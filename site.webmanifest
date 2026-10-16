@@ -1,0 +1,14 @@
+{
+  "name": "Hedgehog 语感词库",
+  "short_name": "Hedgehog",
+  "description": "自用多语言语感词库与背词工具",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf8f0",
+  "theme_color": "#0b4638",
+  "icons": [
+    { "src": "icons/hedgehog.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

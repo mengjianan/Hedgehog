@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#0b4638" />
+    <title>Hedgehog 语感词库</title>
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="icon" href="icons/hedgehog.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/hedgehog.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- 密码门 -->
+    <div class="gate" id="gate">
+      <div class="gate-card">
+        <img class="gate-logo" src="icons/hedgehog.svg" alt="" />
+        <h1>Hedgehog</h1>
+        <p class="gate-sub">语感词库 · 自用</p>
+        <form id="gateForm" autocomplete="off">
+          <input
+            id="gatePassword"
+            type="password"
+            placeholder="访问密码"
+            autocomplete="current-password"
+            required
+          />
+          <button type="submit" id="gateBtn">进入</button>
+        </form>
+        <p class="gate-hint" id="gateHint"></p>
+      </div>
+    </div>
+
+    <!-- 主应用 -->
+    <div class="app" id="app" hidden>
+      <header class="topbar">
+        <a class="brand" href="#/home">
+          <img src="icons/hedgehog.svg" alt="" />
+          <span><strong>Hedgehog</strong><small>语感词库</small></span>
+        </a>
+        <nav id="nav">
+          <a href="#/home" data-nav="home">搜索</a>
+          <a href="#/categories" data-nav="categories">词库</a>
+          <a href="#/study" data-nav="study">背词</a>
+          <a href="#/favorites" data-nav="favorites">收藏</a>
+        </nav>
+      </header>
+      <main id="view" class="view"></main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
