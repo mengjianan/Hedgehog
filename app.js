@@ -558,8 +558,19 @@
   window.addEventListener('hashchange', route);
 
   // 本会话已解锁过则直接进入（关掉标签页后需重新输密码）
+  // 版本守卫：旧结构缓存（如无 tables 的 v2）自动作废，强制重新解密
   try {
     var cached = sessionStorage.getItem('hedgehog:data');
-    if (cached) { setData(JSON.parse(cached)); openApp(); }
-  } catch (e) {}
+    if (cached) {
+      var cd = JSON.parse(cached);
+      if (cd && cd.version >= 3 && cd.tables && cd.tables.length) {
+        setData(cd);
+        openApp();
+      } else {
+        sessionStorage.removeItem('hedgehog:data');
+      }
+    }
+  } catch (e) {
+    try { sessionStorage.removeItem('hedgehog:data'); } catch (e2) {}
+  }
 })();
