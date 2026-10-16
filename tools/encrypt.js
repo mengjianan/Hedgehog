@@ -73,9 +73,11 @@ async function main() {
         new Uint8Array(Buffer.from(blob.data, 'base64'))
       );
       const data = JSON.parse(new TextDecoder().decode(plain));
-      console.log(
-        'verify OK: ' + data.lists.map((l) => `${l.id}=${l.words.length}词`).join(', ')
+      const parts = data.lists.map((l) => `${l.id}=${l.words.length}词`);
+      (data.tables || []).forEach((t) =>
+        parts.push(`${t.id}=${(t.sections || []).length}节`)
       );
+      console.log('verify OK: ' + parts.join(', '));
     } catch (e) {
       console.error('verify FAILED: 密码不对或数据损坏');
       process.exit(1);
@@ -86,17 +88,23 @@ async function main() {
   const files = fs.existsSync(SRC_DIR)
     ? fs.readdirSync(SRC_DIR).filter((f) => f.endsWith('.json')).sort()
     : [];
-  if (!files.length) {
-    console.error('src/ 下没有 words-*.json 源文件');
+  const wordFiles = files.filter((f) => f.startsWith('words-'));
+  const tableFiles = files.filter((f) => f.startsWith('tables-'));
+  if (!wordFiles.length) {
+    console.error('src/ 下没有 words-*.json 词库源文件');
     process.exit(1);
   }
-  const lists = files.map((f) =>
+  const lists = wordFiles.map((f) =>
+    JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
+  );
+  const tables = tableFiles.map((f) =>
     JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
   );
   const json = JSON.stringify({
-    version: 2,
+    version: 3,
     updated: new Date().toISOString().slice(0, 10),
     lists,
+    tables,
   });
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(

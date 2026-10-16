@@ -5,12 +5,13 @@
 
 ## 特性
 
-- **密码门**：词库以 AES-GCM 加密上传（`data/words.enc`），浏览器 PBKDF2 解密，仓库里没有明文词库
-- **词感词条**：每个词 = 词感直觉 / 中式误区 / 高频搭配 / 原创例句
-- **背词**：认识/模糊自评卡片，进度存 localStorage（本机）
-- **收藏**：本机 localStorage
-- **PWA**：手机可"添加到主屏幕"
-- 响应式，国内手机/电脑直接访问（系统字体，无外部资源请求）
+- **密码门**：内容以 AES-GCM 加密上传（`data/words.enc`），浏览器 PBKDF2 解密，仓库里没有明文数据
+- **三语词库**：雅思英语 / TOPIK 韩语 / JLPT 日语各 30 词起，词条 = 词感直觉 / 中式误区 / 高频搭配 / 原创例句
+- **三张基础表**：词根词缀（51 词根·41 前缀·33 后缀）、한글 音表（元音辅音收音 + 8 条音变规则）、五十音（全表 + 浊音拗音 + 6 条节奏规则）
+- **背词**：按词库开轮（每轮 10 词），认识/模糊自评，进度存 localStorage（本机）
+- **收藏**：本机 localStorage；**跨语言搜索**：三语通查带语言标签；TTS 按语言发音
+- **手账贴纸风 UI**：纸纹底 + 贴纸卡片 + 和纸胶带 + 语言分色（英=森绿/韩=紫粉/日=朱红）+ 刺猬贴纸
+- **PWA**：手机可"添加到主屏幕"；响应式，国内手机/电脑直接访问（系统字体，无外部资源请求）
 
 ## 目录
 
@@ -21,21 +22,24 @@ app.js              路由 / 解密 / 跨语言搜索 / 背词 / 收藏
 src/words-en.json   英语词库明文源【仅本地，整个 src/ 不上传】
 src/words-ko.json   韩语词库明文源【仅本地】
 src/words-ja.json   日语词库明文源【仅本地】
-data/words.enc      三语合并加密词库【上传】
+src/tables-en.json  词根词缀表明文源【仅本地】
+src/tables-ko.json  한글 音表明文源【仅本地】
+src/tables-ja.json  五十音表明文源【仅本地】
+data/words.enc      词库 + 基础表合并加密【上传】
 data/salt           PBKDF2 盐值【上传，只生成一次】
 tools/encrypt.js    合并 + 加解密工具
-icons/              SVG 图标
+icons/              SVG 图标（含 sticker-hog.svg 手绘贴纸）
 site.webmanifest    PWA 清单
 docs/               项目日志（每日一记）
 ```
 
-## 修改词库
+## 修改内容（词库或基础表）
 
 ```bash
-# 1. 编辑 src/words-en.json / words-ko.json / words-ja.json
+# 1. 编辑 src/words-*.json（词库）或 src/tables-*.json（基础表）
 # 2. 合并 + 重新加密（密码不入库：见本地 PRIVATE-NOTE.md 或私聊会话）
 node tools/encrypt.js <密码>
-node tools/encrypt.js <密码> --verify   # 校验（会打印各词表词数）
+node tools/encrypt.js <密码> --verify   # 校验（会打印各词库词数与表节数）
 # 3. commit（src/ 被 gitignore，只会提交 words.enc）
 ```
 

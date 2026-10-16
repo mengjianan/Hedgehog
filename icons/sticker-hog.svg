@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 92" width="140" height="92">
+  <!-- 手绘风刺猬贴纸（A 风格装饰） -->
+  <g stroke="#1d2b26" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 刺（在身体后方） -->
+    <path d="M18 62 L26 34 L36 54 L48 24 L58 48 L70 20 L80 44 L92 26 L100 48 L110 38 L116 56 Z"
+          fill="#7c5a3a"/>
+    <!-- 身体 -->
+    <path d="M16 70 Q14 46 44 36 Q72 27 98 36 Q122 44 132 60 L120 68 Q70 76 16 70 Z"
+          fill="#f3e6cf"/>
+    <!-- 脸颊纹 -->
+    <path d="M104 46 Q110 52 112 60" fill="none" stroke-width="2.4"/>
+    <!-- 眼睛 -->
+    <circle cx="110" cy="52" r="3.2" fill="#1d2b26" stroke="none"/>
+    <!-- 鼻子 -->
+    <circle cx="132" cy="60" r="4" fill="#1d2b26" stroke="none"/>
+    <!-- 微笑 -->
+    <path d="M118 62 Q122 65 126 62" fill="none" stroke-width="2.4"/>
+    <!-- 小脚 -->
+    <path d="M40 72 q-2 8 8 8" fill="none"/>
+    <path d="M84 73 q-2 8 8 8" fill="none"/>
+    <!-- 头顶小花 -->
+    <path d="M66 18 q2 -8 8 -8 q6 0 6 7 q0 6 -7 6" fill="#c0392b" stroke-width="2.4"/>
+    <path d="M74 17 l2 4" fill="none" stroke-width="2.4"/>
+  </g>
+</svg>

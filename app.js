@@ -10,6 +10,8 @@
   var LIST = {}; // id -> list
   var IDX = {}; // "listId/w" -> {l, x}
   var ALL = []; // 扁平索引（跨语言搜索用）
+  var TABLES = []; // 基础表 [{id, lang, title, sections}]
+  var TBY = {}; // id -> table
   var session = null; // 当前背词轮次 {listId, queue, idx, good, bad, revealed}
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
@@ -95,6 +97,9 @@
         ALL.push(e);
       });
     });
+    TABLES = data.tables || [];
+    TBY = {};
+    TABLES.forEach(function (t) { TBY[t.id] = t; });
   }
 
   function speak(ref) {
@@ -118,6 +123,7 @@
     var k = Object.keys(known()).length;
     return (
       '<div class="hero">' +
+      '<img class="sticker hero-sticker" src="icons/sticker-hog.svg" alt="" />' +
       '<h2>用语感学词，不死背中文</h2>' +
       '<p class="sub">英语 · 韩语 · 日语，先建立母语者的直觉</p>' +
       '<div class="search-row"><input id="q" type="search" placeholder="三语通查：abolish / 마음 / 環境" autocomplete="off" /></div>' +
@@ -155,7 +161,7 @@
           '<a class="result" href="' + wordHref(e) + '">' +
           '<b>' + esc(e.x.w) + '</b><i>' + esc(e.x.pron) + '</i>' +
           '<span>' + esc(e.x.zh) + '</span>' +
-          '<em class="lang-tag">' + (LANG_NAME[e.l.lang] || e.l.lang) + '</em></a>'
+          '<em class="lang-tag lang-' + e.l.lang + '">' + (LANG_NAME[e.l.lang] || e.l.lang) + '</em></a>'
         );
       })
       .join('');
@@ -163,16 +169,27 @@
 
   // ---------- 视图：词库 / 列表 / 详情 ----------
   function viewCategories() {
-    var cards = LISTS.map(function (l) {
+    var wordCards = LISTS.map(function (l) {
       var pend = pendingCount(l);
       return (
-        '<a class="card cat-card" href="#/categories/' + l.id + '">' +
+        '<a class="card cat-card lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
         '<span><b>' + esc(l.title) + '</b><small>' +
         (LANG_NAME[l.lang] || l.lang) + ' · ' + l.words.length + ' 词 · 待学 ' + pend +
         '</small></span><span>→</span></a>'
       );
     }).join('');
-    return '<h2>词库</h2>' + cards;
+    var tableCards = TABLES.map(function (t) {
+      return (
+        '<a class="card cat-card lang-' + t.lang + '" href="#/tables/' + t.id + '">' +
+        '<span><b>' + esc(t.title) + '</b><small>' +
+        (LANG_NAME[t.lang] || t.lang) + ' · ' + esc(t.subtitle || (t.sections || []).length + ' 节') +
+        '</small></span><span>→</span></a>'
+      );
+    }).join('');
+    return (
+      '<h2>词库</h2>' + wordCards +
+      (tableCards ? '<h2 class="group-h">基础表</h2>' + tableCards : '')
+    );
   }
 
   function viewList(listId) {
@@ -214,12 +231,12 @@
       .join('');
     return (
       '<a class="back-link" href="#/categories/' + l.id + '">← ' + esc(l.title) + '</a>' +
-      '<div class="card">' +
+      '<div class="card lang-card lang-' + l.lang + '">' +
       '<div class="word-head">' +
       '<h2>' + esc(x.w) + '</h2>' +
       '<span class="ipa">' + esc(x.pron) + '</span>' +
       '<span class="pos">' + esc(x.pos) + '</span>' +
-      '<em class="lang-tag">' + (LANG_NAME[l.lang] || l.lang) + '</em>' +
+      '<em class="lang-tag lang-' + l.lang + '">' + (LANG_NAME[l.lang] || l.lang) + '</em>' +
       '<button class="icon-btn" data-act="speak" data-ref="' + esc(e.ref) + '" title="发音">🔊</button>' +
       '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">★</button>' +
       '</div>' +
@@ -253,7 +270,8 @@
       return (
         '<h2>背词</h2>' +
         '<div class="card study-done">' +
-        '<div class="big">🎉</div>' +
+        '<img class="sticker" src="icons/sticker-hog.svg" alt="" />' +
+        '<div class="stamp">完成</div>' +
         '<p>本轮完成：认识 <b>' + session.good + '</b> · 模糊 <b>' + session.bad + '</b></p>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="study-home">再背一轮</button>' +
@@ -325,7 +343,8 @@
     if (!list.length) {
       return (
         '<h2>我的收藏</h2>' +
-        '<div class="empty"><div class="big">☆</div>还没有收藏。在词页点 ★ 收藏</div>'
+        '<div class="empty"><img class="sticker sticker-sm" src="icons/sticker-hog.svg" alt="" />' +
+        '<div>还没有收藏。在词页点 ★ 收藏</div></div>'
       );
     }
     var chips = list
@@ -337,6 +356,99 @@
       })
       .join('');
     return '<h2>我的收藏</h2><div class="wordlist">' + chips + '</div>';
+  }
+
+  // ---------- 视图：基础表 ----------
+  function viewTable(id) {
+    var t = TBY[id];
+    if (!t) return viewCategories();
+    var body = (t.sections || []).map(renderSection).join('');
+    return (
+      '<a class="back-link" href="#/categories">← 词库</a>' +
+      '<div class="table-head lang-' + t.lang + '">' +
+      '<h2>' + esc(t.title) + '</h2>' +
+      '<em class="lang-tag lang-' + t.lang + '">' + (LANG_NAME[t.lang] || t.lang) + '</em>' +
+      '<p class="sub">' + esc(t.subtitle || '') + '</p>' +
+      '</div>' + body +
+      '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
+    );
+  }
+
+  function renderSection(s) {
+    var note = s.note ? '<p class="table-note">' + esc(s.note) + '</p>' : '';
+    var inner = '';
+    if (s.type === 'morphemes') {
+      inner =
+        '<div class="morph-list">' +
+        s.rows.map(function (r) {
+          return (
+            '<div class="card morph-row">' +
+            '<div class="morph-top"><b class="morph-form">' + esc(r.form) + '</b>' +
+            '<span class="morph-mean">' + esc(r.meaning) + '</span></div>' +
+            '<div class="morph-ex">' +
+            (r.examples || []).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') +
+            '</div></div>'
+          );
+        }).join('') +
+        '</div>';
+    } else if (s.type === 'grid') {
+      inner =
+        '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+        s.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') +
+        '</tr></thead><tbody>' +
+        s.rows.map(function (r) {
+          return (
+            '<tr>' +
+            r.map(function (c, i) {
+              return i === 0
+                ? '<th scope="row">' + esc(c) + '</th>'
+                : '<td>' + esc(c) + '</td>';
+            }).join('') +
+            '</tr>'
+          );
+        }).join('') +
+        '</tbody></table></div>';
+    } else if (s.type === 'matrix') {
+      inner =
+        '<div class="table-wrap"><table class="matrix-table"><thead><tr>' +
+        '<th class="corner">' + esc(s.colHead || '') + '</th>' +
+        s.cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') +
+        '</tr></thead><tbody>' +
+        s.rows.map(function (r) {
+          return (
+            '<tr><th scope="row">' + esc(r.label) + '</th>' +
+            r.cells.map(function (c) {
+              if (c === '・') return '<td class="blank">・</td>';
+              var p = c.split('·');
+              return (
+                '<td><b>' + esc(p[0]) + '</b>' +
+                (p[1] ? '<i>' + esc(p[1]) + '</i>' : '') +
+                (p[2] ? '<small>' + esc(p[2]) + '</small>' : '') +
+                '</td>'
+              );
+            }).join('') +
+            '</tr>'
+          );
+        }).join('') +
+        '</tbody></table></div>' +
+        (s.footnote ? '<p class="table-note">' + esc(s.footnote) + '</p>' : '');
+    } else if (s.type === 'rules') {
+      inner =
+        '<div class="rule-grid">' +
+        s.cards.map(function (c) {
+          return (
+            '<div class="card rule-card"><h4>' + esc(c.name) + '</h4>' +
+            '<p>' + esc(c.desc) + '</p>' +
+            (c.ex ? '<div class="rule-ex">' + esc(c.ex) + '</div>' : '') +
+            '</div>'
+          );
+        }).join('') +
+        '</div>';
+    }
+    return (
+      '<section class="table-section"><h3>' + esc(s.title) + '</h3>' +
+      note + inner + '</section>'
+    );
   }
 
   // ---------- 路由 ----------
@@ -355,6 +467,9 @@
       nav = 'categories';
     } else if (name === 'categories') {
       view.innerHTML = parts[1] ? viewList(parts[1]) : viewCategories();
+      nav = 'categories';
+    } else if (name === 'tables') {
+      view.innerHTML = viewTable(parts[1] || '');
       nav = 'categories';
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
