@@ -1,25 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 92" width="140" height="92">
-  <!-- 手绘风刺猬贴纸（A 风格装饰） -->
-  <g stroke="#1d2b26" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-    <!-- 刺（在身体后方） -->
-    <path d="M18 62 L26 34 L36 54 L48 24 L58 48 L70 20 L80 44 L92 26 L100 48 L110 38 L116 56 Z"
-          fill="#7c5a3a"/>
-    <!-- 身体 -->
-    <path d="M16 70 Q14 46 44 36 Q72 27 98 36 Q122 44 132 60 L120 68 Q70 76 16 70 Z"
-          fill="#f3e6cf"/>
-    <!-- 脸颊纹 -->
-    <path d="M104 46 Q110 52 112 60" fill="none" stroke-width="2.4"/>
-    <!-- 眼睛 -->
-    <circle cx="110" cy="52" r="3.2" fill="#1d2b26" stroke="none"/>
-    <!-- 鼻子 -->
-    <circle cx="132" cy="60" r="4" fill="#1d2b26" stroke="none"/>
-    <!-- 微笑 -->
-    <path d="M118 62 Q122 65 126 62" fill="none" stroke-width="2.4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 150" width="180" height="150">
+  <!-- 韩系细线插画：坐姿看书的刺猬（无腮红、无大眼，排线画刺） -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- 地面与草 -->
+    <path d="M26 132 H162" stroke="#C9BFAE" stroke-width="1.6" fill="none"/>
+    <path d="M30 132 l2 -7 M36 132 l-2 -6 M152 132 l3 -7" stroke="#A8B5A2" stroke-width="1.6" fill="none"/>
+    <!-- 身体（侧坐，面向右） -->
+    <path d="M156 96 C156 88 150 74 136 68 C120 60 78 58 58 78 C48 88 46 104 52 116 L100 124 C118 126 132 120 140 110 C148 104 154 100 156 96 Z"
+          fill="#F5EFE4" stroke="#4A443C" stroke-width="2.4"/>
+    <!-- 刺：外层（长排线） -->
+    <g stroke="#5C5346" stroke-width="2.1" fill="none">
+      <path d="M142 70 L150 57"/><path d="M134 66 L139 51"/><path d="M126 63 L128 47"/>
+      <path d="M117 61 L117 44"/><path d="M108 60 L105 43"/><path d="M99 60 L94 44"/>
+      <path d="M90 61 L83 46"/><path d="M81 64 L72 50"/><path d="M73 68 L62 56"/>
+      <path d="M66 73 L53 64"/><path d="M60 80 L46 73"/><path d="M56 88 L41 84"/>
+      <path d="M54 96 L39 96"/>
+    </g>
+    <!-- 刺：内层（短排线） -->
+    <g stroke="#6B6255" stroke-width="1.9" fill="none">
+      <path d="M138 76 L144 66"/><path d="M128 72 L131 59"/><path d="M116 70 L116 56"/>
+      <path d="M104 69 L101 55"/><path d="M92 70 L87 57"/><path d="M80 74 L72 63"/>
+      <path d="M70 80 L60 72"/><path d="M62 88 L51 83"/>
+    </g>
+    <!-- 耳朵 -->
+    <path d="M118 76 Q122 68 128 74" stroke="#4A443C" stroke-width="2.2" fill="#F5EFE4"/>
+    <!-- 脸 -->
+    <circle cx="138" cy="86" r="2.6" fill="#4A443C"/>
+    <circle cx="157" cy="95" r="3.2" fill="#4A443C"/>
+    <path d="M148 100 Q152 103 156 100" stroke="#4A443C" stroke-width="1.8" fill="none"/>
     <!-- 小脚 -->
-    <path d="M40 72 q-2 8 8 8" fill="none"/>
-    <path d="M84 73 q-2 8 8 8" fill="none"/>
-    <!-- 头顶小花 -->
-    <path d="M66 18 q2 -8 8 -8 q6 0 6 7 q0 6 -7 6" fill="#c0392b" stroke-width="2.4"/>
-    <path d="M74 17 l2 4" fill="none" stroke-width="2.4"/>
+    <path d="M70 124 Q74 131 82 128" stroke="#4A443C" stroke-width="2.1" fill="none"/>
+    <path d="M94 127 Q98 133 106 130" stroke="#4A443C" stroke-width="2.1" fill="none"/>
+    <!-- 摊开的书（灰绿封面） -->
+    <path d="M78 113 L112 123 L146 113 L146 129 L112 139 L78 129 Z"
+          fill="#B7C4B0" stroke="#4A443C" stroke-width="2.1"/>
+    <path d="M84 115 L112 124 L140 115 L140 126 L112 135 L84 126 Z"
+          fill="#FFFDF8" stroke="#4A443C" stroke-width="1.8"/>
+    <path d="M112 124 L112 135" stroke="#4A443C" stroke-width="1.5"/>
+    <g stroke="#A89984" stroke-width="1.3" fill="none">
+      <path d="M90 119 L104 123"/><path d="M90 123 L102 126.5"/>
+      <path d="M120 123 L134 119"/><path d="M122 126.5 L134 123"/>
+    </g>
+    <!-- 小爪搭在书上 -->
+    <path d="M96 112 Q99 107 104 110" stroke="#4A443C" stroke-width="2.1" fill="none"/>
+    <path d="M128 112 Q125 107 120 110" stroke="#4A443C" stroke-width="2.1" fill="none"/>
+    <!-- 脚边小 sprig -->
+    <path d="M62 132 Q64 122 70 118" stroke="#A8B5A2" stroke-width="1.7" fill="none"/>
+    <path d="M66 126 Q70 124 72 127 M64 129 Q60 127 59 130" stroke="#A8B5A2" stroke-width="1.5" fill="none"/>
   </g>
 </svg>

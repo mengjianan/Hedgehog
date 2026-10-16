@@ -6,8 +6,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#faf8f0",
-  "theme_color": "#0b4638",
+  "background_color": "#faf7f2",
+  "theme_color": "#8fa088",
   "icons": [
     { "src": "icons/hedgehog.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]

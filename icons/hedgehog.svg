@@ -1,7 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="15" fill="#0b4638"/>
-  <path d="M10 45 L14 31 L18 39 L23 27 L28 37 L33 25 L38 37 L43 29 L47 39 L50 32 L54 45 Q54 50 32 50 Q10 50 10 45 Z" fill="#faf8f0"/>
-  <circle cx="47" cy="42" r="2.2" fill="#0b4638"/>
-  <circle cx="53.5" cy="44" r="2.2" fill="#0b4638"/>
-  <path d="M6 46 Q4 49 8 50 L14 50 L13 46 Z" fill="#faf8f0"/>
+  <!-- 韩系细线头部特写（方形图标 / 顶栏用） -->
+  <rect width="64" height="64" rx="14" fill="#FAF7F2"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- 脸部圆顶 -->
+    <path d="M12 46 C12 30 22 22 34 23 C46 24 54 32 54 44 C54 48 50 50 44 50 L18 50 C14 50 12 49 12 46 Z"
+          fill="#F5EFE4" stroke="#4A443C" stroke-width="2.4"/>
+    <!-- 刺（排线） -->
+    <g stroke="#5C5346" stroke-width="2.1" fill="none">
+      <path d="M16 36 L8 28"/><path d="M22 29 L17 18"/><path d="M30 25 L28 13"/>
+      <path d="M38 25 L40 13"/><path d="M46 29 L52 19"/><path d="M51 36 L59 30"/>
+    </g>
+    <!-- 耳朵 -->
+    <path d="M24 27 Q27 21 32 25" stroke="#4A443C" stroke-width="2" fill="#F5EFE4"/>
+    <!-- 脸部 -->
+    <circle cx="40" cy="38" r="2.4" fill="#4A443C"/>
+    <circle cx="55" cy="44" r="2.9" fill="#4A443C"/>
+    <path d="M47 47 Q50 49.5 53 47" stroke="#4A443C" stroke-width="1.7" fill="none"/>
+    <!-- 底部小书签（灰绿） -->
+    <path d="M18 54 H46" stroke="#A8B5A2" stroke-width="3" fill="none"/>
+  </g>
 </svg>

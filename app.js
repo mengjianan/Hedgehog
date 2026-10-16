@@ -16,6 +16,44 @@
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
 
+  // 细线图标（韩系极简：不用 emoji）
+  var ICON = {
+    sound:
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M17.8 6.8a7 7 0 0 1 0 10.4"/></svg>',
+    star:
+      '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.7-4.2 3.9 1.1 5.6L12 16.4l-5.1 2.6 1.1-5.6-4.2-3.9 5.7-.7L12 3.6z"/></svg>'
+  };
+
+  var PAPER_CLASSES = ['paper-grid', 'paper-lined', 'paper-blank'];
+
+  function applyPaper(p) {
+    var page = $('page');
+    if (!page) return;
+    PAPER_CLASSES.forEach(function (c) { page.classList.remove(c); });
+    page.classList.add(PAPER_CLASSES.indexOf(p) >= 0 ? p : 'paper-grid');
+  }
+
+  function initPage() {
+    var d = new Date();
+    var days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var pd = $('pageDate');
+    if (pd) {
+      pd.textContent =
+        d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + days[d.getDay()];
+    }
+    applyPaper(lsGet('hedgehog:paper', 'paper-grid'));
+    var pb = $('paperBtn');
+    if (pb) {
+      pb.addEventListener('click', function () {
+        var cur = lsGet('hedgehog:paper', 'paper-grid');
+        var next = PAPER_CLASSES[(PAPER_CLASSES.indexOf(cur) + 1) % PAPER_CLASSES.length];
+        lsSet('hedgehog:paper', next);
+        applyPaper(next);
+      });
+    }
+  }
+
   // ---------- 小工具 ----------
   var $ = function (id) { return document.getElementById(id); };
   var te = new TextEncoder();
@@ -215,7 +253,8 @@
     if (!e) {
       return (
         '<a class="back-link" href="#/categories">← 词库</a>' +
-        '<div class="empty"><div class="big">🧐</div>词库里还没有「' + esc(w) + '」</div>'
+        '<div class="empty"><img class="sticker sticker-sm" src="icons/sticker-hog.svg" alt="" />' +
+        '<div>词库里还没有「' + esc(w) + '」</div></div>'
       );
     }
     var x = e.x;
@@ -237,8 +276,8 @@
       '<span class="ipa">' + esc(x.pron) + '</span>' +
       '<span class="pos">' + esc(x.pos) + '</span>' +
       '<em class="lang-tag lang-' + l.lang + '">' + (LANG_NAME[l.lang] || l.lang) + '</em>' +
-      '<button class="icon-btn" data-act="speak" data-ref="' + esc(e.ref) + '" title="发音">🔊</button>' +
-      '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">★</button>' +
+      '<button class="icon-btn" data-act="speak" data-ref="' + esc(e.ref) + '" title="发音">' + ICON.sound + '</button>' +
+      '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">' + ICON.star + '</button>' +
       '</div>' +
       '<p class="zh-line">' + esc(x.zh) + '</p>' +
       '<div class="entry-section"><span class="entry-label">词感</span><p>' + esc(x.sense) + '</p></div>' +
@@ -298,7 +337,7 @@
         '<div class="sw">' + esc(x.w) + '</div>' +
         '<div class="sipa">' + esc(x.pron) + '</div>' +
         '<div class="study-actions">' +
-        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">🔊</button>' +
+        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
         '</div>' +
         '<button class="btn" data-act="reveal" style="margin-top:14px">显示词感</button>' +
         '</div>'
@@ -484,6 +523,9 @@
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
+    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5 }[name] || 1;
+    var pn = $('pageNum');
+    if (pn) pn.textContent = '— ' + pnum + ' —';
     window.scrollTo(0, 0);
 
     var q = $('q');
@@ -556,6 +598,8 @@
   });
 
   window.addEventListener('hashchange', route);
+
+  initPage();
 
   // 本会话已解锁过则直接进入（关掉标签页后需重新输密码）
   // 版本守卫：旧结构缓存（如无 tables 的 v2）自动作废，强制重新解密

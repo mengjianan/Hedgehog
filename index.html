@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#0b4638" />
+    <meta name="theme-color" content="#8FA088" />
     <title>Hedgehog 语感词库</title>
     <link rel="manifest" href="site.webmanifest" />
     <link rel="icon" href="icons/hedgehog.svg" type="image/svg+xml" />
@@ -33,22 +33,30 @@
       </div>
     </div>
 
-    <!-- 主应用 -->
+    <!-- 本子 -->
     <div class="app" id="app" hidden>
-      <header class="topbar">
-        <span class="tape tape-top" aria-hidden="true"></span>
-        <a class="brand" href="#/home">
-          <img src="icons/hedgehog.svg" alt="" />
-          <span><strong>Hedgehog</strong><small>语感词库</small></span>
-        </a>
-        <nav id="nav">
-          <a href="#/home" data-nav="home">搜索</a>
-          <a href="#/categories" data-nav="categories">词库</a>
-          <a href="#/study" data-nav="study">背词</a>
-          <a href="#/favorites" data-nav="favorites">收藏</a>
-        </nav>
-      </header>
-      <main id="view" class="view"></main>
+      <div class="notebook">
+        <div class="spiral" aria-hidden="true"></div>
+        <div class="page paper-grid" id="page">
+          <div class="holes" aria-hidden="true"></div>
+          <header class="page-head">
+            <a class="brand" href="#/home">
+              <img src="icons/hedgehog.svg" alt="" />
+              <span><strong>Hedgehog</strong><small>语感词库</small></span>
+            </a>
+            <div class="page-date" id="pageDate"></div>
+            <button class="paper-btn" id="paperBtn" type="button" title="切换纸纹">换纸</button>
+          </header>
+          <nav class="index-tabs" id="nav">
+            <a href="#/home" data-nav="home">搜索</a>
+            <a href="#/categories" data-nav="categories">词库</a>
+            <a href="#/study" data-nav="study">背词</a>
+            <a href="#/favorites" data-nav="favorites">收藏</a>
+          </nav>
+          <main id="view" class="view"></main>
+          <footer class="page-foot"><span class="page-num" id="pageNum">— 1 —</span></footer>
+        </div>
+      </div>
     </div>
 
     <script src="app.js"></script>
