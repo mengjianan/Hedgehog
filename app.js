@@ -1,10 +1,18 @@
-/* Hedgehog 语感词库 — 纯原生单文件应用（无框架、无构建、无外部请求） */
+/* Hedgehog 语感词库 — 纯原生单文件应用（无框架、无构建、无外部请求）
+ * 数据结构: {version, updated, lists: [{id, lang, title, speech, words: [...]}]}
+ * 词条 ref = listId + '/' + 词头，收藏/进度都按 ref 存
+ */
 (function () {
   'use strict';
 
-  var DATA = null; // 解密后的词库
-  var IDX = {}; // 词 -> 词条
-  var session = null; // 当前背词轮次
+  var DATA = null;
+  var LISTS = [];
+  var LIST = {}; // id -> list
+  var IDX = {}; // "listId/w" -> {l, x}
+  var ALL = []; // 扁平索引（跨语言搜索用）
+  var session = null; // 当前背词轮次 {listId, queue, idx, good, bad, revealed}
+
+  var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
 
   // ---------- 小工具 ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -36,14 +44,18 @@
 
   function favs() { return lsGet('hedgehog:favs', []); }
   function known() { return lsGet('hedgehog:known', {}); }
-  function isFav(w) { return favs().indexOf(w) !== -1; }
+  function isFav(ref) { return favs().indexOf(ref) !== -1; }
 
-  function toggleFav(w) {
+  function toggleFav(ref) {
     var list = favs();
-    var i = list.indexOf(w);
-    if (i === -1) list.push(w); else list.splice(i, 1);
+    var i = list.indexOf(ref);
+    if (i === -1) list.push(ref); else list.splice(i, 1);
     lsSet('hedgehog:favs', list);
     return i === -1;
+  }
+
+  function wordHref(e) {
+    return '#/word/' + e.l.id + '/' + encodeURIComponent(e.x.w);
   }
 
   // ---------- 密码解密（PBKDF2 -> AES-GCM） ----------
@@ -70,34 +82,53 @@
 
   function setData(data) {
     DATA = data;
+    LISTS = data.lists || [];
+    LIST = {};
     IDX = {};
-    DATA.words.forEach(function (x) { IDX[x.w] = x; });
+    ALL = [];
+    LISTS.forEach(function (l) {
+      LIST[l.id] = l;
+      (l.words || []).forEach(function (x) {
+        var ref = l.id + '/' + x.w;
+        var e = { l: l, x: x, ref: ref };
+        IDX[ref] = e;
+        ALL.push(e);
+      });
+    });
   }
 
-  function speak(w) {
+  function speak(ref) {
     if (!window.speechSynthesis) return;
+    var e = IDX[ref];
+    if (!e) return;
     window.speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(w);
-    u.lang = 'en-US';
+    var u = new SpeechSynthesisUtterance(e.x.w);
+    u.lang = e.l.speech || 'en-US';
     u.rate = 0.9;
     window.speechSynthesis.speak(u);
   }
 
-  // ---------- 视图 ----------
+  function pendingCount(l) {
+    var k = known();
+    return l.words.filter(function (x) { return !k[l.id + '/' + x.w]; }).length;
+  }
+
+  // ---------- 视图：首页 / 搜索 ----------
   function viewHome() {
     var k = Object.keys(known()).length;
     return (
       '<div class="hero">' +
       '<h2>用语感学词，不死背中文</h2>' +
-      '<p class="sub">先建立母语者对这个词的直觉，再谈释义</p>' +
-      '<div class="search-row"><input id="q" type="search" placeholder="查一个词，如 inhibit / accumulate" autocomplete="off" /></div>' +
+      '<p class="sub">英语 · 韩语 · 日语，先建立母语者的直觉</p>' +
+      '<div class="search-row"><input id="q" type="search" placeholder="三语通查：abolish / 마음 / 環境" autocomplete="off" /></div>' +
       '<div class="stats">' +
-      '<span><b>' + DATA.words.length + '</b>词库</span>' +
+      '<span><b>' + ALL.length + '</b>词库</span>' +
+      '<span><b>' + LISTS.length + '</b>词表</span>' +
       '<span><b>' + k + '</b>已掌握</span>' +
       '<span><b>' + favs().length + '</b>收藏</span>' +
       '</div></div>' +
       '<div class="results" id="results"></div>' +
-      '<p class="footnote">Hedgehog · 自用语感词库 · 词条内容全部原创</p>'
+      '<p class="footnote">Hedgehog · 三语语感词库 · 词条内容全部原创</p>'
     );
   }
 
@@ -106,11 +137,12 @@
     if (!box) return;
     q = q.trim().toLowerCase();
     if (!q) { box.innerHTML = ''; return; }
-    var hits = DATA.words.filter(function (x) {
+    var hits = ALL.filter(function (e) {
       return (
-        x.w.toLowerCase().indexOf(q) !== -1 ||
-        x.zh.indexOf(q) !== -1 ||
-        x.sense.toLowerCase().indexOf(q) !== -1
+        e.x.w.toLowerCase().indexOf(q) !== -1 ||
+        (e.x.zh || '').indexOf(q) !== -1 ||
+        (e.x.sense || '').toLowerCase().indexOf(q) !== -1 ||
+        (e.x.pron || '').toLowerCase().indexOf(q) !== -1
       );
     });
     if (!hits.length) {
@@ -118,71 +150,78 @@
       return;
     }
     box.innerHTML = hits
-      .map(function (x) {
+      .map(function (e) {
         return (
-          '<a class="result" href="#/word/' + encodeURIComponent(x.w) + '">' +
-          '<b>' + esc(x.w) + '</b><i>' + esc(x.ipa) + '</i>' +
-          '<span>' + esc(x.zh) + '</span></a>'
+          '<a class="result" href="' + wordHref(e) + '">' +
+          '<b>' + esc(e.x.w) + '</b><i>' + esc(e.x.pron) + '</i>' +
+          '<span>' + esc(e.x.zh) + '</span>' +
+          '<em class="lang-tag">' + (LANG_NAME[e.l.lang] || e.l.lang) + '</em></a>'
         );
       })
       .join('');
   }
 
+  // ---------- 视图：词库 / 列表 / 详情 ----------
   function viewCategories() {
-    return (
-      '<h2>词库</h2>' +
-      '<a class="card cat-card" href="#/categories/ielts-core">' +
-      '<span><b>雅思核心词（首批）</b><small>IELTS Core · ' + DATA.words.length + ' 词 · 词感全原创</small></span>' +
-      '<span>→</span></a>' +
-      '<div class="card cat-card" style="margin-top:12px;opacity:.65">' +
-      '<span><b>TOPIK 韩语词库</b><small>规划中 · 第二批</small></span><span>Coming</span></div>' +
-      '<div class="card cat-card" style="margin-top:12px;opacity:.65">' +
-      '<span><b>JLPT 日语词库</b><small>规划中 · 第三批</small></span><span>Coming</span></div>'
-    );
+    var cards = LISTS.map(function (l) {
+      var pend = pendingCount(l);
+      return (
+        '<a class="card cat-card" href="#/categories/' + l.id + '">' +
+        '<span><b>' + esc(l.title) + '</b><small>' +
+        (LANG_NAME[l.lang] || l.lang) + ' · ' + l.words.length + ' 词 · 待学 ' + pend +
+        '</small></span><span>→</span></a>'
+      );
+    }).join('');
+    return '<h2>词库</h2>' + cards;
   }
 
-  function viewList(cat) {
-    var chips = DATA.words
+  function viewList(listId) {
+    var l = LIST[listId];
+    if (!l) return viewCategories();
+    var chips = l.words
       .map(function (x) {
         return (
-          '<a class="word-chip" href="#/word/' + encodeURIComponent(x.w) + '">' +
+          '<a class="word-chip" href="#/word/' + l.id + '/' + encodeURIComponent(x.w) + '">' +
           '<b>' + esc(x.w) + '</b><small>' + esc(x.zh) + '</small></a>'
         );
       })
       .join('');
     return (
       '<a class="back-link" href="#/categories">← 词库</a>' +
-      '<h2>' + esc(DATA.title || '词表') + '</h2>' +
+      '<h2>' + esc(l.title) + '</h2>' +
       '<div class="wordlist">' + chips + '</div>'
     );
   }
 
-  function viewWord(w) {
-    var x = IDX[w];
-    if (!x) {
+  function viewWord(listId, w) {
+    var e = IDX[listId + '/' + w];
+    if (!e) {
       return (
-        '<a class="back-link" href="#/home">← 返回</a>' +
+        '<a class="back-link" href="#/categories">← 词库</a>' +
         '<div class="empty"><div class="big">🧐</div>词库里还没有「' + esc(w) + '」</div>'
       );
     }
-    var fav = isFav(x.w);
+    var x = e.x;
+    var l = e.l;
+    var fav = isFav(e.ref);
     var ex = (x.ex || [])
-      .map(function (e) {
-        return '<div class="ex"><div class="en">' + esc(e.en) + '</div><div class="zh">' + esc(e.zh) + '</div></div>';
+      .map(function (it) {
+        return '<div class="ex"><div class="en">' + esc(it.en) + '</div><div class="zh">' + esc(it.zh) + '</div></div>';
       })
       .join('');
     var collo = (x.collo || [])
       .map(function (c) { return '<span>' + esc(c) + '</span>'; })
       .join('');
     return (
-      '<a class="back-link" href="#/categories">← 词库</a>' +
+      '<a class="back-link" href="#/categories/' + l.id + '">← ' + esc(l.title) + '</a>' +
       '<div class="card">' +
       '<div class="word-head">' +
       '<h2>' + esc(x.w) + '</h2>' +
-      '<span class="ipa">' + esc(x.ipa) + '</span>' +
+      '<span class="ipa">' + esc(x.pron) + '</span>' +
       '<span class="pos">' + esc(x.pos) + '</span>' +
-      '<button class="icon-btn" data-act="speak" data-w="' + esc(x.w) + '" title="发音">🔊</button>' +
-      '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-w="' + esc(x.w) + '" title="收藏">★</button>' +
+      '<em class="lang-tag">' + (LANG_NAME[l.lang] || l.lang) + '</em>' +
+      '<button class="icon-btn" data-act="speak" data-ref="' + esc(e.ref) + '" title="发音">🔊</button>' +
+      '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">★</button>' +
       '</div>' +
       '<p class="zh-line">' + esc(x.zh) + '</p>' +
       '<div class="entry-section"><span class="entry-label">词感</span><p>' + esc(x.sense) + '</p></div>' +
@@ -193,62 +232,55 @@
     );
   }
 
-  // ---------- 背词 ----------
-  function startSession() {
-    var k = known();
-    var fresh = [];
-    var review = [];
-    DATA.words.forEach(function (x) {
-      if (k[x.w]) review.push(x.w); else fresh.push(x.w);
-    });
-    var queue = (fresh.length ? fresh : review).slice(0, 10);
-    if (fresh.length < 10 && review.length) {
-      queue = fresh.concat(review).slice(0, 10);
-    }
-    session = { queue: queue, idx: 0, good: 0, bad: 0, revealed: false };
-  }
-
+  // ---------- 视图：背词 ----------
   function studyScreen() {
     if (!session) {
-      var k = Object.keys(known()).length;
-      var left = DATA.words.length - k;
+      var picks = LISTS.map(function (l) {
+        var pend = pendingCount(l);
+        return (
+          '<button class="word-chip" data-act="start-study" data-list="' + l.id + '">' +
+          '<b>' + esc(l.title.replace(/（.*?）/, '')) + '</b>' +
+          '<small>' + (pend ? '待学 ' + pend + ' 词' : '已全会 · 可复习') + '</small></button>'
+        );
+      }).join('');
       return (
         '<h2>背词</h2>' +
-        '<div class="card study-card">' +
-        '<p style="font-size:17px">本轮 10 词 · 还有 <b style="color:var(--green)">' + (left || DATA.words.length) + '</b> 词待学</p>' +
-        '<p class="sub">认识 / 模糊 自评，进度存在本机浏览器里</p>' +
-        '<button class="btn" data-act="start-study">开始本轮</button>' +
-        '</div>'
+        '<p class="sub">每轮 10 词，选一个词库开始 · 进度存在本机浏览器</p>' +
+        '<div class="wordlist">' + picks + '</div>'
       );
     }
     if (session.idx >= session.queue.length) {
-      var html =
+      return (
         '<h2>背词</h2>' +
         '<div class="card study-done">' +
         '<div class="big">🎉</div>' +
         '<p>本轮完成：认识 <b>' + session.good + '</b> · 模糊 <b>' + session.bad + '</b></p>' +
         '<div class="study-actions">' +
-        '<button class="btn" data-act="start-study">再来一轮</button>' +
+        '<button class="btn" data-act="study-home">再背一轮</button>' +
         '<a class="btn ghost" href="#/home" style="text-align:center">回首页</a>' +
-        '</div></div>';
-      return html;
+        '</div></div>'
+      );
     }
+    var l = LIST[session.listId];
     var w = session.queue[session.idx];
-    var x = IDX[w];
+    var ref = session.listId + '/' + w;
+    var e = IDX[ref];
+    var x = e.x;
     var pct = Math.round((session.idx / session.queue.length) * 100);
     var head =
       '<h2>背词</h2>' +
-      '<div class="study-meta"><span>' + (session.idx + 1) + ' / ' + session.queue.length + '</span>' +
+      '<div class="study-meta"><span>' + esc(l.title.replace(/（.*?）/, '')) + ' · ' +
+      (session.idx + 1) + ' / ' + session.queue.length + '</span>' +
       '<span>认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
     if (!session.revealed) {
       return (
         head +
         '<div class="card study-card">' +
-        '<div class="sw">' + esc(w) + '</div>' +
-        '<div class="sipa">' + esc(x.ipa) + '</div>' +
+        '<div class="sw">' + esc(x.w) + '</div>' +
+        '<div class="sipa">' + esc(x.pron) + '</div>' +
         '<div class="study-actions">' +
-        '<button class="icon-btn" data-act="speak" data-w="' + esc(w) + '">🔊</button>' +
+        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">🔊</button>' +
         '</div>' +
         '<button class="btn" data-act="reveal" style="margin-top:14px">显示词感</button>' +
         '</div>'
@@ -258,8 +290,8 @@
     return (
       head +
       '<div class="card study-card">' +
-      '<div class="sw">' + esc(w) + '</div>' +
-      '<div class="sipa">' + esc(x.ipa) + ' · ' + esc(x.zh) + '</div>' +
+      '<div class="sw">' + esc(x.w) + '</div>' +
+      '<div class="sipa">' + esc(x.pron) + ' · ' + esc(x.zh) + '</div>' +
       '<div class="study-back">' +
       '<div class="entry-section"><span class="entry-label">词感</span><p style="text-align:left">' + esc(x.sense) + '</p></div>' +
       '<div class="entry-section"><span class="entry-label">搭配</span><div class="collo">' + collo + '</div></div>' +
@@ -271,8 +303,25 @@
     );
   }
 
+  function startSession(listId) {
+    var l = LIST[listId];
+    if (!l) return;
+    var k = known();
+    var fresh = [];
+    var review = [];
+    l.words.forEach(function (x) {
+      if (k[l.id + '/' + x.w]) review.push(x.w); else fresh.push(x.w);
+    });
+    var queue = fresh.slice(0, 10);
+    if (queue.length < 10 && review.length) {
+      queue = fresh.concat(review).slice(0, 10);
+    }
+    session = { listId: listId, queue: queue, idx: 0, good: 0, bad: 0, revealed: false };
+  }
+
+  // ---------- 视图：收藏 ----------
   function viewFavorites() {
-    var list = favs().filter(function (w) { return IDX[w]; });
+    var list = favs().map(function (ref) { return IDX[ref]; }).filter(Boolean);
     if (!list.length) {
       return (
         '<h2>我的收藏</h2>' +
@@ -280,11 +329,10 @@
       );
     }
     var chips = list
-      .map(function (w) {
-        var x = IDX[w];
+      .map(function (e) {
         return (
-          '<a class="word-chip" href="#/word/' + encodeURIComponent(w) + '">' +
-          '<b>' + esc(x.w) + '</b><small>' + esc(x.zh) + '</small></a>'
+          '<a class="word-chip" href="' + wordHref(e) + '">' +
+          '<b>' + esc(e.x.w) + '</b><small>' + esc(e.x.zh) + '</small></a>'
         );
       })
       .join('');
@@ -297,16 +345,29 @@
     var h = location.hash.replace(/^#\/?/, '');
     var parts = h.split('/');
     var name = parts[0] || 'home';
-    var arg = parts.length > 1 ? decodeURIComponent(parts.slice(1).join('/')) : '';
+    var nav = name;
     var view = $('view');
-    if (name === 'word') view.innerHTML = viewWord(arg);
-    else if (name === 'categories') view.innerHTML = arg ? viewList(arg) : viewCategories();
-    else if (name === 'study') view.innerHTML = studyScreen();
-    else if (name === 'favorites') view.innerHTML = viewFavorites();
-    else { name = 'home'; view.innerHTML = viewHome(); }
+
+    if (name === 'word') {
+      var listId = parts[1] || '';
+      var w = decodeURIComponent(parts.slice(2).join('/'));
+      view.innerHTML = viewWord(listId, w);
+      nav = 'categories';
+    } else if (name === 'categories') {
+      view.innerHTML = parts[1] ? viewList(parts[1]) : viewCategories();
+      nav = 'categories';
+    } else if (name === 'study') {
+      view.innerHTML = studyScreen();
+    } else if (name === 'favorites') {
+      view.innerHTML = viewFavorites();
+    } else {
+      name = 'home';
+      nav = 'home';
+      view.innerHTML = viewHome();
+    }
 
     document.querySelectorAll('#nav a').forEach(function (a) {
-      a.classList.toggle('active', a.getAttribute('data-nav') === name);
+      a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
     window.scrollTo(0, 0);
 
@@ -322,18 +383,25 @@
     var el = e.target.closest('[data-act]');
     if (!el) return;
     var act = el.getAttribute('data-act');
-    var w = el.getAttribute('data-w');
+    var ref = el.getAttribute('data-ref');
 
-    if (act === 'speak') speak(w);
+    if (act === 'speak') speak(ref);
     else if (act === 'star') {
-      var on = toggleFav(w);
-      el.classList.toggle('on', on);
-    } else if (act === 'start-study') { startSession(); route(); }
-    else if (act === 'reveal') { session.revealed = true; route(); }
-    else if (act === 'good' || act === 'blur') {
+      el.classList.toggle('on', toggleFav(ref));
+    } else if (act === 'start-study') {
+      startSession(el.getAttribute('data-list'));
+      route();
+    } else if (act === 'study-home') {
+      session = null;
+      route();
+    } else if (act === 'reveal') {
+      session.revealed = true;
+      route();
+    } else if (act === 'good' || act === 'blur') {
       var k = known();
-      if (act === 'good') { k[session.queue[session.idx]] = 1; session.good++; }
-      else { delete k[session.queue[session.idx]]; session.bad++; }
+      var sref = session.listId + '/' + session.queue[session.idx];
+      if (act === 'good') { k[sref] = 1; session.good++; }
+      else { delete k[sref]; session.bad++; }
       lsSet('hedgehog:known', k);
       session.idx++;
       session.revealed = false;
@@ -358,7 +426,7 @@
     hint.textContent = '解密中…';
     try {
       var data = await unlock($('gatePassword').value);
-      if (!data || !data.words || !data.words.length) throw new Error('empty');
+      if (!data || !data.lists || !data.lists.length) throw new Error('empty');
       setData(data);
       try { sessionStorage.setItem('hedgehog:data', JSON.stringify(data)); } catch (err) {}
       $('gatePassword').value = '';

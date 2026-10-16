@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /* 词库加解密小工具
  * 用法:
- *   node tools/encrypt.js <密码>            把 data/words.json 加密为 data/words.enc
+ *   node tools/encrypt.js <密码>            合并 src/words-*.json 加密为 data/words.enc
  *   node tools/encrypt.js <密码> --verify   解密验证一次（检查密码/数据完整性）
  * 算法: PBKDF2-SHA256(200k) -> AES-GCM-256
  * data/salt 只生成一次，之后复用（换密码不用重生成 salt）
+ * 明文源 src/ 整个目录被 gitignore，只上传密文
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,7 +13,7 @@ const { webcrypto } = require('node:crypto');
 const crypto = webcrypto;
 
 const ROOT = path.join(__dirname, '..');
-const SRC = path.join(ROOT, 'data', 'words.json');
+const SRC_DIR = path.join(ROOT, 'src');
 const OUT = path.join(ROOT, 'data', 'words.enc');
 const SALT = path.join(ROOT, 'data', 'salt');
 const ITER = 200000;
@@ -72,7 +73,9 @@ async function main() {
         new Uint8Array(Buffer.from(blob.data, 'base64'))
       );
       const data = JSON.parse(new TextDecoder().decode(plain));
-      console.log(`verify OK: ${data.words.length} 词, list=${data.list}`);
+      console.log(
+        'verify OK: ' + data.lists.map((l) => `${l.id}=${l.words.length}词`).join(', ')
+      );
     } catch (e) {
       console.error('verify FAILED: 密码不对或数据损坏');
       process.exit(1);
@@ -80,12 +83,21 @@ async function main() {
     return;
   }
 
-  if (!fs.existsSync(SRC)) {
-    console.error('data/words.json 不存在');
+  const files = fs.existsSync(SRC_DIR)
+    ? fs.readdirSync(SRC_DIR).filter((f) => f.endsWith('.json')).sort()
+    : [];
+  if (!files.length) {
+    console.error('src/ 下没有 words-*.json 源文件');
     process.exit(1);
   }
-  const json = fs.readFileSync(SRC, 'utf8');
-  JSON.parse(json); // 提前校验 JSON 合法
+  const lists = files.map((f) =>
+    JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
+  );
+  const json = JSON.stringify({
+    version: 2,
+    updated: new Date().toISOString().slice(0, 10),
+    lists,
+  });
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },

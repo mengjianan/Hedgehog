@@ -1,5 +1,5 @@
-# 明文词库只留本地，仓库只放加密版
-data/words.json
+# 明文词库源目录只留本地，仓库只放加密版
+src/
 # 本地私密笔记（密码等，绝不入库）
 PRIVATE-NOTE.md
 node_modules/

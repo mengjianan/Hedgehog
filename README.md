@@ -15,26 +15,28 @@
 ## 目录
 
 ```
-index.html        单页骨架（密码门 + 4 视图）
-styles.css        样式（深绿 #0b4638 + 米白 #faf8f0）
-app.js            路由 / 解密 / 搜索 / 背词 / 收藏
-data/words.json   明文词库【仅本地，.gitignore 不上传】
-data/words.enc    加密词库【上传】
-data/salt         PBKDF2 盐值【上传，只生成一次】
-tools/encrypt.js  加解密工具
-icons/            SVG 图标
-site.webmanifest  PWA 清单
-docs/             项目日志（每日一记）
+index.html          单页骨架（密码门 + 4 视图）
+styles.css          样式（深绿 #0b4638 + 米白 #faf8f0）
+app.js              路由 / 解密 / 跨语言搜索 / 背词 / 收藏
+src/words-en.json   英语词库明文源【仅本地，整个 src/ 不上传】
+src/words-ko.json   韩语词库明文源【仅本地】
+src/words-ja.json   日语词库明文源【仅本地】
+data/words.enc      三语合并加密词库【上传】
+data/salt           PBKDF2 盐值【上传，只生成一次】
+tools/encrypt.js    合并 + 加解密工具
+icons/              SVG 图标
+site.webmanifest    PWA 清单
+docs/               项目日志（每日一记）
 ```
 
 ## 修改词库
 
 ```bash
-# 1. 编辑 data/words.json
-# 2. 重新加密（密码不入库：见本地 PRIVATE-NOTE.md 或私聊会话）
+# 1. 编辑 src/words-en.json / words-ko.json / words-ja.json
+# 2. 合并 + 重新加密（密码不入库：见本地 PRIVATE-NOTE.md 或私聊会话）
 node tools/encrypt.js <密码>
-node tools/encrypt.js <密码> --verify   # 校验
-# 3. commit（words.json 被 gitignore，只会提交 words.enc）
+node tools/encrypt.js <密码> --verify   # 校验（会打印各词表词数）
+# 3. commit（src/ 被 gitignore，只会提交 words.enc）
 ```
 
 **换密码**：重新执行第 2 步换新密码即可（salt 不变），告诉所有设备用新密码。
