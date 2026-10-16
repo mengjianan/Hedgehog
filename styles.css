@@ -112,8 +112,8 @@ img { max-width: 100%; }
 .notebook {
   position: relative;
   display: flex;
-  max-width: 1100px;
-  margin: 26px auto;
+  max-width: min(1400px, calc(100vw - 32px));
+  margin: 18px auto;
   background: var(--card);
   border-radius: 3px 14px 14px 3px;
   box-shadow: 0 2px 5px rgba(60, 58, 54, 0.07), 0 22px 48px -16px rgba(60, 58, 54, 0.22);
@@ -247,7 +247,7 @@ img { max-width: 100%; }
 }
 
 /* ---------- 内容区 ---------- */
-.view { max-width: 860px; margin: 0 auto; padding: 20px 4px 30px; }
+.view { max-width: 1040px; margin: 0 auto; padding: 20px 4px 30px; }
 .view h2 {
   margin: 4px 0 16px;
   font-size: 19px;
@@ -718,6 +718,226 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 
 .footnote { margin-top: 34px; text-align: center; color: var(--stone); font-size: 11.5px; letter-spacing: 0.12em; }
 
+/* ---------- 宫殿总图 ---------- */
+.halls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 24px;
+}
+.hall {
+  border: 1px solid var(--line);
+  background: rgba(255, 254, 251, 0.8);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.hall .k {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--stone);
+}
+.hall b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: 0.08em; }
+.hall small { color: var(--mut); font-size: 11.5px; }
+
+.floor { position: relative; padding: 10px 0; max-width: 680px; margin: 0 auto; }
+.floor::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 8px;
+  border-left: 2px dashed var(--line-d);
+  pointer-events: none;
+}
+.room {
+  position: relative;
+  display: block;
+  width: 46%;
+  margin: 16px 0;
+  padding: 13px 40px 13px 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--ink);
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.room:nth-child(odd) { margin-right: auto; }
+.room:nth-child(even) { margin-left: auto; }
+.room::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 6%;
+  border-top: 2px solid var(--line-d);
+}
+.room:nth-child(odd)::after { right: -6%; }
+.room:nth-child(even)::after { left: -6%; }
+.room .door {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 24px;
+  border: 1.5px solid var(--stone);
+  background: #f6f3ea;
+}
+.room:nth-child(odd) .door { right: -12px; border-radius: 0 3px 3px 0; }
+.room:nth-child(even) .door { left: -12px; border-radius: 3px 0 0 3px; }
+.room .lit-dot {
+  position: absolute;
+  top: 11px;
+  right: 13px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--line-d);
+}
+.room .room-en {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  color: var(--stone);
+}
+.room h4 { margin: 2px 0 0; font-size: 15.5px; font-weight: 600; letter-spacing: 0.1em; }
+.room .room-meta { font-size: 11.5px; color: var(--mut); }
+.room.lit {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(143, 160, 136, 0.14), var(--shadow);
+}
+.room.lit .lit-dot { color: var(--sage-d); }
+.room.dim { opacity: 0.62; }
+.room:hover { border-color: var(--sage); opacity: 1; }
+.legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--mut);
+  margin-top: 16px;
+}
+.legend .lg-lit { color: var(--sage-d); }
+
+/* 房间页（场景） */
+.room-head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.room-head h2 { margin: 0; display: inline; }
+.room-head .room-en {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  color: var(--stone);
+}
+.room-head .prog { margin-left: auto; font-size: 12.5px; letter-spacing: 0.1em; color: var(--mut); }
+.room-head .prog.on { color: var(--sage-d); }
+.dress {
+  font-size: 13px;
+  color: var(--mut);
+  background: #f7f4ec;
+  border: 1px dashed var(--line-d);
+  border-radius: 8px;
+  padding: 9px 13px;
+  margin: 12px 0 4px;
+}
+.word-chip .slot {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--stone);
+  margin-bottom: 2px;
+}
+.word-chip.lit { border-color: var(--sage); }
+
+/* 宫殿地址 */
+.locus-addr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 7px 14px;
+  background: #f2eee3;
+  border: 1px solid var(--line-d);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--ink2);
+}
+.locus-addr i {
+  font-style: normal;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--stone);
+}
+
+/* 巡游小地图 */
+.minimap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 6px 0 14px;
+}
+.minimap .stop {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--line-d);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  color: var(--mut);
+  background: var(--card);
+}
+.minimap .stop.done { background: #eef1ea; border-color: var(--sage); color: var(--sage-d); }
+.minimap .stop.cur { background: var(--sage); border-color: var(--sage-d); color: #fff; }
+.minimap .seg { width: 14px; border-top: 2px dashed var(--line-d); }
+.tour-slot {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  color: var(--stone);
+  margin-bottom: 4px;
+}
+.lit-banner {
+  display: block;
+  text-align: center;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  color: var(--sage-d);
+  background: #eef1ea;
+  border: 1px solid var(--sage);
+  border-radius: 999px;
+  padding: 8px 18px;
+  margin: 0 auto 14px;
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.picker-h {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin: 22px 0 2px;
+}
+
 /* ---------- 移动端（本子简化版） ---------- */
 @media (max-width: 780px) {
   .notebook { margin: 0; border-radius: 0; min-height: 100vh; }
@@ -745,6 +965,14 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
     box-shadow: none;
   }
   .view { padding: 14px 0 24px; }
+  .floor::before { display: none; }
+  .room,
+  .room:nth-child(odd),
+  .room:nth-child(even) { width: 100%; margin-left: 0; margin-right: 0; }
+  .room::after,
+  .room .door { display: none; }
+  .minimap .stop { width: 28px; height: 28px; font-size: 12px; }
+  .minimap .seg { width: 8px; }
   .hero h2 { font-size: 19px; }
   .hero-sticker { width: 150px; }
   .word-head h2 { font-size: 24px; }

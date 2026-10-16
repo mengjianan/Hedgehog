@@ -77,7 +77,10 @@ async function main() {
       (data.tables || []).forEach((t) =>
         parts.push(`${t.id}=${(t.sections || []).length}节`)
       );
-      console.log('verify OK: ' + parts.join(', '));
+      const scenes = data.lists.filter((l) => l.group === 'scene').length;
+      console.log(
+        `verify OK (v${data.version}, 场景厅${scenes}): ` + parts.join(', ')
+      );
     } catch (e) {
       console.error('verify FAILED: 密码不对或数据损坏');
       process.exit(1);
@@ -88,20 +91,26 @@ async function main() {
   const files = fs.existsSync(SRC_DIR)
     ? fs.readdirSync(SRC_DIR).filter((f) => f.endsWith('.json')).sort()
     : [];
-  const wordFiles = files.filter((f) => f.startsWith('words-'));
+  const dataFiles = files.filter(
+    (f) => f.startsWith('words-') || f.startsWith('scenes-')
+  );
   const tableFiles = files.filter((f) => f.startsWith('tables-'));
-  if (!wordFiles.length) {
-    console.error('src/ 下没有 words-*.json 词库源文件');
+  if (!dataFiles.length) {
+    console.error('src/ 下没有 words-/scenes- 词库源文件');
     process.exit(1);
   }
-  const lists = wordFiles.map((f) =>
-    JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
-  );
+  // 一个文件可以是一张词表，也可以是 {lists:[...]} 装多张（场景文件用）
+  const lists = [];
+  dataFiles.forEach((f) => {
+    const parsed = JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'));
+    if (Array.isArray(parsed.lists)) lists.push(...parsed.lists);
+    else lists.push(parsed);
+  });
   const tables = tableFiles.map((f) =>
     JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
   );
   const json = JSON.stringify({
-    version: 3,
+    version: 4,
     updated: new Date().toISOString().slice(0, 10),
     lists,
     tables,

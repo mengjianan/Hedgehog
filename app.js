@@ -156,23 +156,57 @@
     return l.words.filter(function (x) { return !k[l.id + '/' + x.w]; }).length;
   }
 
-  // ---------- 视图：首页 / 搜索 ----------
+  function isScene(l) { return l.group === 'scene'; }
+  function coreLists() { return LISTS.filter(function (l) { return !isScene(l); }); }
+  function sceneLists() { return LISTS.filter(isScene); }
+  function isLit(l) { return l.words.length > 0 && pendingCount(l) === 0; }
+
+  // ---------- 视图：宫殿总图（首页） ----------
+  function sceneRoomHTML(l) {
+    var total = l.words.length;
+    var mastered = total - pendingCount(l);
+    var lit = isLit(l);
+    return (
+      '<a class="room ' + (lit ? 'lit' : 'dim') + ' lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
+      '<span class="door" aria-hidden="true"></span>' +
+      '<span class="lit-dot">' + (lit ? '● 已点亮' : '○ 未点亮') + '</span>' +
+      '<div class="room-en">' + esc(l.enName || l.title) + '</div>' +
+      '<h4>' + esc(l.title) + '</h4>' +
+      '<div class="room-meta">' + total + ' 词 · ' + mastered + '/' + total + ' 已掌握</div>' +
+      '</a>'
+    );
+  }
+
+  // ---------- 视图：首页（宫殿总图 + 门厅搜索） ----------
   function viewHome() {
-    var k = Object.keys(known()).length;
+    var coreWords = coreLists().reduce(function (n, l) { return n + l.words.length; }, 0);
+    var scenes = sceneLists();
+    var litCount = scenes.filter(isLit).length;
+    var halls =
+      '<div class="halls">' +
+      '<div class="hall"><span class="k">FOYER</span><b>门厅</b><small>上方搜索 · 迎宾台</small></div>' +
+      '<div class="hall"><span class="k">MAIN HALL</span><b>词库大厅</b><small>核心词 ' + coreWords + ' 词</small></div>' +
+      '<div class="hall"><span class="k">STUDY</span><b>图书室</b><small>基础表 ' + TABLES.length + ' 张</small></div>' +
+      '<div class="hall"><span class="k">CABINET</span><b>藏品室</b><small>收藏 ' + favs().length + ' 件</small></div>' +
+      '</div>';
     return (
       '<div class="hero">' +
       '<img class="sticker hero-sticker" src="icons/sticker-hog.svg" alt="" />' +
-      '<h2>用语感学词，不死背中文</h2>' +
-      '<p class="sub">英语 · 韩语 · 日语，先建立母语者的直觉</p>' +
-      '<div class="search-row"><input id="q" type="search" placeholder="三语通查：abolish / 마음 / 環境" autocomplete="off" /></div>' +
-      '<div class="stats">' +
-      '<span><b>' + ALL.length + '</b>词库</span>' +
-      '<span><b>' + LISTS.length + '</b>词表</span>' +
-      '<span><b>' + k + '</b>已掌握</span>' +
-      '<span><b>' + favs().length + '</b>收藏</span>' +
-      '</div></div>' +
+      '<h2>语感宫殿</h2>' +
+      '<p class="sub">学习走宫殿，查询走门厅 · 词条内容全原创</p>' +
+      '<div class="search-row"><input id="q" type="search" placeholder="门厅搜索：abolish / 마음 / 環境" autocomplete="off" /></div>' +
+      '</div>' +
       '<div class="results" id="results"></div>' +
-      '<p class="footnote">Hedgehog · 三语语感词库 · 词条内容全部原创</p>'
+      halls +
+      '<h2 class="group-h">场景厅</h2>' +
+      '<div class="floor">' + scenes.map(sceneRoomHTML).join('') + '</div>' +
+      '<div class="legend">' +
+      '<span class="lg-lit">● 全会 = 点亮</span>' +
+      '<span class="lg-dim">○ 还有词没掌握</span>' +
+      '<span>┈ 中央虚线 = 巡游路线</span>' +
+      '<span>' + litCount + '/' + scenes.length + ' 厅已点亮</span>' +
+      '</div>' +
+      '<p class="footnote">Hedgehog · 语感宫殿 · 内容全部原创</p>'
     );
   }
 
@@ -207,12 +241,23 @@
 
   // ---------- 视图：词库 / 列表 / 详情 ----------
   function viewCategories() {
-    var wordCards = LISTS.map(function (l) {
+    var wordCards = coreLists().map(function (l) {
       var pend = pendingCount(l);
       return (
         '<a class="card cat-card lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
         '<span><b>' + esc(l.title) + '</b><small>' +
         (LANG_NAME[l.lang] || l.lang) + ' · ' + l.words.length + ' 词 · 待学 ' + pend +
+        '</small></span><span>→</span></a>'
+      );
+    }).join('');
+    var sceneCards = sceneLists().map(function (l) {
+      var total = l.words.length;
+      var mastered = total - pendingCount(l);
+      return (
+        '<a class="card cat-card lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
+        '<span><b>' + esc(l.title) + '</b><small>' +
+        esc(l.enName || '') + ' · ' + total + ' 词 · ' +
+        (isLit(l) ? '● 已点亮' : mastered + '/' + total + ' 已掌握') +
         '</small></span><span>→</span></a>'
       );
     }).join('');
@@ -226,6 +271,7 @@
     }).join('');
     return (
       '<h2>词库</h2>' + wordCards +
+      (sceneCards ? '<h2 class="group-h">场景厅</h2>' + sceneCards : '') +
       (tableCards ? '<h2 class="group-h">基础表</h2>' + tableCards : '')
     );
   }
@@ -233,6 +279,7 @@
   function viewList(listId) {
     var l = LIST[listId];
     if (!l) return viewCategories();
+    if (isScene(l)) return viewRoom(l);
     var chips = l.words
       .map(function (x) {
         return (
@@ -245,6 +292,34 @@
       '<a class="back-link" href="#/categories">← 词库</a>' +
       '<h2>' + esc(l.title) + '</h2>' +
       '<div class="wordlist">' + chips + '</div>'
+    );
+  }
+
+  // 场景厅房间页（展位号 + 陈设钩子）
+  function viewRoom(l) {
+    var total = l.words.length;
+    var mastered = total - pendingCount(l);
+    var lit = isLit(l);
+    var chips = l.words
+      .map(function (x, i) {
+        return (
+          '<a class="word-chip" href="#/word/' + l.id + '/' + encodeURIComponent(x.w) + '">' +
+          '<span class="slot">No.' + (i + 1) + ' 展台</span>' +
+          '<b>' + esc(x.w) + '</b><small>' + esc(x.zh) + '</small></a>'
+        );
+      })
+      .join('');
+    return (
+      '<a class="back-link" href="#/home">← 宫殿总图</a>' +
+      '<div class="room-head lang-' + l.lang + '">' +
+      '<span class="room-en">' + esc(l.enName || l.title) + '</span>' +
+      '<h2>' + esc(l.title) + '</h2>' +
+      '<span class="prog' + (lit ? ' on' : '') + '">' +
+      (lit ? '● 已点亮' : '○ 未点亮') + ' · ' + mastered + '/' + total +
+      '</span></div>' +
+      '<div class="dress">' + esc(l.dress || '') + '</div>' +
+      '<div class="wordlist">' + chips + '</div>' +
+      '<p class="footnote">走完整厅点亮房间 · 点词进详情看宫殿地址</p>'
     );
   }
 
@@ -268,6 +343,13 @@
     var collo = (x.collo || [])
       .map(function (c) { return '<span>' + esc(c) + '</span>'; })
       .join('');
+    var addr = '';
+    if (isScene(l)) {
+      var slotNo = l.words.indexOf(x) + 1;
+      addr =
+        '<div class="locus-addr"><i>PALACE ADDRESS</i> ' +
+        esc(l.title) + ' · No.' + slotNo + ' 展台</div>';
+    }
     return (
       '<a class="back-link" href="#/categories/' + l.id + '">← ' + esc(l.title) + '</a>' +
       '<div class="card lang-card lang-' + l.lang + '">' +
@@ -279,7 +361,7 @@
       '<button class="icon-btn" data-act="speak" data-ref="' + esc(e.ref) + '" title="发音">' + ICON.sound + '</button>' +
       '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">' + ICON.star + '</button>' +
       '</div>' +
-      '<p class="zh-line">' + esc(x.zh) + '</p>' +
+      '<p class="zh-line">' + esc(x.zh) + '</p>' + addr +
       '<div class="entry-section"><span class="entry-label">词感</span><p>' + esc(x.sense) + '</p></div>' +
       '<div class="entry-section"><span class="entry-label">中式误区</span><p class="trap">' + esc(x.trap) + '</p></div>' +
       '<div class="entry-section"><span class="entry-label">高频搭配</span><div class="collo">' + collo + '</div></div>' +
@@ -288,33 +370,70 @@
     );
   }
 
-  // ---------- 视图：背词 ----------
+  // ---------- 视图：巡游（背词的宫殿化） ----------
+  function minimapHTML() {
+    var stops = session.queue
+      .map(function (_, i) {
+        var cls = i < session.idx ? 'done' : i === session.idx ? 'cur' : '';
+        return '<span class="stop ' + cls + '">' + (i + 1) + '</span>';
+      })
+      .join('<span class="seg"></span>');
+    return '<div class="minimap">' + stops + '</div>';
+  }
+
+  function pickBtn(l) {
+    var pend = pendingCount(l);
+    var sub = isScene(l)
+      ? isLit(l)
+        ? '● 已点亮'
+        : pend + ' 词待学 · 走完点灯'
+      : pend
+        ? '待学 ' + pend + ' 词'
+        : '已全会 · 可复习';
+    return (
+      '<button class="word-chip' + (isScene(l) && isLit(l) ? ' lit' : '') + '" ' +
+      'data-act="start-study" data-list="' + l.id + '">' +
+      '<b>' + esc(l.title.replace(/（.*?）/, '')) + '</b>' +
+      '<small>' + sub + '</small></button>'
+    );
+  }
+
   function studyScreen() {
     if (!session) {
-      var picks = LISTS.map(function (l) {
-        var pend = pendingCount(l);
-        return (
-          '<button class="word-chip" data-act="start-study" data-list="' + l.id + '">' +
-          '<b>' + esc(l.title.replace(/（.*?）/, '')) + '</b>' +
-          '<small>' + (pend ? '待学 ' + pend + ' 词' : '已全会 · 可复习') + '</small></button>'
-        );
-      }).join('');
+      var scenes = sceneLists();
+      var cores = coreLists();
+      var groups = '';
+      if (scenes.length) {
+        groups +=
+          '<p class="picker-h">场景厅 · 巡游点灯</p>' +
+          '<div class="wordlist">' + scenes.map(pickBtn).join('') + '</div>';
+      }
+      if (cores.length) {
+        groups +=
+          '<p class="picker-h">词库</p>' +
+          '<div class="wordlist">' + cores.map(pickBtn).join('') + '</div>';
+      }
       return (
-        '<h2>背词</h2>' +
-        '<p class="sub">每轮 10 词，选一个词库开始 · 进度存在本机浏览器</p>' +
-        '<div class="wordlist">' + picks + '</div>'
+        '<h2>巡游</h2>' +
+        '<p class="sub">每轮 10 站 · 选一间厅出发 · 整厅走完房间点亮</p>' +
+        groups
       );
     }
     if (session.idx >= session.queue.length) {
+      var doneList = LIST[session.listId];
+      var nowLit = doneList && isLit(doneList);
+      var banner = nowLit
+        ? '<div class="lit-banner">✦ ' + esc(doneList.title) + ' 已点亮</div>'
+        : '';
       return (
-        '<h2>背词</h2>' +
-        '<div class="card study-done">' +
+        '<h2>巡游</h2>' +
+        '<div class="card study-done">' + banner +
         '<img class="sticker" src="icons/sticker-hog.svg" alt="" />' +
         '<div class="stamp">完成</div>' +
         '<p>本轮完成：认识 <b>' + session.good + '</b> · 模糊 <b>' + session.bad + '</b></p>' +
         '<div class="study-actions">' +
-        '<button class="btn" data-act="study-home">再背一轮</button>' +
-        '<a class="btn ghost" href="#/home" style="text-align:center">回首页</a>' +
+        '<button class="btn" data-act="study-home">再巡一轮</button>' +
+        '<a class="btn ghost" href="#/home" style="text-align:center">回总图</a>' +
         '</div></div>'
       );
     }
@@ -324,16 +443,21 @@
     var e = IDX[ref];
     var x = e.x;
     var pct = Math.round((session.idx / session.queue.length) * 100);
+    var slotNote = isScene(l)
+      ? '<span class="tour-slot">No.' + (l.words.indexOf(x) + 1) + ' 展台</span> '
+      : '';
     var head =
-      '<h2>背词</h2>' +
-      '<div class="study-meta"><span>' + esc(l.title.replace(/（.*?）/, '')) + ' · ' +
-      (session.idx + 1) + ' / ' + session.queue.length + '</span>' +
+      '<h2>巡游</h2>' +
+      '<div class="study-meta"><span>巡游中 · ' + esc(l.title.replace(/（.*?）/, '')) +
+      ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
       '<span>认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
+      minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
     if (!session.revealed) {
       return (
         head +
         '<div class="card study-card">' +
+        slotNote +
         '<div class="sw">' + esc(x.w) + '</div>' +
         '<div class="sipa">' + esc(x.pron) + '</div>' +
         '<div class="study-actions">' +
@@ -347,6 +471,7 @@
     return (
       head +
       '<div class="card study-card">' +
+      slotNote +
       '<div class="sw">' + esc(x.w) + '</div>' +
       '<div class="sipa">' + esc(x.pron) + ' · ' + esc(x.zh) + '</div>' +
       '<div class="study-back">' +
@@ -607,7 +732,7 @@
     var cached = sessionStorage.getItem('hedgehog:data');
     if (cached) {
       var cd = JSON.parse(cached);
-      if (cd && cd.version >= 3 && cd.tables && cd.tables.length) {
+      if (cd && cd.version >= 4 && cd.tables && cd.tables.length) {
         setData(cd);
         openApp();
       } else {
