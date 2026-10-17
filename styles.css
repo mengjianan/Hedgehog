@@ -1136,7 +1136,8 @@ details.pt[open] summary { border-bottom: 1px dashed var(--line); }
 
 /* 练字本 */
 a.entry-card { text-decoration: none; color: var(--ink); }
-.cb-card canvas {
+.cb-card canvas,
+.study-card.write canvas {
   width: 100%;
   height: auto;
   display: block;
@@ -1144,6 +1145,35 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   border-radius: 10px;
   touch-action: none; /* 画板内笔迹不带滚页面 */
   background: #fdfbf4;
+}
+.wm-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+.wm-compare figure {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fdfbf4;
+  padding: 10px;
+  min-height: 150px;
+}
+.wm-compare figcaption {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.wm-compare .wm-ours img { width: 100%; border-radius: 6px; display: block; }
+.wm-compare .wm-model { text-align: center; display: flex; flex-direction: column; justify-content: center; }
+@media (max-width: 640px) {
+  .wm-compare { grid-template-columns: 1fr; }
 }
 .cb-tools { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
 .cb-gallery {
