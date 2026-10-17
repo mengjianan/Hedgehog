@@ -1035,6 +1035,94 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 .spell-answer { margin-top: 10px; font-size: 14px; color: var(--ink2); }
 .spell-answer b { font-size: 18px; color: var(--ink); }
 
+/* 记忆钩子 */
+.hook-img,
+.hook-mn { font-size: 14px; color: var(--ink2); margin: 3px 0; }
+.hook-img::before { content: "画面 · "; color: var(--stone); font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.14em; }
+.hook-mn::before { content: "助记 · "; color: var(--stone); font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.14em; }
+
+/* 造句本 */
+.sent-box { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.sent-box textarea {
+  flex: 1;
+  min-width: 220px;
+  border: 1px dashed var(--line-d);
+  border-radius: 10px;
+  background: #fdfbf4;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  resize: vertical;
+}
+.sent-box textarea:focus { outline: 2px solid rgba(143, 160, 136, 0.4); }
+.sent-hint { font-size: 12px; color: var(--sage-d); align-self: center; }
+
+/* 语法点折叠卡 */
+details.pt {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+details.pt summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 13px 16px;
+  font-size: 15.5px;
+  font-weight: 600;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+details.pt summary::-webkit-details-marker { display: none; }
+details.pt summary .n {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  color: var(--stone);
+  font-size: 14px;
+}
+details.pt summary::after {
+  content: "＋";
+  margin-left: auto;
+  color: var(--stone);
+  font-weight: 400;
+}
+details.pt[open] summary::after { content: "－"; }
+details.pt[open] summary { border-bottom: 1px dashed var(--line); }
+.pt .body { padding: 14px 16px 16px; font-size: 14px; line-height: 1.75; }
+.pt .lbl {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin: 12px 0 4px;
+}
+.pt .lbl:first-child { margin-top: 0; }
+.pt .formula {
+  display: inline-block;
+  background: #f2eee3;
+  border: 1px solid var(--line-d);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.03em;
+}
+.pt .ex {
+  background: #fdfbf4;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 6px;
+}
+.pt .ex b { display: block; font-weight: 500; }
+.pt .ex small { color: var(--mut); }
+.pt .trap { margin-top: 6px; }
+
 /* ---------- 移动端（本子简化版） ---------- */
 @media (max-width: 780px) {
   .notebook { margin: 0; border-radius: 0; min-height: 100vh; }

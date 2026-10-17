@@ -12,6 +12,8 @@
   var ALL = []; // 扁平索引（跨语言搜索用）
   var TABLES = []; // 基础表 [{id, lang, title, sections}]
   var TBY = {}; // id -> table
+  var GRAMMARS = []; // 语法翼楼 [{id, lang, title, rooms}]
+  var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
 
@@ -237,6 +239,20 @@
     TABLES = data.tables || [];
     TBY = {};
     TABLES.forEach(function (t) { TBY[t.id] = t; });
+    GRAMMARS = data.grammars || [];
+    GBY = {};
+    GRAMMARS.forEach(function (g) { GBY[g.id] = g; });
+    // 图像钩子 / 助记 旁路表挂到词条上
+    var hooks = data.hooks || {};
+    LISTS.forEach(function (l) {
+      (l.words || []).forEach(function (x) {
+        var h = hooks[l.id + '/' + x.w];
+        if (h) {
+          x.img = h.img;
+          x.mn = h.mn;
+        }
+      });
+    });
   }
 
   function speak(ref) {
@@ -372,10 +388,16 @@
         '</small></span><span>→</span></a>'
       );
     }).join('');
+    var gramCard =
+      '<h2 class="group-h">语法翼楼</h2>' +
+      '<a class="card cat-card lang-en" href="#/grammar">' +
+      '<span><b>英语语法宫</b><small>6 宫室 · 30 语法点 · 走廊式复习</small></span>' +
+      '<span>→</span></a>';
     return (
       '<h2>词库</h2>' + wordCards +
       (sceneCards ? '<h2 class="group-h">场景厅</h2>' + sceneCards : '') +
-      (tableCards ? '<h2 class="group-h">基础表</h2>' + tableCards : '')
+      (tableCards ? '<h2 class="group-h">基础表</h2>' + tableCards : '') +
+      gramCard
     );
   }
 
@@ -428,6 +450,33 @@
     );
   }
 
+  // 构词解剖：扫描词根词缀表，找出这个单词里藏着的已知语素（零人工，纯计算）
+  function morphemesOf(w) {
+    var t = TBY['en-roots'];
+    if (!t) return [];
+    var low = w.toLowerCase();
+    var out = [];
+    (t.sections || []).forEach(function (s) {
+      var kind = /前缀/.test(s.title) ? '前缀' : /后缀/.test(s.title) ? '后缀' : '词根';
+      (s.rows || []).forEach(function (r) {
+        String(r.form || '')
+          .split('/')
+          .forEach(function (f0) {
+            var f = f0.trim().toLowerCase().replace(/[①②]/g, '');
+            if (f.length < 2) return;
+            var hit = '';
+            if (kind === '前缀' && low.indexOf(f) === 0 && low.length > f.length) hit = '前缀';
+            else if (kind === '后缀' && low.length > f.length + 2 && low.lastIndexOf(f) === low.length - f.length) hit = '后缀';
+            else if (kind === '词根' && low.indexOf(f) !== -1 && low.length > f.length) hit = '词根';
+            if (hit && out.length < 5 && !out.some(function (o) { return o.f === f; })) {
+              out.push({ f: f, m: r.meaning, kind: hit });
+            }
+          });
+      });
+    });
+    return out;
+  }
+
   function viewWord(listId, w) {
     var e = IDX[listId + '/' + w];
     if (!e) {
@@ -455,6 +504,38 @@
         '<div class="locus-addr"><i>PALACE ADDRESS</i> ' +
         esc(l.title) + ' · No.' + slotNo + ' 展台</div>';
     }
+    var hookSec = '';
+    if (x.img || x.mn) {
+      hookSec =
+        '<div class="entry-section"><span class="entry-label">记忆钩子</span>' +
+        (x.img ? '<p class="hook-img">' + esc(x.img) + '</p>' : '') +
+        (x.mn ? '<p class="hook-mn">' + esc(x.mn) + '</p>' : '') +
+        '</div>';
+    }
+    var morphSec = '';
+    if (l.lang === 'en') {
+      var mm = morphemesOf(x.w);
+      if (mm.length) {
+        morphSec =
+          '<div class="entry-section"><span class="entry-label">构词解剖</span><div class="collo">' +
+          mm
+            .map(function (o) {
+              return '<span><b>' + esc(o.f) + '</b> ' + esc(o.m) + '（' + o.kind + '）</span>';
+            })
+            .join('') +
+          '</div></div>';
+      }
+    }
+    var sents = lsGet('hedgehog:sentences', {});
+    var sentSec =
+      '<div class="entry-section"><span class="entry-label">造句本 · 我的例句</span>' +
+      '<div class="sent-box">' +
+      '<textarea id="sentInput" rows="2" placeholder="用这个词造一个你自己的句子…">' +
+      esc(sents[e.ref] || '') +
+      '</textarea>' +
+      '<button class="btn ghost" data-act="save-sent" data-ref="' + esc(e.ref) + '">保存</button>' +
+      '<span class="sent-hint" id="sentHint"></span>' +
+      '</div></div>';
     return (
       '<a class="back-link" href="#/categories/' + l.id + '">← ' + esc(l.title) + '</a>' +
       '<div class="card lang-card lang-' + l.lang + '">' +
@@ -469,8 +550,11 @@
       '<p class="zh-line">' + esc(x.zh) + '</p>' + addr +
       '<div class="entry-section"><span class="entry-label">词感</span><p>' + esc(x.sense) + '</p></div>' +
       '<div class="entry-section"><span class="entry-label">中式误区</span><p class="trap">' + esc(x.trap) + '</p></div>' +
+      hookSec +
       '<div class="entry-section"><span class="entry-label">高频搭配</span><div class="collo">' + collo + '</div></div>' +
+      morphSec +
       '<div class="entry-section"><span class="entry-label">例句</span><div class="ex-list">' + ex + '</div></div>' +
+      sentSec +
       '</div>'
     );
   }
@@ -743,6 +827,92 @@
     return '<h2>我的收藏</h2><div class="wordlist">' + chips + '</div>';
   }
 
+  // ---------- 视图：语法翼楼 ----------
+  function totalPoints(g) {
+    return (g.rooms || []).reduce(function (n, r) { return n + (r.points || []).length; }, 0);
+  }
+
+  function viewGrammarHub() {
+    var cards = GRAMMARS.map(function (g) {
+      return (
+        '<a class="card cat-card lang-' + g.lang + '" href="#/grammar/' + g.id + '">' +
+        '<span><b>' + esc(g.title) + '</b><small>' + esc(g.enName || '') +
+        ' · ' + (g.rooms || []).length + ' 宫室 · ' + totalPoints(g) + ' 点</small></span>' +
+        '<span>→</span></a>'
+      );
+    }).join('');
+    var soon =
+      '<div class="card cat-card" style="opacity:.65;margin-top:12px">' +
+      '<span><b>韩语语法翼楼</b><small>建設中</small></span><span>Coming</span></div>' +
+      '<div class="card cat-card" style="opacity:.65;margin-top:12px">' +
+      '<span><b>日语语法翼楼</b><small>建設中</small></span><span>Coming</span></div>';
+    return (
+      '<h2>语法翼楼</h2>' +
+      '<p class="sub">一条走廊走完宫室，就是背语法的顺序</p>' +
+      cards + soon
+    );
+  }
+
+  function viewGrammarWing(gid) {
+    var g = GBY[gid];
+    if (!g) return viewGrammarHub();
+    var rooms = (g.rooms || [])
+      .map(function (r, i) {
+        return (
+          '<a class="room lit" href="#/grammar/' + gid + '/' + r.id + '">' +
+          '<span class="door" aria-hidden="true"></span>' +
+          '<span class="lit-dot">ROOM No.' + (i + 1) + '</span>' +
+          '<div class="room-en">' + esc(r.enName || '') + '</div>' +
+          '<h4>' + esc(r.name) + '</h4>' +
+          '<div class="room-meta">' + (r.points || []).length + ' 个语法点 · ' +
+          esc(r.summary || '') + '</div></a>'
+        );
+      })
+      .join('');
+    return (
+      '<a class="back-link" href="#/grammar">← 语法翼楼</a>' +
+      '<div class="room-head"><span class="room-en">' + esc(g.enName || '') +
+      '</span><h2>' + esc(g.title) + '</h2></div>' +
+      '<div class="floor">' + rooms + '</div>' +
+      '<p class="footnote">按号走完宫室 · 每点先回想再展开</p>'
+    );
+  }
+
+  function viewGrammarRoom(gid, rid) {
+    var g = GBY[gid];
+    var r = g && (g.rooms || []).filter(function (x) { return x.id === rid; })[0];
+    if (!r) return viewGrammarWing(gid);
+    var no = g.rooms.indexOf(r) + 1;
+    var pts = (r.points || [])
+      .map(function (p, i) {
+        var formulaSec =
+          p.formula && !/—/.test(p.formula)
+            ? '<span class="lbl">公式</span><span class="formula">' + esc(p.formula) + '</span>'
+            : '';
+        var exSec = (p.ex || [])
+          .map(function (e0) {
+            return '<div class="ex"><b>' + esc(e0.en) + '</b><small>' + esc(e0.zh) + '</small></div>';
+          })
+          .join('');
+        return (
+          '<details class="pt"><summary><span class="n">' + (i + 1) + '.</span> ' +
+          esc(p.t) + '</summary><div class="body">' +
+          '<span class="lbl">核心语感</span>' + esc(p.core) +
+          formulaSec +
+          '<span class="lbl">例句</span>' + exSec +
+          '<span class="lbl">中式误区</span><div class="trap">' + esc(p.trap) + '</div>' +
+          '</div></details>'
+        );
+      })
+      .join('');
+    return (
+      '<a class="back-link" href="#/grammar/' + gid + '">← ' + esc(g.title) + '</a>' +
+      '<div class="room-head"><span class="room-en">ROOM No.' + no +
+      (r.enName ? ' · ' + esc(r.enName) : '') + '</span><h2>' + esc(r.name) + '</h2></div>' +
+      '<p class="sub">' + esc(r.summary || '') + '</p>' + pts
+    );
+  }
+
   // ---------- 视图：基础表 ----------
   function viewTable(id) {
     var t = TBY[id];
@@ -856,6 +1026,11 @@
     } else if (name === 'tables') {
       view.innerHTML = viewTable(parts[1] || '');
       nav = 'categories';
+    } else if (name === 'grammar') {
+      if (parts[2]) view.innerHTML = viewGrammarRoom(parts[1], parts[2]);
+      else if (parts[1]) view.innerHTML = viewGrammarWing(parts[1]);
+      else view.innerHTML = viewGrammarHub();
+      nav = 'categories';
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
     } else if (name === 'favorites') {
@@ -869,7 +1044,7 @@
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
-    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5 }[name] || 1;
+    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6 }[name] || 1;
     var pn = $('pageNum');
     if (pn) pn.textContent = '— ' + pnum + ' —';
     window.scrollTo(0, 0);
@@ -933,6 +1108,14 @@
     } else if (act === 'spell-next') {
       advanceSession();
       route();
+    } else if (act === 'save-sent') {
+      var ta = $('sentInput');
+      var sentMap = lsGet('hedgehog:sentences', {});
+      if (ta && ta.value.trim()) sentMap[ref] = ta.value.trim();
+      else delete sentMap[ref];
+      lsSet('hedgehog:sentences', sentMap);
+      var sh = $('sentHint');
+      if (sh) sh.textContent = ta && ta.value.trim() ? '已保存到本机 ✓' : '已清空';
     }
   });
 
@@ -977,7 +1160,7 @@
     var cached = sessionStorage.getItem('hedgehog:data');
     if (cached) {
       var cd = JSON.parse(cached);
-      if (cd && cd.version >= 4 && cd.tables && cd.tables.length) {
+      if (cd && cd.version >= 5 && cd.tables && cd.tables.length) {
         setData(cd);
         openApp();
       } else {

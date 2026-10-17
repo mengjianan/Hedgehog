@@ -77,9 +77,14 @@ async function main() {
       (data.tables || []).forEach((t) =>
         parts.push(`${t.id}=${(t.sections || []).length}节`)
       );
+      (data.grammars || []).forEach((g) =>
+        parts.push(`${g.id}=${(g.rooms || []).length}室`)
+      );
       const scenes = data.lists.filter((l) => l.group === 'scene').length;
+      const hookN = Object.keys(data.hooks || {}).length;
       console.log(
-        `verify OK (v${data.version}, 场景厅${scenes}): ` + parts.join(', ')
+        `verify OK (v${data.version}, 场景厅${scenes}, 钩子${hookN}): ` +
+          parts.join(', ')
       );
     } catch (e) {
       console.error('verify FAILED: 密码不对或数据损坏');
@@ -109,11 +114,20 @@ async function main() {
   const tables = tableFiles.map((f) =>
     JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
   );
+  const grammars = files
+    .filter((f) => f.startsWith('grammar-'))
+    .map((f) => JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')));
+  let hooks = {};
+  if (files.includes('hooks.json')) {
+    hooks = JSON.parse(fs.readFileSync(path.join(SRC_DIR, 'hooks.json'), 'utf8')).hooks || {};
+  }
   const json = JSON.stringify({
-    version: 4,
+    version: 5,
     updated: new Date().toISOString().slice(0, 10),
     lists,
     tables,
+    grammars,
+    hooks,
   });
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
