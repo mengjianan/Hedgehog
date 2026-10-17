@@ -52,6 +52,7 @@ node tools/encrypt.js <密码> --verify   # 校验（会打印各词库词数与
 ## 部署
 
 Gitee `wuxiejiameng123/hedgehog` → 镜像 GitHub `mengjianan/hedgehog` → GitHub Pages（根目录）。
+**已上线**：<https://mengjianan.github.io/Hedgehog/>（手机浏览器打开 → 添加到主屏幕 = App）
 
 ## 计划
 
