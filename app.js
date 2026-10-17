@@ -276,29 +276,12 @@
   function sceneLists() { return LISTS.filter(isScene); }
   function isLit(l) { return l.words.length > 0 && pendingCount(l) === 0; }
 
-  // ---------- 视图：宫殿总图（首页） ----------
-  function sceneRoomHTML(l) {
-    var total = l.words.length;
-    var mastered = total - pendingCount(l);
-    var lit = isLit(l);
-    var dc = listDueCount(l);
-    return (
-      '<a class="room ' + (lit ? 'lit' : 'dim') + ' lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
-      '<span class="door" aria-hidden="true"></span>' +
-      '<span class="lit-dot">' + (lit ? '● 已点亮' : '○ 未点亮') + '</span>' +
-      '<div class="room-en">' + esc(l.enName || l.title) + '</div>' +
-      '<h4>' + esc(l.title) + '</h4>' +
-      '<div class="room-meta">' + total + ' 词 · ' + mastered + '/' + total + ' 已掌握' +
-      (dc ? ' · <span class="due-b">↻ ' + dc + '</span>' : '') +
-      '</div></a>'
-    );
-  }
-
-  // ---------- 视图：首页（宫殿总图 + 门厅搜索） ----------
+  // ---------- 视图：首页（门厅搜索 + 快捷入口） ----------
   function viewHome() {
     var coreWords = coreLists().reduce(function (n, l) { return n + l.words.length; }, 0);
     var scenes = sceneLists();
     var litCount = scenes.filter(isLit).length;
+    var dueAll = dueRefsNow().length;
     var halls =
       '<div class="halls">' +
       '<a class="hall hall-link" href="#/home" data-act="focus-search">' +
@@ -319,13 +302,8 @@
       '</div>' +
       '<div class="results" id="results"></div>' +
       halls +
-      '<h2 class="group-h">场景厅</h2>' +
-      '<div class="floor">' + scenes.map(sceneRoomHTML).join('') + '</div>' +
-      '<div class="legend">' +
-      '<span class="lg-lit">● 已点亮</span>' +
-      '<span class="lg-dim">○ 未点亮</span>' +
-      '<span>' + litCount + '/' + scenes.length + ' 厅已点亮</span>' +
-      '</div>' +
+      '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
+      (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · 内容全部原创</p>'
     );
   }

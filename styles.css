@@ -846,6 +846,14 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
   margin-top: 16px;
 }
 .legend .lg-lit { color: var(--sage-d); }
+.home-stat {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--mut);
+  letter-spacing: 0.06em;
+}
+.home-stat b { color: var(--sage-d); font-weight: 600; }
 
 /* 房间页（场景） */
 .room-head {
