@@ -12,7 +12,8 @@
   var ALL = []; // 扁平索引（跨语言搜索用）
   var TABLES = []; // 基础表 [{id, lang, title, sections}]
   var TBY = {}; // id -> table
-  var session = null; // 当前背词轮次 {listId, queue, idx, good, bad, revealed}
+  var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
+  var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
 
@@ -98,6 +99,104 @@
     return '#/word/' + e.l.id + '/' + encodeURIComponent(e.x.w);
   }
 
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function now() { return Date.now(); }
+  var DAY_MS = 86400000;
+
+  // ---------- 间隔重复（hedgehog:due = {ref: {s:阶段, d:到期毫秒}}） ----------
+  var DUE_INTERVALS = [1, 3, 7, 15]; // 天
+
+  function dueMap() { return lsGet('hedgehog:due', {}); }
+  function saveDue(m) { lsSet('hedgehog:due', m); }
+
+  function dueRefsNow() {
+    var m = dueMap();
+    return Object.keys(m).filter(function (ref) {
+      return IDX[ref] && m[ref].d <= now();
+    });
+  }
+  function listDueCount(l) {
+    var m = dueMap();
+    var t = now();
+    return l.words.reduce(function (n, x) {
+      var e = m[l.id + '/' + x.w];
+      return n + (e && e.d <= t ? 1 : 0);
+    }, 0);
+  }
+  // 学习结果入调度：good 晋级 1→3→7→15 天；bad 回炉明天再来
+  function scheduleRef(ref, good) {
+    var m = dueMap();
+    if (good) {
+      var s = m[ref] ? Math.min(m[ref].s + 1, DUE_INTERVALS.length - 1) : 0;
+      m[ref] = { s: s, d: now() + DUE_INTERVALS[s] * DAY_MS };
+    } else {
+      m[ref] = { s: 0, d: now() + DAY_MS };
+    }
+    saveDue(m);
+  }
+
+  // ---------- 打卡格（hedgehog:stamps = {"YYYY-MM-DD": 轮数}） ----------
+  function dateKey(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function logStamp() {
+    var m = lsGet('hedgehog:stamps', {});
+    var k = dateKey(new Date());
+    m[k] = (m[k] || 0) + 1;
+    lsSet('hedgehog:stamps', m);
+  }
+  function weeklyHTML() {
+    var m = lsGet('hedgehog:stamps', {});
+    var names = ['一', '二', '三', '四', '五', '六', '日'];
+    var d = new Date();
+    var dow = (d.getDay() + 6) % 7; // 周一=0
+    var monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
+    var cells = '';
+    for (var i = 0; i < 7; i++) {
+      var dt = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      var n = m[dateKey(dt)] || 0;
+      cells +=
+        '<div class="wk-cell ' + (n ? 'on ' : '') + (i === dow ? 'today' : '') + '">' +
+        '<em>' + names[i] + '</em><span>' + (n || '·') + '</span></div>';
+    }
+    return (
+      '<div class="weekly"><p class="picker-h">本周打卡</p>' +
+      '<div class="wk-row">' + cells + '</div></div>'
+    );
+  }
+
+  // ---------- 拼写判定（英文精确；韩日接受本国字或罗马音） ----------
+  function normText(s) {
+    return String(s)
+      .toLowerCase()
+      .trim()
+      .replace(/['’.\s\-_/·[\]]/g, '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+  }
+  function checkSpelling(input, x) {
+    if (!input) return false;
+    var a = normText(input);
+    if (!a) return false;
+    if (a === normText(x.w)) return true;
+    // 非 ASCII 目标（韩/日）：罗马音也算对（取 pron 中的拉丁片段）
+    if (/[^\x00-\x7F]/.test(x.w)) {
+      var lat = String(x.pron || '').match(/[a-zA-Z][a-zA-Z ōūēīāśń]*/);
+      if (lat && normText(lat[0]) === a) return true;
+    }
+    return false;
+  }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i];
+      arr[i] = arr[j];
+      arr[j] = t;
+    }
+    return arr;
+  }
+
   // ---------- 密码解密（PBKDF2 -> AES-GCM） ----------
   async function unlock(password) {
     var saltResp = await fetch('data/salt');
@@ -166,14 +265,16 @@
     var total = l.words.length;
     var mastered = total - pendingCount(l);
     var lit = isLit(l);
+    var dc = listDueCount(l);
     return (
       '<a class="room ' + (lit ? 'lit' : 'dim') + ' lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
       '<span class="door" aria-hidden="true"></span>' +
       '<span class="lit-dot">' + (lit ? '● 已点亮' : '○ 未点亮') + '</span>' +
       '<div class="room-en">' + esc(l.enName || l.title) + '</div>' +
       '<h4>' + esc(l.title) + '</h4>' +
-      '<div class="room-meta">' + total + ' 词 · ' + mastered + '/' + total + ' 已掌握</div>' +
-      '</a>'
+      '<div class="room-meta">' + total + ' 词 · ' + mastered + '/' + total + ' 已掌握' +
+      (dc ? ' · <span class="due-b">↻ ' + dc + '</span>' : '') +
+      '</div></a>'
     );
   }
 
@@ -253,11 +354,13 @@
     var sceneCards = sceneLists().map(function (l) {
       var total = l.words.length;
       var mastered = total - pendingCount(l);
+      var dc = listDueCount(l);
       return (
         '<a class="card cat-card lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
         '<span><b>' + esc(l.title) + '</b><small>' +
         esc(l.enName || '') + ' · ' + total + ' 词 · ' +
         (isLit(l) ? '● 已点亮' : mastered + '/' + total + ' 已掌握') +
+        (dc ? ' · <span class="due-b">↻ ' + dc + '</span>' : '') +
         '</small></span><span>→</span></a>'
       );
     }).join('');
@@ -300,6 +403,7 @@
     var total = l.words.length;
     var mastered = total - pendingCount(l);
     var lit = isLit(l);
+    var dc = listDueCount(l);
     var chips = l.words
       .map(function (x, i) {
         return (
@@ -316,6 +420,7 @@
       '<h2>' + esc(l.title) + '</h2>' +
       '<span class="prog' + (lit ? ' on' : '') + '">' +
       (lit ? '● 已点亮' : '○ 未点亮') + ' · ' + mastered + '/' + total +
+      (dc ? ' · <span class="due-b">↻ ' + dc + ' 待复习</span>' : '') +
       '</span></div>' +
       '<div class="dress">' + esc(l.dress || '') + '</div>' +
       '<div class="wordlist">' + chips + '</div>' +
@@ -383,6 +488,7 @@
 
   function pickBtn(l) {
     var pend = pendingCount(l);
+    var dc = listDueCount(l);
     var sub = isScene(l)
       ? isLit(l)
         ? '● 已点亮'
@@ -390,16 +496,68 @@
       : pend
         ? '待学 ' + pend + ' 词'
         : '已全会 · 可复习';
+    if (dc) sub += ' · ↻' + dc + ' 待复习';
     return (
       '<button class="word-chip' + (isScene(l) && isLit(l) ? ' lit' : '') + '" ' +
-      'data-act="start-study" data-list="' + l.id + '">' +
+      'data-act="start-study" data-kind="normal" data-list="' + l.id + '">' +
       '<b>' + esc(l.title.replace(/（.*?）/, '')) + '</b>' +
       '<small>' + sub + '</small></button>'
     );
   }
 
+  // 拼写模式卡片：看中文写词（系统手写输入可直接填入）
+  function spellCardHTML(e, ref) {
+    if (!session.spellChecked) {
+      return (
+        '<div class="card study-card spell">' +
+        '<div class="spell-hint">看中文，写出这个词</div>' +
+        '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
+        '<div class="spell-tools">' +
+        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
+        '<span class="tour-slot">可先听发音 · 支持手写输入</span></div>' +
+        '<div class="spell-row">' +
+        '<input id="spellInput" type="text" autocomplete="off" autocapitalize="none" ' +
+        'autocorrect="off" spellcheck="false" placeholder="输入或手写" />' +
+        '<button class="btn" id="spellCheckBtn" data-act="spell-check">检查</button>' +
+        '</div></div>'
+      );
+    }
+    return (
+      '<div class="card study-card spell">' +
+      '<div class="spell-result ' + (session.spellOk ? 'ok' : 'err') + '">' +
+      (session.spellOk ? '✓ 正确' : '✗ 不对') +
+      '</div>' +
+      '<div class="sw">' + esc(e.x.w) + '</div>' +
+      '<div class="sipa">' + esc(e.x.pron) + ' · ' + esc(e.x.zh) + '</div>' +
+      (session.spellOk
+        ? ''
+        : '<div class="spell-answer">正确答案：<b>' + esc(e.x.w) + '</b></div>') +
+      '<button class="btn" data-act="spell-next" style="margin-top:16px">下一站</button>' +
+      '</div>'
+    );
+  }
+
   function studyScreen() {
     if (!session) {
+      var dueN = dueRefsNow().length;
+      var modeSeg =
+        '<div class="seg-ctl">' +
+        '<button type="button" class="seg' + (pickMode === 'card' ? ' on' : '') +
+        '" data-act="set-mode" data-mode="card">认卡</button>' +
+        '<button type="button" class="seg' + (pickMode === 'spell' ? ' on' : '') +
+        '" data-act="set-mode" data-mode="spell">拼写</button>' +
+        '</div>';
+      var cards = '';
+      if (dueN) {
+        cards +=
+          '<button class="entry-card review" data-act="start-study" data-kind="review">' +
+          '<b>今日复习 · ' + Math.min(dueN, 10) + ' 站</b>' +
+          '<small>到期的词自动回到这里 · 记忆间隔 1 / 3 / 7 / 15 天</small></button>';
+      }
+      cards +=
+        '<button class="entry-card" data-act="start-study" data-kind="mix">' +
+        '<b>串门混考</b>' +
+        '<small>随机跨厅抽 10 站 · 交错练习记得更牢</small></button>';
       var scenes = sceneLists();
       var cores = coreLists();
       var groups = '';
@@ -415,16 +573,22 @@
       }
       return (
         '<h2>巡游</h2>' +
-        '<p class="sub">每轮 10 站 · 选一间厅出发 · 整厅走完房间点亮</p>' +
-        groups
+        '<p class="sub">先选模式，再选出发点 · 每轮 10 站 · 进度存在本机</p>' +
+        modeSeg + cards + groups + weeklyHTML()
       );
     }
     if (session.idx >= session.queue.length) {
-      var doneList = LIST[session.listId];
-      var nowLit = doneList && isLit(doneList);
-      var banner = nowLit
-        ? '<div class="lit-banner">✦ ' + esc(doneList.title) + ' 已点亮</div>'
-        : '';
+      var doneList = session.listId ? LIST[session.listId] : null;
+      var banner;
+      if (session.kind === 'review') {
+        banner = '<div class="lit-banner">↻ 今日复习完成 · ' + session.queue.length + ' 站</div>';
+      } else if (session.kind === 'mix') {
+        banner = '<div class="lit-banner">✦ 串门混考完成 · ' + session.queue.length + ' 站</div>';
+      } else if (doneList && isLit(doneList)) {
+        banner = '<div class="lit-banner">✦ ' + esc(doneList.title) + ' 已点亮</div>';
+      } else {
+        banner = '';
+      }
       return (
         '<h2>巡游</h2>' +
         '<div class="card study-done">' + banner +
@@ -437,22 +601,27 @@
         '</div></div>'
       );
     }
-    var l = LIST[session.listId];
-    var w = session.queue[session.idx];
-    var ref = session.listId + '/' + w;
+    var ref = session.queue[session.idx];
     var e = IDX[ref];
     var x = e.x;
+    var l = e.l;
     var pct = Math.round((session.idx / session.queue.length) * 100);
-    var slotNote = isScene(l)
-      ? '<span class="tour-slot">No.' + (l.words.indexOf(x) + 1) + ' 展台</span> '
-      : '';
+    var kindLabel =
+      session.kind === 'review' ? '今日复习' : session.kind === 'mix' ? '串门混考' : '巡游中';
+    var slotNote =
+      '<span class="tour-slot">' + esc(l.title.replace(/（.*?）/, '')) +
+      (isScene(l) ? ' · No.' + (l.words.indexOf(x) + 1) + ' 展台' : '') +
+      '</span> ';
     var head =
       '<h2>巡游</h2>' +
-      '<div class="study-meta"><span>巡游中 · ' + esc(l.title.replace(/（.*?）/, '')) +
+      '<div class="study-meta"><span>' + kindLabel + ' · ' + esc(l.title.replace(/（.*?）/, '')) +
       ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
       '<span>认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
+
+    if (session.mode === 'spell') return head + spellCardHTML(e, ref);
+
     if (!session.revealed) {
       return (
         head +
@@ -485,20 +654,72 @@
     );
   }
 
-  function startSession(listId) {
-    var l = LIST[listId];
-    if (!l) return;
+  // 开一轮：kind = normal(按厅) / review(今日到期) / mix(串门混考)
+  function startSession(opts) {
+    var refs = [];
     var k = known();
-    var fresh = [];
-    var review = [];
-    l.words.forEach(function (x) {
-      if (k[l.id + '/' + x.w]) review.push(x.w); else fresh.push(x.w);
-    });
-    var queue = fresh.slice(0, 10);
-    if (queue.length < 10 && review.length) {
-      queue = fresh.concat(review).slice(0, 10);
+    if (opts.kind === 'review') {
+      refs = shuffle(dueRefsNow()).slice(0, 10);
+    } else if (opts.kind === 'mix') {
+      var m = dueMap();
+      var t = now();
+      var pool = ALL.filter(function (e) {
+        return !k[e.ref] || (m[e.ref] && m[e.ref].d <= t);
+      }).map(function (e) { return e.ref; });
+      refs = shuffle(pool).slice(0, 10);
+    } else {
+      var l = LIST[opts.listId];
+      if (!l) return false;
+      var fresh = [];
+      var rev = [];
+      l.words.forEach(function (x) {
+        var r = l.id + '/' + x.w;
+        (k[r] ? rev : fresh).push(r);
+      });
+      refs = fresh.slice(0, 10);
+      if (refs.length < 10) refs = fresh.concat(rev).slice(0, 10);
     }
-    session = { listId: listId, queue: queue, idx: 0, good: 0, bad: 0, revealed: false };
+    if (!refs.length) return false;
+    session = {
+      queue: refs,
+      idx: 0,
+      good: 0,
+      bad: 0,
+      mode: opts.mode || 'card',
+      kind: opts.kind || 'normal',
+      listId: opts.listId || null,
+      revealed: false,
+      spellChecked: false,
+      spellOk: false,
+      logged: false,
+    };
+    return true;
+  }
+
+  // 记录一站的结果：认识→掌握+间隔晋级；模糊→退出掌握+明天回访
+  function recordStudy(good) {
+    var ref = session.queue[session.idx];
+    var k = known();
+    if (good) {
+      k[ref] = 1;
+      session.good++;
+    } else {
+      delete k[ref];
+      session.bad++;
+    }
+    lsSet('hedgehog:known', k);
+    scheduleRef(ref, good);
+  }
+
+  function advanceSession() {
+    session.idx++;
+    session.revealed = false;
+    session.spellChecked = false;
+    session.spellOk = false;
+    if (session.idx >= session.queue.length && !session.logged) {
+      session.logged = true;
+      logStamp();
+    }
   }
 
   // ---------- 视图：收藏 ----------
@@ -658,6 +879,18 @@
       q.addEventListener('input', function () { renderResults(q.value); });
       q.focus();
     }
+
+    var si = $('spellInput');
+    if (si) {
+      si.focus();
+      si.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          var b = $('spellCheckBtn');
+          if (b) b.click();
+        }
+      });
+    }
   }
 
   // ---------- 事件委托（只绑一次） ----------
@@ -670,8 +903,15 @@
     if (act === 'speak') speak(ref);
     else if (act === 'star') {
       el.classList.toggle('on', toggleFav(ref));
+    } else if (act === 'set-mode') {
+      pickMode = el.getAttribute('data-mode');
+      route();
     } else if (act === 'start-study') {
-      startSession(el.getAttribute('data-list'));
+      startSession({
+        listId: el.getAttribute('data-list'),
+        kind: el.getAttribute('data-kind') || 'normal',
+        mode: pickMode,
+      });
       route();
     } else if (act === 'study-home') {
       session = null;
@@ -680,13 +920,18 @@
       session.revealed = true;
       route();
     } else if (act === 'good' || act === 'blur') {
-      var k = known();
-      var sref = session.listId + '/' + session.queue[session.idx];
-      if (act === 'good') { k[sref] = 1; session.good++; }
-      else { delete k[sref]; session.bad++; }
-      lsSet('hedgehog:known', k);
-      session.idx++;
-      session.revealed = false;
+      recordStudy(act === 'good');
+      advanceSession();
+      route();
+    } else if (act === 'spell-check') {
+      var si = $('spellInput');
+      var sent = IDX[session.queue[session.idx]];
+      session.spellOk = checkSpelling(si ? si.value : '', sent.x);
+      session.spellChecked = true;
+      recordStudy(session.spellOk);
+      route();
+    } else if (act === 'spell-next') {
+      advanceSession();
       route();
     }
   });

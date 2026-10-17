@@ -938,6 +938,103 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
   margin: 22px 0 2px;
 }
 
+/* 模式切换（认卡 / 拼写） */
+.seg-ctl {
+  display: inline-flex;
+  border: 1px solid var(--line-d);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 4px 0 14px;
+  background: var(--card);
+}
+.seg {
+  border: 0;
+  background: transparent;
+  padding: 7px 22px;
+  font-size: 13.5px;
+  letter-spacing: 0.12em;
+  color: var(--mut);
+  cursor: pointer;
+}
+.seg.on { background: var(--sage); color: #fdfcf8; }
+
+/* 复习 / 混考入口卡 */
+.entry-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-top: 10px;
+  padding: 13px 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-d);
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color 0.15s;
+}
+.entry-card:hover { border-color: var(--sage); }
+.entry-card b { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: 0.06em; }
+.entry-card small { color: var(--mut); font-size: 12.5px; }
+.entry-card.review { border-left-color: var(--sage); background: #fbfdf9; }
+
+/* 复习角标 */
+.due-b { color: #a56a32; font-weight: 600; white-space: nowrap; }
+
+/* 本周打卡格 */
+.weekly { margin-top: 26px; }
+.wk-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; max-width: 420px; }
+.wk-cell {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  text-align: center;
+  padding: 7px 2px 6px;
+}
+.wk-cell em {
+  display: block;
+  font-style: normal;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5px;
+  color: var(--stone);
+  letter-spacing: 0.06em;
+}
+.wk-cell span { display: block; font-size: 14px; color: var(--line-d); margin-top: 2px; }
+.wk-cell.on { background: #eef1ea; border-color: var(--sage); }
+.wk-cell.on span { color: var(--sage-d); font-weight: 600; }
+.wk-cell.today { outline: 2px solid var(--taupe); outline-offset: 1px; }
+
+/* 拼写模式 */
+.spell-hint { font-size: 12.5px; color: var(--mut); letter-spacing: 0.1em; }
+.spell-zh { font-size: 24px; font-weight: 600; margin: 10px 0 6px; color: var(--ink); }
+.spell-tools { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 14px; }
+.spell-row { display: flex; gap: 8px; max-width: 400px; margin: 0 auto; }
+.spell-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line-d);
+  border-radius: 8px;
+  font-size: 16px; /* 防 iOS 聚焦缩放 + 系统手写输入友好 */
+  background: #fff;
+  color: var(--ink);
+}
+.spell-row input:focus { outline: 2px solid rgba(143, 160, 136, 0.45); }
+.spell-result {
+  display: inline-block;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  border-radius: 999px;
+  padding: 4px 18px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line-d);
+}
+.spell-result.ok { color: var(--sage-d); border-color: var(--sage); background: #eef1ea; }
+.spell-result.err { color: #a05a52; border-color: #d8b4ae; background: #f8efed; }
+.spell-answer { margin-top: 10px; font-size: 14px; color: var(--ink2); }
+.spell-answer b { font-size: 18px; color: var(--ink); }
+
 /* ---------- 移动端（本子简化版） ---------- */
 @media (max-width: 780px) {
   .notebook { margin: 0; border-radius: 0; min-height: 100vh; }
