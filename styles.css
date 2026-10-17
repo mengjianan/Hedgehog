@@ -718,15 +718,6 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 .footnote { margin-top: 34px; text-align: center; color: var(--stone); font-size: 11.5px; letter-spacing: 0.12em; }
 
 /* ---------- 宫殿总图 ---------- */
-.halls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 24px;
-}
-.hall-link { text-decoration: none; color: inherit; transition: border-color 0.15s; }
-.hall-link:hover { border-color: var(--sage); }
-
 /* 紧凑小卡（场景厅/基础表/语法） */
 .mini-card {
   display: block;
@@ -749,23 +740,6 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .mini-card b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: 0.06em; margin: 1px 0; }
 .mini-card small { color: var(--mut); font-size: 12px; }
-
-.hall {
-  border: 1px solid var(--line);
-  background: rgba(255, 254, 251, 0.8);
-  border-radius: 8px;
-  padding: 10px 12px;
-  text-align: center;
-}
-.hall .k {
-  display: block;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  color: var(--stone);
-}
-.hall b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: 0.08em; }
-.hall small { color: var(--mut); font-size: 11.5px; }
 
 .floor { position: relative; padding: 10px 0; max-width: 680px; margin: 0 auto; }
 .floor::before {

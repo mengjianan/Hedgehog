@@ -278,21 +278,9 @@
 
   // ---------- 视图：首页（门厅搜索 + 快捷入口） ----------
   function viewHome() {
-    var coreWords = coreLists().reduce(function (n, l) { return n + l.words.length; }, 0);
     var scenes = sceneLists();
     var litCount = scenes.filter(isLit).length;
     var dueAll = dueRefsNow().length;
-    var halls =
-      '<div class="halls">' +
-      '<a class="hall hall-link" href="#/home" data-act="focus-search">' +
-      '<span class="k">SEARCH</span><b>搜索</b><small>三语通查</small></a>' +
-      '<a class="hall hall-link" href="#/categories">' +
-      '<span class="k">HALL</span><b>词库</b><small>核心词 ' + coreWords + ' · 场景厅</small></a>' +
-      '<a class="hall hall-link" href="#/study">' +
-      '<span class="k">TOUR</span><b>巡游</b><small>背词与复习</small></a>' +
-      '<a class="hall hall-link" href="#/favorites">' +
-      '<span class="k">CABINET</span><b>藏品</b><small>收藏 ' + favs().length + ' 件</small></a>' +
-      '</div>';
     return (
       '<div class="hero">' +
       '<img class="sticker hero-sticker" src="icons/sticker-hog.svg" alt="" />' +
@@ -301,7 +289,6 @@
       '<div class="search-row"><input id="q" type="search" placeholder="门厅搜索：abolish / 마음 / 環境" autocomplete="off" /></div>' +
       '</div>' +
       '<div class="results" id="results"></div>' +
-      halls +
       '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
       (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · 内容全部原创</p>'
@@ -1186,9 +1173,6 @@
     if (act === 'speak') speak(ref);
     else if (act === 'star') {
       el.classList.toggle('on', toggleFav(ref));
-    } else if (act === 'focus-search') {
-      var qi = $('q');
-      if (qi) qi.focus();
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
       route();
