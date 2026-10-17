@@ -1089,7 +1089,7 @@
       );
     }).join('');
     return (
-      '<h2>书阁</h2>' +
+      '<h2>基础表</h2>' +
       '<p class="sub">词根 · 韩语音表 · 日语五十音</p>' +
       '<div class="wordlist">' + cards + '</div>'
     );
