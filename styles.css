@@ -690,7 +690,27 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 
 .footnote { margin-top: 34px; text-align: center; color: var(--stone); font-size: 11.5px; letter-spacing: 0.12em; }
 
-.word-foot { margin-top: 16px; text-align: right; }
+.word-foot {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 场景厅语言筛选 */
+.filter-chips { display: flex; gap: 8px; margin-top: -6px; flex-wrap: wrap; }
+.fchip {
+  font-size: 13px;
+  color: var(--mut);
+  background: var(--card);
+  border: 1px solid var(--line-d);
+  border-radius: 999px;
+  padding: 5px 16px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+.fchip.on { background: var(--sage); border-color: var(--sage-d); color: #fdfcf8; }
 
 /* 数据导出/导入 */
 .data-row { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }

@@ -16,6 +16,7 @@
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
+  var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
 
@@ -273,10 +274,25 @@
     return null; // 没有匹配语言的语音：交给系统默认（可能无声，见说明）
   }
 
+  var audioEl = null;
+  var YOUDAO_LE = { en: 'en', ja: 'jap', ko: 'ko' };
+
+  // 发音：自动按语种路由——优先有道发音音频（英日韩真人级，国内可直连），
+  // 拿不到（断网/接口挂）再回退系统 TTS（选设备里对应语言的语音包）
   function speak(ref) {
-    if (!window.speechSynthesis) return;
     var e = IDX[ref];
     if (!e) return;
+    var le = YOUDAO_LE[e.l.lang] || 'en';
+    var url =
+      'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(e.x.w) + '&le=' + le;
+    if (!audioEl) audioEl = new Audio();
+    audioEl.onerror = function () { speakTTS(e); };
+    var p = audioEl.play();
+    if (p && p.catch) p.catch(function () { speakTTS(e); });
+  }
+
+  function speakTTS(e) {
+    if (!window.speechSynthesis) return;
     var u = new SpeechSynthesisUtterance(e.x.w);
     u.lang = e.l.speech || 'en-US';
     var v = pickVoice(u.lang);
@@ -389,7 +405,19 @@
         '<small>' + meta + '</small></a>'
       );
     };
+    var sceneChips =
+      '<div class="filter-chips">' +
+      [['all', '全部'], ['en', '英语'], ['ko', '韩语'], ['ja', '日语']]
+        .map(function (p) {
+          return (
+            '<button class="fchip' + (sceneLang === p[0] ? ' on' : '') +
+            '" data-act="scene-filter" data-lang="' + p[0] + '">' + p[1] + '</button>'
+          );
+        })
+        .join('') +
+      '</div>';
     var sceneCards = sceneLists()
+      .filter(function (l) { return sceneLang === 'all' || l.lang === sceneLang; })
       .map(function (l) {
         var total = l.words.length;
         var mastered = total - pendingCount(l);
@@ -403,32 +431,10 @@
         );
       })
       .join('');
-    var tableCards = TABLES.map(function (t) {
-      return mini(
-        t.title,
-        String(t.id || '').toUpperCase().replace(/-/g, ' '),
-        esc(t.subtitle || (t.sections || []).length + ' 节'),
-        '#/tables/' + t.id,
-        t.lang
-      );
-    }).join('');
     return (
       '<h2>词库</h2>' + wordCards +
-      '<h2 class="group-h">场景厅</h2><div class="wordlist">' + sceneCards + '</div>' +
-      '<h2 class="group-h">基础表</h2><div class="wordlist">' + tableCards + '</div>' +
-      '<h2 class="group-h">语法翼楼</h2><div class="wordlist">' +
-      (GRAMMARS.length
-        ? GRAMMARS.map(function (g) {
-            return mini(
-              g.title,
-              (g.enName || 'GRAMMAR'),
-              (g.rooms || []).length + ' 宫室 · ' + totalPoints(g) + ' 点',
-              '#/grammar/' + g.id,
-              g.lang
-            );
-          }).join('')
-        : mini('语法翼楼', 'GRAMMAR', '建设中', '#/grammar', 'en')) +
-      '</div>'
+      '<h2 class="group-h">场景厅</h2>' + sceneChips +
+      '<div class="wordlist">' + sceneCards + '</div>'
     );
   }
 
@@ -576,8 +582,11 @@
       '</div></div>';
     var idxW = l.words.indexOf(x);
     var nextX = l.words[(idxW + 1) % l.words.length];
+    var prevX = l.words[(idxW - 1 + l.words.length) % l.words.length];
     var nextBtn =
       '<div class="word-foot">' +
+      '<a class="btn ghost" href="#/word/' + l.id + '/' + encodeURIComponent(prevX.w) + '">' +
+      '← 上一个：' + esc(prevX.w) + '</a>' +
       '<a class="btn ghost" href="#/word/' + l.id + '/' + encodeURIComponent(nextX.w) + '">' +
       '下一个：' + esc(nextX.w) + ' →</a></div>';
     return (
@@ -1302,6 +1311,9 @@
     if (act === 'speak') speak(ref);
     else if (act === 'star') {
       el.classList.toggle('on', toggleFav(ref));
+    } else if (act === 'scene-filter') {
+      sceneLang = el.getAttribute('data-lang') || 'all';
+      route();
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
       route();
