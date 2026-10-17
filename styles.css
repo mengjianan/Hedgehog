@@ -1256,9 +1256,9 @@ a.entry-card { text-decoration: none; color: var(--ink); }
 @media (max-width: 780px) {
   .notebook { margin: 0; border-radius: 0; min-height: 100vh; }
   .spiral { display: none; }
-  .page { padding: 14px 14px 60px 40px; border-radius: 0; }
-  .holes { left: 10px; top: 28px; bottom: 28px; }
-  .page::before { left: 28px; top: 12px; bottom: 12px; }
+  .page { padding: 14px 14px 60px 14px; border-radius: 0; }
+  .holes { display: none; }
+  .page::before { display: none; }
   .page-head { flex-wrap: wrap; gap: 10px; }
   .page-date { order: 3; width: 100%; margin-left: 0; }
   .view { padding: 14px 0 24px; }
