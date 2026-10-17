@@ -19,6 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
+  var APP_VER = 'v2026-10-17.9'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -378,7 +379,7 @@
       '<button class="mini-btn" data-act="import-data">导入进度</button>' +
       '<input type="file" id="importFile" accept=".json,application/json" hidden />' +
       '</div>' +
-      '<p class="footnote">Hedgehog · 语感宫殿 · 内容全部原创</p>'
+      '<p class="footnote">Hedgehog · 语感宫殿 · ' + APP_VER + '</p>'
     );
   }
 
