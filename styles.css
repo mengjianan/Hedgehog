@@ -27,7 +27,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--desk);
+  background: var(--paper);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   font-weight: 400;
@@ -112,11 +112,10 @@ img { max-width: 100%; }
 .notebook {
   position: relative;
   display: flex;
-  max-width: min(1400px, calc(100vw - 32px));
-  margin: 18px auto;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
   background: var(--card);
-  border-radius: 3px 14px 14px 3px;
-  box-shadow: 0 2px 5px rgba(60, 58, 54, 0.07), 0 22px 48px -16px rgba(60, 58, 54, 0.22);
 }
 
 .spiral {
@@ -134,7 +133,7 @@ img { max-width: 100%; }
   min-width: 0;
   padding: 20px 30px 56px 78px;
   background-color: var(--paper);
-  border-radius: 0 14px 14px 0;
+  border-radius: 0;
 }
 
 /* 活页孔 */
@@ -212,7 +211,7 @@ img { max-width: 100%; }
 .index-tabs {
   position: absolute;
   top: 104px;
-  right: -14px;
+  right: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -725,6 +724,32 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
   gap: 10px;
   margin-top: 24px;
 }
+.hall-link { text-decoration: none; color: inherit; transition: border-color 0.15s; }
+.hall-link:hover { border-color: var(--sage); }
+
+/* 紧凑小卡（场景厅/基础表/语法） */
+.mini-card {
+  display: block;
+  padding: 11px 13px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--lang, var(--line-d));
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 0.15s;
+}
+.mini-card:hover { border-color: var(--sage); }
+.mini-card .en {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--stone);
+}
+.mini-card b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: 0.06em; margin: 1px 0; }
+.mini-card small { color: var(--mut); font-size: 12px; }
+
 .hall {
   border: 1px solid var(--line);
   background: rgba(255, 254, 251, 0.8);

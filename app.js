@@ -301,16 +301,20 @@
     var litCount = scenes.filter(isLit).length;
     var halls =
       '<div class="halls">' +
-      '<div class="hall"><span class="k">FOYER</span><b>门厅</b><small>上方搜索 · 迎宾台</small></div>' +
-      '<div class="hall"><span class="k">MAIN HALL</span><b>词库大厅</b><small>核心词 ' + coreWords + ' 词</small></div>' +
-      '<div class="hall"><span class="k">STUDY</span><b>图书室</b><small>基础表 ' + TABLES.length + ' 张</small></div>' +
-      '<div class="hall"><span class="k">CABINET</span><b>藏品室</b><small>收藏 ' + favs().length + ' 件</small></div>' +
+      '<a class="hall hall-link" href="#/home" data-act="focus-search">' +
+      '<span class="k">SEARCH</span><b>搜索</b><small>三语通查</small></a>' +
+      '<a class="hall hall-link" href="#/categories">' +
+      '<span class="k">HALL</span><b>词库</b><small>核心词 ' + coreWords + ' · 场景厅</small></a>' +
+      '<a class="hall hall-link" href="#/study">' +
+      '<span class="k">TOUR</span><b>巡游</b><small>背词与复习</small></a>' +
+      '<a class="hall hall-link" href="#/favorites">' +
+      '<span class="k">CABINET</span><b>藏品</b><small>收藏 ' + favs().length + ' 件</small></a>' +
       '</div>';
     return (
       '<div class="hero">' +
       '<img class="sticker hero-sticker" src="icons/sticker-hog.svg" alt="" />' +
       '<h2>语感宫殿</h2>' +
-      '<p class="sub">学习走宫殿，查询走门厅 · 词条内容全原创</p>' +
+      '<p class="sub">学习走宫殿 · 查询走门厅</p>' +
       '<div class="search-row"><input id="q" type="search" placeholder="门厅搜索：abolish / 마음 / 環境" autocomplete="off" /></div>' +
       '</div>' +
       '<div class="results" id="results"></div>' +
@@ -318,9 +322,8 @@
       '<h2 class="group-h">场景厅</h2>' +
       '<div class="floor">' + scenes.map(sceneRoomHTML).join('') + '</div>' +
       '<div class="legend">' +
-      '<span class="lg-lit">● 全会 = 点亮</span>' +
-      '<span class="lg-dim">○ 还有词没掌握</span>' +
-      '<span>┈ 中央虚线 = 巡游路线</span>' +
+      '<span class="lg-lit">● 已点亮</span>' +
+      '<span class="lg-dim">○ 未点亮</span>' +
       '<span>' + litCount + '/' + scenes.length + ' 厅已点亮</span>' +
       '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · 内容全部原创</p>'
@@ -367,37 +370,44 @@
         '</small></span><span>→</span></a>'
       );
     }).join('');
-    var sceneCards = sceneLists().map(function (l) {
-      var total = l.words.length;
-      var mastered = total - pendingCount(l);
-      var dc = listDueCount(l);
+    var mini = function (title, en, meta, href, lang) {
       return (
-        '<a class="card cat-card lang-' + l.lang + '" href="#/categories/' + l.id + '">' +
-        '<span><b>' + esc(l.title) + '</b><small>' +
-        esc(l.enName || '') + ' · ' + total + ' 词 · ' +
-        (isLit(l) ? '● 已点亮' : mastered + '/' + total + ' 已掌握') +
-        (dc ? ' · <span class="due-b">↻ ' + dc + '</span>' : '') +
-        '</small></span><span>→</span></a>'
+        '<a class="mini-card' + (lang ? ' lang-' + lang : '') + '" href="' + href + '">' +
+        '<span class="en">' + esc(en) + '</span>' +
+        '<b>' + esc(title) + '</b>' +
+        '<small>' + meta + '</small></a>'
       );
-    }).join('');
+    };
+    var sceneCards = sceneLists()
+      .map(function (l) {
+        var total = l.words.length;
+        var mastered = total - pendingCount(l);
+        var dc = listDueCount(l);
+        return mini(
+          l.title,
+          l.enName || '',
+          total + ' 词 · ' + (isLit(l) ? '● 已点亮' : mastered + '/' + total) + (dc ? ' · ↻' + dc : ''),
+          '#/categories/' + l.id,
+          l.lang
+        );
+      })
+      .join('');
     var tableCards = TABLES.map(function (t) {
-      return (
-        '<a class="card cat-card lang-' + t.lang + '" href="#/tables/' + t.id + '">' +
-        '<span><b>' + esc(t.title) + '</b><small>' +
-        (LANG_NAME[t.lang] || t.lang) + ' · ' + esc(t.subtitle || (t.sections || []).length + ' 节') +
-        '</small></span><span>→</span></a>'
+      return mini(
+        t.title,
+        String(t.id || '').toUpperCase().replace(/-/g, ' '),
+        esc(t.subtitle || (t.sections || []).length + ' 节'),
+        '#/tables/' + t.id,
+        t.lang
       );
     }).join('');
-    var gramCard =
-      '<h2 class="group-h">语法翼楼</h2>' +
-      '<a class="card cat-card lang-en" href="#/grammar">' +
-      '<span><b>英语语法宫</b><small>6 宫室 · 30 语法点 · 走廊式复习</small></span>' +
-      '<span>→</span></a>';
     return (
       '<h2>词库</h2>' + wordCards +
-      (sceneCards ? '<h2 class="group-h">场景厅</h2>' + sceneCards : '') +
-      (tableCards ? '<h2 class="group-h">基础表</h2>' + tableCards : '') +
-      gramCard
+      '<h2 class="group-h">场景厅</h2><div class="wordlist">' + sceneCards + '</div>' +
+      '<h2 class="group-h">基础表</h2><div class="wordlist">' + tableCards + '</div>' +
+      '<h2 class="group-h">语法翼楼</h2><div class="wordlist">' +
+      mini('英语语法宫', 'GRAMMAR', '6 宫室 · 30 点', '#/grammar', 'en') +
+      '</div>'
     );
   }
 
@@ -1198,6 +1208,9 @@
     if (act === 'speak') speak(ref);
     else if (act === 'star') {
       el.classList.toggle('on', toggleFav(ref));
+    } else if (act === 'focus-search') {
+      var qi = $('q');
+      if (qi) qi.focus();
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
       route();
