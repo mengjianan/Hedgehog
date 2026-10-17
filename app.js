@@ -621,6 +621,36 @@
     );
   }
 
+  // 书写模式卡片：照着范字写（练字形，配合系统手写输入）
+  function writeCardHTML(e, ref) {
+    if (!session.spellChecked) {
+      return (
+        '<div class="card study-card write">' +
+        '<div class="spell-hint">照着范字写一遍（手写笔直填也行）</div>' +
+        '<div class="write-model">' + esc(e.x.w) + '</div>' +
+        '<div class="sipa">' + esc(e.x.pron) + '</div>' +
+        '<div class="spell-tools">' +
+        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
+        '<span class="tour-slot">' + esc(e.x.zh) + '</span></div>' +
+        '<div class="spell-row">' +
+        '<input id="spellInput" type="text" autocomplete="off" autocapitalize="none" ' +
+        'autocorrect="off" spellcheck="false" placeholder="照写 / 手写" />' +
+        '<button class="btn" id="spellCheckBtn" data-act="spell-check">检查</button>' +
+        '</div></div>'
+      );
+    }
+    return (
+      '<div class="card study-card spell">' +
+      '<div class="spell-result ' + (session.spellOk ? 'ok' : 'err') + '">' +
+      (session.spellOk ? '✓ 写对了' : '✗ 再看一眼范字') +
+      '</div>' +
+      '<div class="write-model">' + esc(e.x.w) + '</div>' +
+      '<div class="sipa">' + esc(e.x.pron) + ' · ' + esc(e.x.zh) + '</div>' +
+      '<button class="btn" data-act="spell-next" style="margin-top:16px">下一站</button>' +
+      '</div>'
+    );
+  }
+
   function studyScreen() {
     if (!session) {
       var dueN = dueRefsNow().length;
@@ -630,6 +660,8 @@
         '" data-act="set-mode" data-mode="card">认卡</button>' +
         '<button type="button" class="seg' + (pickMode === 'spell' ? ' on' : '') +
         '" data-act="set-mode" data-mode="spell">拼写</button>' +
+        '<button type="button" class="seg' + (pickMode === 'write' ? ' on' : '') +
+        '" data-act="set-mode" data-mode="write">书写</button>' +
         '</div>';
       var cards = '';
       if (dueN) {
@@ -641,7 +673,9 @@
       cards +=
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
         '<b>串门混考</b>' +
-        '<small>随机跨厅抽 10 站 · 交错练习记得更牢</small></button>';
+        '<small>随机跨厅抽 10 站 · 交错练习记得更牢</small></button>' +
+        '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
+        '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
       var cores = coreLists();
       var groups = '';
@@ -705,6 +739,7 @@
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
     if (session.mode === 'spell') return head + spellCardHTML(e, ref);
+    if (session.mode === 'write') return head + writeCardHTML(e, ref);
 
     if (!session.revealed) {
       return (
@@ -913,6 +948,77 @@
     );
   }
 
+  // ---------- 视图：练字本（画板 + 贴图册） ----------
+  function viewCopybook() {
+    var items = lsGet('hedgehog:copybook', []);
+    var gallery = items.length
+      ? '<div class="cb-gallery">' +
+        items
+          .map(function (it, i) {
+            return (
+              '<figure class="cb-item">' +
+              '<img src="' + it.img + '" alt="练字" />' +
+              '<figcaption>' + new Date(it.t).toLocaleDateString() + '</figcaption>' +
+              '<button class="cb-del" data-act="cb-del" data-i="' + i + '" title="删除">×</button>' +
+              '</figure>'
+            );
+          })
+          .join('') +
+        '</div>'
+      : '<div class="empty">画点什么贴进来，这里就是你的练字页</div>';
+    return (
+      '<a class="back-link" href="#/study">← 巡游</a>' +
+      '<h2>练字本</h2>' +
+      '<p class="sub">用笔在下面写（字、词、涂鸦都行）· 贴进本子存本机 · 最多 20 张</p>' +
+      '<div class="card cb-card">' +
+      '<canvas id="cbCanvas" width="720" height="360"></canvas>' +
+      '<div class="cb-tools">' +
+      '<button class="btn" data-act="cb-save">贴进本子</button>' +
+      '<button class="btn ghost" data-act="cb-clear">清空画板</button>' +
+      '<span class="sent-hint" id="cbHint"></span>' +
+      '</div></div>' +
+      gallery
+    );
+  }
+
+  function initCanvas() {
+    var cv = $('cbCanvas');
+    if (!cv) return;
+    var ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fdfbf4';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.strokeStyle = '#3c3a36';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    var drawing = false;
+    var last = null;
+    function pos(ev) {
+      var r = cv.getBoundingClientRect();
+      return {
+        x: ((ev.clientX - r.left) * cv.width) / r.width,
+        y: ((ev.clientY - r.top) * cv.height) / r.height,
+      };
+    }
+    cv.addEventListener('pointerdown', function (ev) {
+      drawing = true;
+      last = pos(ev);
+      cv.setPointerCapture(ev.pointerId);
+    });
+    cv.addEventListener('pointermove', function (ev) {
+      if (!drawing) return;
+      var p = pos(ev);
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+    });
+    ['pointerup', 'pointercancel'].forEach(function (t) {
+      cv.addEventListener(t, function () { drawing = false; });
+    });
+  }
+
   // ---------- 视图：基础表 ----------
   function viewTable(id) {
     var t = TBY[id];
@@ -1033,6 +1139,9 @@
       nav = 'categories';
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
+    } else if (name === 'copybook') {
+      view.innerHTML = viewCopybook();
+      nav = 'study';
     } else if (name === 'favorites') {
       view.innerHTML = viewFavorites();
     } else {
@@ -1044,7 +1153,7 @@
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
-    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6 }[name] || 1;
+    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7 }[name] || 1;
     var pn = $('pageNum');
     if (pn) pn.textContent = '— ' + pnum + ' —';
     window.scrollTo(0, 0);
@@ -1066,6 +1175,8 @@
         }
       });
     }
+
+    initCanvas();
   }
 
   // ---------- 事件委托（只绑一次） ----------
@@ -1116,6 +1227,35 @@
       lsSet('hedgehog:sentences', sentMap);
       var sh = $('sentHint');
       if (sh) sh.textContent = ta && ta.value.trim() ? '已保存到本机 ✓' : '已清空';
+    } else if (act === 'cb-save') {
+      var cv = $('cbCanvas');
+      if (cv) {
+        var off = document.createElement('canvas');
+        off.width = 360;
+        off.height = Math.round((cv.height * 360) / cv.width);
+        off.getContext('2d').drawImage(cv, 0, 0, off.width, off.height);
+        var url = off.toDataURL('image/jpeg', 0.55);
+        var pics = lsGet('hedgehog:copybook', []);
+        pics.push({ t: now(), img: url });
+        while (pics.length > 20) pics.shift();
+        try {
+          lsSet('hedgehog:copybook', pics);
+        } catch (err) {
+          // 存储接近上限：挤掉更多旧图再试
+          while (pics.length > 5) {
+            pics.shift();
+            try { lsSet('hedgehog:copybook', pics); break; } catch (e2) {}
+          }
+        }
+        route();
+      }
+    } else if (act === 'cb-clear') {
+      route();
+    } else if (act === 'cb-del') {
+      var pics2 = lsGet('hedgehog:copybook', []);
+      pics2.splice(parseInt(el.getAttribute('data-i'), 10) || 0, 1);
+      lsSet('hedgehog:copybook', pics2);
+      route();
     }
   });
 
