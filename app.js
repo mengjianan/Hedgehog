@@ -315,9 +315,9 @@
       '<a class="hall hall-link" href="#/study">' +
       '<span class="k">TOUR</span><b>背词</b><small>巡游与复习</small></a>' +
       '<a class="hall hall-link" href="#/tables">' +
-      '<span class="k">STUDY</span><b>书阁</b><small>词根 · 音表</small></a>' +
+      '<span class="k">STUDY</span><b>基础表</b><small>词根 · 音表</small></a>' +
       '<a class="hall hall-link" href="#/grammar">' +
-      '<span class="k">GRAMMAR</span><b>文法殿</b><small>语法宫室</small></a>' +
+      '<span class="k">GRAMMAR</span><b>语法</b><small>三语语法宫</small></a>' +
       '<a class="hall hall-link" href="#/favorites">' +
       '<span class="k">CABINET</span><b>收藏</b><small>' + favs().length + ' 件</small></a>' +
       '</div>';
