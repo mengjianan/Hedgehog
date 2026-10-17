@@ -1,7 +1,7 @@
 /* Hedgehog service worker：满足安卓 PWA 安装条件 + 壳资源缓存（离线可开）
  * 数据文件（data/*）不缓存，保证词库更新即时生效
  */
-var CACHE = 'hedgehog-v3';
+var CACHE = 'hedgehog-v4';
 var SHELL = [
   './',
   'index.html',
@@ -43,21 +43,20 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.indexOf('/data/') !== -1) return; // 词库数据走网络
+  // 网络优先：联网时永远拿最新版，缓存只做断网兜底（解决手机端旧壳问题）
   e.respondWith(
-    caches.match(req).then(function (hit) {
-      var net = fetch(req)
-        .then(function (res) {
-          if (res && res.status === 200) {
-            var copy = res.clone();
-            caches.open(CACHE).then(function (c) { c.put(req, copy); });
-          }
-          return res;
-        })
-        .catch(function () {
-          // 断网：回退缓存；导航请求回退到本子首页
+    fetch(req)
+      .then(function (res) {
+        if (res && res.status === 200) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      })
+      .catch(function () {
+        return caches.match(req).then(function (hit) {
           return hit || (req.mode === 'navigate' ? caches.match('./') : Response.error());
         });
-      return hit || net;
-    })
+      })
   );
 });

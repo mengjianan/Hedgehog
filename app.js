@@ -1310,8 +1310,9 @@
   initPage();
 
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
+  // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本会话已解锁过则直接进入（关掉标签页后需重新输密码）
