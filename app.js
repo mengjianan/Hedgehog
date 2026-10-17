@@ -277,6 +277,20 @@
   var audioEl = null;
   var YOUDAO_LE = { en: 'en', ja: 'jap', ko: 'ko' };
 
+  function toast(msg) {
+    var t = $('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      t.className = 'toast';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(function () { t.classList.remove('show'); }, 2800);
+  }
+
   // 发音：自动按语种路由——优先有道发音音频（英日韩真人级，国内可直连），
   // 拿不到（断网/接口挂）再回退系统 TTS（选设备里对应语言的语音包）
   function speak(ref) {
@@ -286,9 +300,17 @@
     var url =
       'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(e.x.w) + '&le=' + le;
     if (!audioEl) audioEl = new Audio();
-    audioEl.onerror = function () { speakTTS(e); };
+    audioEl.onerror = function () {
+      speakTTS(e);
+      toast('发音源不可用，已切换系统朗读');
+    };
     var p = audioEl.play();
-    if (p && p.catch) p.catch(function () { speakTTS(e); });
+    if (p && p.catch) {
+      p.catch(function () {
+        speakTTS(e);
+        toast('自动播放被系统拦了，点🔊手动播');
+      });
+    }
   }
 
   function speakTTS(e) {
@@ -297,6 +319,9 @@
     u.lang = e.l.speech || 'en-US';
     var v = pickVoice(u.lang);
     if (v) u.voice = v;
+    else if (e.l.lang && e.l.lang !== 'en') {
+      toast('本机无' + (LANG_NAME[e.l.lang] || '') + '语音包（系统朗读会无声）');
+    }
     u.rate = 0.9;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
