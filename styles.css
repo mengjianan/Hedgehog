@@ -690,6 +690,20 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 
 .footnote { margin-top: 34px; text-align: center; color: var(--stone); font-size: 11.5px; letter-spacing: 0.12em; }
 
+/* 数据导出/导入 */
+.data-row { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
+.mini-btn {
+  font-size: 12px;
+  color: var(--mut);
+  background: none;
+  border: 1px dashed var(--line-d);
+  border-radius: 999px;
+  padding: 4px 14px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+.mini-btn:hover { border-color: var(--sage); color: var(--sage-d); }
+
 /* ---------- 宫殿总图 ---------- */
 .halls {
   display: grid;

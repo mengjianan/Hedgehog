@@ -304,6 +304,11 @@
       halls +
       '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
       (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
+      '<div class="data-row">' +
+      '<button class="mini-btn" data-act="export-data">导出进度</button>' +
+      '<button class="mini-btn" data-act="import-data">导入进度</button>' +
+      '<input type="file" id="importFile" accept=".json,application/json" hidden />' +
+      '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · 内容全部原创</p>'
     );
   }
@@ -1174,6 +1179,35 @@
     }
 
     initCanvas();
+
+    var ifile = $('importFile');
+    if (ifile) {
+      ifile.addEventListener('change', function () {
+        var f = ifile.files && ifile.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var obj = JSON.parse(reader.result);
+            var d = obj && obj.data;
+            if (!d || typeof d !== 'object') throw new Error('bad');
+            var n = 0;
+            Object.keys(d).forEach(function (k) {
+              if (k.indexOf('hedgehog:') === 0 && d[k] != null) {
+                lsSet(k, d[k]);
+                n++;
+              }
+            });
+            if (!n) throw new Error('empty');
+            alert('已导入 ' + n + ' 项进度，页面将刷新');
+            location.reload();
+          } catch (e) {
+            alert('文件格式不对，导入失败');
+          }
+        };
+        reader.readAsText(f);
+      });
+    }
   }
 
   // ---------- 事件委托（只绑一次） ----------
@@ -1242,6 +1276,27 @@
       recordStudy(false);
       advanceSession();
       route();
+    } else if (act === 'export-data') {
+      var dump = {};
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf('hedgehog:') === 0) dump[k] = lsGet(k, null);
+      });
+      var blob = new Blob([JSON.stringify({ v: 1, t: now(), data: dump })], {
+        type: 'application/json',
+      });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hedgehog-progress-' + dateKey(new Date()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    } else if (act === 'import-data') {
+      var fi = $('importFile');
+      if (fi) {
+        fi.value = '';
+        fi.click();
+      }
     } else if (act === 'cb-save') {
       var cv = $('cbCanvas');
       if (cv) {

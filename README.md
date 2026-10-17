@@ -45,7 +45,14 @@ docs/               项目日志（每日一记）
 node tools/encrypt.js <密码>
 node tools/encrypt.js <密码> --verify   # 校验（会打印各词库词数与表节数）
 # 3. commit（src/ 被 gitignore，只会提交 words.enc）
+# 4. 备份明文源到私有仓库（改完词库跑一次）
+node tools/backup-src.js
 ```
+
+## 备份与恢复
+
+- **明文源备份**：`node tools/backup-src.js` → 同步到私有仓库 `hedgehog-src`（含恢复说明）
+- **学习进度**：首页「导出进度」下载 JSON（掌握/复习/收藏/造句/打卡/练字全量）；换机或清缓存后「导入进度」即可找回
 
 **换密码**：重新执行第 2 步换新密码即可（salt 不变），告诉所有设备用新密码。
 
