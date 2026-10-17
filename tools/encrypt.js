@@ -105,12 +105,25 @@ async function main() {
     process.exit(1);
   }
   // 一个文件可以是一张词表，也可以是 {lists:[...]} 装多张（场景文件用）
-  const lists = [];
+  // 同 id 的词表自动合并（考试词库分批文件拼成一张表：words-en-awl-01/02… 都声明 id:ielts-core）
+  const raw = [];
   dataFiles.forEach((f) => {
     const parsed = JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'));
-    if (Array.isArray(parsed.lists)) lists.push(...parsed.lists);
-    else lists.push(parsed);
+    if (Array.isArray(parsed.lists)) raw.push(...parsed.lists);
+    else raw.push(parsed);
   });
+  const byId = new Map();
+  raw.forEach((l) => {
+    if (byId.has(l.id)) {
+      const seen = new Set(byId.get(l.id).words.map((w) => w.w));
+      l.words.forEach((w) => {
+        if (!seen.has(w.w)) byId.get(l.id).words.push(w);
+      });
+    } else {
+      byId.set(l.id, l);
+    }
+  });
+  const lists = [...byId.values()];
   const tables = tableFiles.map((f) =>
     JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'))
   );
