@@ -118,9 +118,9 @@ async function main() {
     .filter((f) => f.startsWith('grammar-'))
     .map((f) => JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')));
   let hooks = {};
-  if (files.includes('hooks.json')) {
-    hooks = JSON.parse(fs.readFileSync(path.join(SRC_DIR, 'hooks.json'), 'utf8')).hooks || {};
-  }
+  files.filter((f) => f.startsWith('hooks')).forEach((f) => {
+    Object.assign(hooks, JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).hooks || {});
+  });
   const json = JSON.stringify({
     version: 5,
     updated: new Date().toISOString().slice(0, 10),

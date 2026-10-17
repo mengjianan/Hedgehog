@@ -389,7 +389,17 @@
       '<h2 class="group-h">场景厅</h2><div class="wordlist">' + sceneCards + '</div>' +
       '<h2 class="group-h">基础表</h2><div class="wordlist">' + tableCards + '</div>' +
       '<h2 class="group-h">语法翼楼</h2><div class="wordlist">' +
-      mini('英语语法宫', 'GRAMMAR', '6 宫室 · 30 点', '#/grammar', 'en') +
+      (GRAMMARS.length
+        ? GRAMMARS.map(function (g) {
+            return mini(
+              g.title,
+              (g.enName || 'GRAMMAR'),
+              (g.rooms || []).length + ' 宫室 · ' + totalPoints(g) + ' 点',
+              '#/grammar/' + g.id,
+              g.lang
+            );
+          }).join('')
+        : mini('语法翼楼', 'GRAMMAR', '建设中', '#/grammar', 'en')) +
       '</div>'
     );
   }
@@ -878,11 +888,16 @@
         '<span>→</span></a>'
       );
     }).join('');
-    var soon =
-      '<div class="card cat-card" style="opacity:.65;margin-top:12px">' +
-      '<span><b>韩语语法翼楼</b><small>建設中</small></span><span>Coming</span></div>' +
-      '<div class="card cat-card" style="opacity:.65;margin-top:12px">' +
-      '<span><b>日语语法翼楼</b><small>建設中</small></span><span>Coming</span></div>';
+    var have = {};
+    GRAMMARS.forEach(function (g) { have[g.lang] = true; });
+    var soon = '';
+    [['ko', '韩语语法翼楼'], ['ja', '日语语法翼楼']].forEach(function (p) {
+      if (!have[p[0]]) {
+        soon +=
+          '<div class="card cat-card" style="opacity:.65;margin-top:12px">' +
+          '<span><b>' + p[1] + '</b><small>建設中</small></span><span>Coming</span></div>';
+      }
+    });
     return (
       '<h2>语法翼楼</h2>' +
       '<p class="sub">一条走廊走完宫室，就是背语法的顺序</p>' +
