@@ -255,16 +255,42 @@
     });
   }
 
+  var voicesCache = [];
+  function loadVoices() {
+    try { voicesCache = window.speechSynthesis.getVoices() || []; } catch (e) { voicesCache = []; }
+  }
+  if (window.speechSynthesis) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  function pickVoice(lang) {
+    if (!voicesCache.length) loadVoices();
+    var pref = String(lang || 'en').slice(0, 2).toLowerCase();
+    for (var i = 0; i < voicesCache.length; i++) {
+      var vl = String(voicesCache[i].lang || '').toLowerCase().replace('_', '-');
+      if (vl.slice(0, 2) === pref) return voicesCache[i];
+    }
+    return null; // 没有匹配语言的语音：交给系统默认（可能无声，见说明）
+  }
+
   function speak(ref) {
     if (!window.speechSynthesis) return;
     var e = IDX[ref];
     if (!e) return;
-    window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(e.x.w);
     u.lang = e.l.speech || 'en-US';
+    var v = pickVoice(u.lang);
+    if (v) u.voice = v;
     u.rate = 0.9;
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
+    // iOS/Safari 有时念完前一句就卡住：300ms 后兜底 resume
+    setTimeout(function () {
+      try { if (window.speechSynthesis.speaking) window.speechSynthesis.resume(); } catch (err) {}
+    }, 300);
   }
+
+  var lastAutoRef = null; // 自动朗读去重：同一词页内交互不重复播
 
   function pendingCount(l) {
     var k = known();
@@ -284,12 +310,14 @@
     var dueAll = dueRefsNow().length;
     var halls =
       '<div class="halls">' +
-      '<a class="hall hall-link" href="#/home" data-act="focus-search">' +
-      '<span class="k">SEARCH</span><b>搜索</b><small>三语通查</small></a>' +
       '<a class="hall hall-link" href="#/categories">' +
       '<span class="k">HALL</span><b>词库</b><small>核心词 ' + coreWords + ' · 场景厅</small></a>' +
       '<a class="hall hall-link" href="#/study">' +
       '<span class="k">TOUR</span><b>背词</b><small>巡游与复习</small></a>' +
+      '<a class="hall hall-link" href="#/tables">' +
+      '<span class="k">STUDY</span><b>书阁</b><small>词根 · 音表</small></a>' +
+      '<a class="hall hall-link" href="#/grammar">' +
+      '<span class="k">GRAMMAR</span><b>文法殿</b><small>语法宫室</small></a>' +
       '<a class="hall hall-link" href="#/favorites">' +
       '<span class="k">CABINET</span><b>收藏</b><small>' + favs().length + ' 件</small></a>' +
       '</div>';
@@ -539,6 +567,19 @@
       '<button class="btn ghost" data-act="save-sent" data-ref="' + esc(e.ref) + '">保存</button>' +
       '<span class="sent-hint" id="sentHint"></span>' +
       '</div></div>';
+    var writeSec =
+      '<div class="entry-section"><span class="entry-label">书写练习</span>' +
+      '<canvas id="wmCanvas" width="720" height="280"></canvas>' +
+      '<div class="cb-tools">' +
+      '<button class="btn ghost" data-act="wm-clear">清一下</button>' +
+      '<span class="tour-slot">在这块板上写写这个词</span>' +
+      '</div></div>';
+    var idxW = l.words.indexOf(x);
+    var nextX = l.words[(idxW + 1) % l.words.length];
+    var nextBtn =
+      '<div class="word-foot">' +
+      '<a class="btn ghost" href="#/word/' + l.id + '/' + encodeURIComponent(nextX.w) + '">' +
+      '下一个：' + esc(nextX.w) + ' →</a></div>';
     return (
       '<a class="back-link" href="#/categories/' + l.id + '">← ' + esc(l.title) + '</a>' +
       '<div class="card lang-card lang-' + l.lang + '">' +
@@ -558,7 +599,8 @@
       morphSec +
       '<div class="entry-section"><span class="entry-label">例句</span><div class="ex-list">' + ex + '</div></div>' +
       sentSec +
-      '</div>'
+      writeSec +
+      '</div>' + nextBtn
     );
   }
 
@@ -1036,6 +1078,23 @@
     });
   }
 
+  // 书阁：基础表入口页
+  function viewTablesHub() {
+    var cards = TABLES.map(function (t) {
+      return (
+        '<a class="mini-card lang-' + t.lang + '" href="#/tables/' + t.id + '">' +
+        '<span class="en">' + esc(String(t.id || '').toUpperCase().replace(/-/g, ' ')) + '</span>' +
+        '<b>' + esc(t.title) + '</b>' +
+        '<small>' + esc(t.subtitle || '') + '</small></a>'
+      );
+    }).join('');
+    return (
+      '<h2>书阁</h2>' +
+      '<p class="sub">词根 · 韩语音表 · 日语五十音</p>' +
+      '<div class="wordlist">' + cards + '</div>'
+    );
+  }
+
   // ---------- 视图：基础表 ----------
   function viewTable(id) {
     var t = TBY[id];
@@ -1147,7 +1206,7 @@
       view.innerHTML = parts[1] ? viewList(parts[1]) : viewCategories();
       nav = 'categories';
     } else if (name === 'tables') {
-      view.innerHTML = viewTable(parts[1] || '');
+      view.innerHTML = parts[1] ? viewTable(parts[1]) : viewTablesHub();
       nav = 'categories';
     } else if (name === 'grammar') {
       if (parts[2]) view.innerHTML = viewGrammarRoom(parts[1], parts[2]);
@@ -1175,10 +1234,18 @@
     if (pn) pn.textContent = '— ' + pnum + ' —';
     window.scrollTo(0, 0);
 
+    // 进词详情自动朗读（同词不重复；需设备装有对应语言语音包）
+    if (name === 'word' && parts[1] && parts[2]) {
+      var aref = parts[1] + '/' + decodeURIComponent(parts.slice(2).join('/'));
+      if (aref !== lastAutoRef && IDX[aref]) {
+        lastAutoRef = aref;
+        setTimeout(function () { speak(aref); }, 180);
+      }
+    }
+
     var q = $('q');
     if (q) {
       q.addEventListener('input', function () { renderResults(q.value); });
-      q.focus();
     }
 
     var si = $('spellInput');
@@ -1235,9 +1302,6 @@
     if (act === 'speak') speak(ref);
     else if (act === 'star') {
       el.classList.toggle('on', toggleFav(ref));
-    } else if (act === 'focus-search') {
-      var qi = $('q');
-      if (qi) qi.focus();
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
       route();
@@ -1363,7 +1427,7 @@
       var data = await unlock($('gatePassword').value);
       if (!data || !data.lists || !data.lists.length) throw new Error('empty');
       setData(data);
-      try { sessionStorage.setItem('hedgehog:data', JSON.stringify(data)); } catch (err) {}
+      try { localStorage.setItem('hedgehog:data', JSON.stringify(data)); } catch (err) {}
       $('gatePassword').value = '';
       hint.textContent = '';
       openApp();
@@ -1385,20 +1449,20 @@
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
   }
 
-  // 本会话已解锁过则直接进入（关掉标签页后需重新输密码）
-  // 版本守卫：旧结构缓存（如无 tables 的 v2）自动作废，强制重新解密
+  // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；
+  // 版本守卫：旧结构缓存自动作废，词库大更新后会要求重输一次密码）
   try {
-    var cached = sessionStorage.getItem('hedgehog:data');
+    var cached = localStorage.getItem('hedgehog:data');
     if (cached) {
       var cd = JSON.parse(cached);
       if (cd && cd.version >= 5 && cd.tables && cd.tables.length) {
         setData(cd);
         openApp();
       } else {
-        sessionStorage.removeItem('hedgehog:data');
+        localStorage.removeItem('hedgehog:data');
       }
     }
   } catch (e) {
-    try { sessionStorage.removeItem('hedgehog:data'); } catch (e2) {}
+    try { localStorage.removeItem('hedgehog:data'); } catch (e2) {}
   }
 })();
