@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-19.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-19.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -275,7 +275,6 @@
     return null; // 没有匹配语言的语音：交给系统默认（可能无声，见说明）
   }
 
-  var audioEl = null;
   var YOUDAO_LE = { en: 'en', ja: 'jap', ko: 'ko' };
 
   function toast(msg) {
@@ -300,16 +299,21 @@
     var le = YOUDAO_LE[e.l.lang] || 'en';
     var url =
       'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(e.x.w) + '&le=' + le;
-    if (!audioEl) audioEl = new Audio();
-    audioEl.onerror = function () {
+    var a = new Audio();
+    a.preload = 'auto';
+    var settled = false;
+    a.addEventListener('canplay', function () {
+      if (!settled) { settled = true; toast('▶ ' + e.x.w); }
+    });
+    a.addEventListener('error', function () {
+      if (!settled) { settled = true; toast('发音源不可用：' + e.x.w); }
       speakTTS(e);
-      toast('发音源不可用，已切换系统朗读');
-    };
-    var p = audioEl.play();
+    });
+    var p = a.play();
     if (p && p.catch) {
       p.catch(function () {
+        if (!settled) { settled = true; toast('播放被拦，再点一次试试'); }
         speakTTS(e);
-        toast('自动播放被系统拦了，点🔊手动播');
       });
     }
   }
@@ -1535,7 +1539,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=10', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=11', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；
