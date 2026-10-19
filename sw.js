@@ -1,7 +1,7 @@
 /* Hedgehog service worker：满足安卓 PWA 安装条件 + 壳资源缓存（离线可开）
  * 数据文件（data/*）不缓存，保证词库更新即时生效
  */
-var CACHE = 'hedgehog-v13';
+var CACHE = 'hedgehog-v14';
 var SHELL = [
   './',
   'index.html',

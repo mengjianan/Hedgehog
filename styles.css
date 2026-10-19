@@ -733,19 +733,7 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .fchip.on { background: var(--sage); border-color: var(--sage-d); color: #fdfcf8; }
 
-.test-result {
-  max-width: 520px;
-  margin: 12px auto 0;
-  font-size: 13px;
-  color: var(--ink2);
-  background: var(--card);
-  border: 1px dashed var(--line-d);
-  border-radius: 10px;
-  padding: 10px 14px;
-  line-height: 1.9;
-  text-align: left;
-}
-.test-result:empty { display: none; }
+.scroll-hint { display: none; }
 
 /* 数据导出/导入 */
 .data-row { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
@@ -1325,6 +1313,25 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .room .door { display: none; }
   .minimap .stop { width: 28px; height: 28px; font-size: 12px; }
   .minimap .seg { width: 8px; }
+  /* 基础表手机适配：更紧凑 + 滑动提示 */
+  .scroll-hint {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: var(--stone);
+    letter-spacing: 0.1em;
+    margin: 8px 0 2px;
+  }
+  .data-table,
+  .matrix-table { min-width: 460px; font-size: 13px; }
+  .matrix-table { min-width: 520px; }
+  .data-table th,
+  .data-table td,
+  .matrix-table th,
+  .matrix-table td { padding: 7px 8px; }
+  .matrix-table td b { font-size: 18px; }
+  .matrix-table td i { font-size: 12.5px; }
+  .matrix-table td small { font-size: 10px; }
   .hero h2 { font-size: 19px; }
   .hero-sticker { width: 150px; }
   .word-head h2 { font-size: 24px; }
