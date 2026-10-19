@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-19.6'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-19.7'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -293,30 +293,34 @@
 
   // 发音：自动按语种路由——优先有道发音音频（英日韩真人级，国内可直连），
   // 拿不到（断网/接口挂）再回退系统 TTS（选设备里对应语言的语音包）
-  function speak(ref) {
-    var e = IDX[ref];
-    if (!e) return;
-    var le = YOUDAO_LE[e.l.lang] || 'en';
+  // 原始文本发音（表格点读共用）：text=要读的内容，le=语言，label=提示词，e=词条（可选，失败时回退系统朗读）
+  function playAudio(text, le, label, e) {
     var url =
-      'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(e.x.w) + '&le=' + le;
+      'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&le=' + le;
     var a = new Audio();
     a.preload = 'auto';
     a.src = url;
     var settled = false;
     a.addEventListener('canplay', function () {
-      if (!settled) { settled = true; toast('▶ ' + e.x.w); }
+      if (!settled) { settled = true; toast('▶ ' + label); }
     });
     a.addEventListener('error', function () {
-      if (!settled) { settled = true; toast('发音源不可用：' + e.x.w); }
-      speakTTS(e);
+      if (!settled) { settled = true; toast('发音源不可用：' + label); }
+      if (e) speakTTS(e);
     });
     var p = a.play();
     if (p && p.catch) {
       p.catch(function () {
         if (!settled) { settled = true; toast('播放被拦，再点一次试试'); }
-        speakTTS(e);
+        if (e) speakTTS(e);
       });
     }
+  }
+
+  function speak(ref) {
+    var e = IDX[ref];
+    if (!e) return;
+    playAudio(e.x.w, YOUDAO_LE[e.l.lang] || 'en', e.x.w, e);
   }
 
   function speakTTS(e) {
@@ -1147,8 +1151,8 @@
   // ---------- 视图：基础表 ----------
   function viewTable(id) {
     var t = TBY[id];
-    if (!t) return viewCategories();
-    var body = (t.sections || []).map(renderSection).join('');
+    if (!t) return viewTablesHub();
+    var body = (t.sections || []).map(function (sec) { return renderSection(sec, t.lang); }).join('');
     return (
       '<a class="back-link" href="#/tables">← 基础表</a>' +
       '<div class="table-head lang-' + t.lang + '">' +
@@ -1160,7 +1164,16 @@
     );
   }
 
-  function renderSection(s) {
+  var LE_FOR = { ja: 'jap', ko: 'ko', en: 'en' };
+  function sayable(c, lang) {
+    var t = String(c || '').trim();
+    if (!t || t.length > 2) return null;
+    if (lang === 'ja' && /^[぀-ヿー]$|^[ぁ-んァ-ン]$|^[ぁ-ん]{1,2}$|^[ァ-ン]{1,2}$/.test(t)) return t;
+    if (lang === 'ko' && /^[ㄱ-ㅎㅏ-ㅣ가-힣]{1,2}$/.test(t)) return t;
+    return null;
+  }
+
+  function renderSection(s, lang) {
     var note = s.note ? '<p class="table-note">' + esc(s.note) + '</p>' : '';
     var inner = '';
     if (s.type === 'morphemes') {
@@ -1178,6 +1191,7 @@
         }).join('') +
         '</div>';
     } else if (s.type === 'grid') {
+      var sayGrid = '';
       inner =
         '<div class="table-wrap"><table class="data-table"><thead><tr>' +
         s.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') +
@@ -1186,14 +1200,20 @@
           return (
             '<tr>' +
             r.map(function (c, i) {
+              var sy = lang ? sayable(c, lang) : null;
+              if (sy) sayGrid = '1';
+              var sayAttr = sy
+                ? ' class="sayable" data-say="' + esc(sy) + '" data-le="' + (LE_FOR[lang] || 'ko') + '"'
+                : '';
               return i === 0
-                ? '<th scope="row">' + esc(c) + '</th>'
-                : '<td>' + esc(c) + '</td>';
+                ? '<th scope="row"' + sayAttr + '>' + esc(c) + '</th>'
+                : '<td' + sayAttr + '>' + esc(c) + '</td>';
             }).join('') +
             '</tr>'
           );
         }).join('') +
-        '</tbody></table></div><p class="scroll-hint">← 左右滑动查看完整表格 →</p>';
+        '</tbody></table></div><p class="scroll-hint">← 左右滑动查看完整表格 →</p>' +
+        (sayGrid ? '<p class="table-note">点字母 / 音节即可发音</p>' : '');
     } else if (s.type === 'matrix') {
       inner =
         '<div class="table-wrap"><table class="matrix-table"><thead><tr>' +
@@ -1207,7 +1227,8 @@
               if (c === '・') return '<td class="blank">・</td>';
               var p = c.split('·');
               return (
-                '<td><b>' + esc(p[0]) + '</b>' +
+                '<td class="sayable" data-say="' + esc(p[0]) + '" data-le="' + (LE_FOR[lang] || 'jap') + '">' +
+                '<b>' + esc(p[0]) + '</b>' +
                 (p[1] ? '<i>' + esc(p[1]) + '</i>' : '') +
                 (p[2] ? '<small>' + esc(p[2]) + '</small>' : '') +
                 '</td>'
@@ -1218,6 +1239,7 @@
         }).join('') +
         '</tbody></table></div>' +
         '<p class="scroll-hint">← 左右滑动查看完整表格 →</p>' +
+        '<p class="table-note">点格子即可发音（读假名）</p>' +
         (s.footnote ? '<p class="table-note">' + esc(s.footnote) + '</p>' : '');
     } else if (s.type === 'rules') {
       inner =
@@ -1344,6 +1366,18 @@
 
   // ---------- 事件委托（只绑一次） ----------
   $('view').addEventListener('click', function (e) {
+    // 表格点读：假名/字母格子
+    var sayEl = e.target.closest('[data-say]');
+    if (sayEl) {
+      playAudio(
+        sayEl.getAttribute('data-say'),
+        sayEl.getAttribute('data-le') || 'ko',
+        sayEl.getAttribute('data-say')
+      );
+      sayEl.classList.add('ping');
+      setTimeout(function () { sayEl.classList.remove('ping'); }, 400);
+      return;
+    }
     var el = e.target.closest('[data-act]');
     if (!el) return;
     var act = el.getAttribute('data-act');
@@ -1499,7 +1533,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=15', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=16', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；
