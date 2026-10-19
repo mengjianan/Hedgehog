@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-19.7'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-19.8'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1533,7 +1533,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=16', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=17', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；
@@ -1542,7 +1542,7 @@
     var cached = localStorage.getItem('hedgehog:data');
     if (cached) {
       var cd = JSON.parse(cached);
-      if (cd && cd.version >= 5 && cd.tables && cd.tables.length) {
+      if (cd && cd.version >= 6 && cd.tables && cd.tables.length) {
         setData(cd);
         openApp();
       } else {

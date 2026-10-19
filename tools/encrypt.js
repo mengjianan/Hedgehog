@@ -135,7 +135,7 @@ async function main() {
     Object.assign(hooks, JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).hooks || {});
   });
   const json = JSON.stringify({
-    version: 5,
+    version: 6,
     updated: new Date().toISOString().slice(0, 10),
     lists,
     tables,
