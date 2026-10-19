@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-17.9'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-19.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -334,6 +334,53 @@
 
   var lastAutoRef = null; // 自动朗读去重：同一词页内交互不重复播
 
+  // 发音自检：把手机端真实情况打印到屏幕上
+  function audioSelfTest() {
+    var box = $('testResult');
+    if (!box) return;
+    var lines = [];
+    function render() { box.innerHTML = lines.map(function (s) { return '<div>' + esc(s) + '</div>'; }).join(''); }
+
+    lines.push('① 系统朗读：' + (window.speechSynthesis ? '支持' : '不支持') +
+      '；语音包 ' + voicesCache.length + ' 个' +
+      (voicesCache.length ? '（' + voicesCache.slice(0, 6).map(function (v) { return v.lang; }).join(' / ') + '…）' : '——韩/日系统朗读必无声'));
+    render();
+
+    var done = false;
+    var a = new Audio();
+    a.addEventListener('canplaythrough', function () {
+      if (done) return; done = true;
+      lines.push('② 有道发音接口：可以加载（en 试样）'); render();
+    });
+    a.addEventListener('error', function () {
+      if (done) return; done = true;
+      lines.push('② 有道发音接口：加载失败（网络被拦/被劫持/被墙）'); render();
+    });
+    setTimeout(function () {
+      if (done) return; done = true;
+      lines.push('② 有道发音接口：6 秒超时（网络不通）'); render();
+    }, 6000);
+    a.src = 'https://dict.youdao.com/dictvoice?audio=apple&le=en';
+
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      var ctx = new AC();
+      if (ctx.state === 'suspended' && ctx.resume) ctx.resume();
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 660;
+      g.gain.value = 0.12;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.7);
+      lines.push('③ 提示音：已播一声「嘀——」（没听到 = 媒体静音或音频被蓝牙等抢走）'); render();
+    } catch (err) {
+      lines.push('③ 提示音：失败 ' + (err && err.message)); render();
+    }
+  }
+
   function pendingCount(l) {
     var k = known();
     return l.words.filter(function (x) { return !k[l.id + '/' + x.w]; }).length;
@@ -375,10 +422,12 @@
       '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
       (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
       '<div class="data-row">' +
+      '<button class="mini-btn" data-act="audio-test">发音自检</button>' +
       '<button class="mini-btn" data-act="export-data">导出进度</button>' +
       '<button class="mini-btn" data-act="import-data">导入进度</button>' +
       '<input type="file" id="importFile" accept=".json,application/json" hidden />' +
       '</div>' +
+      '<div class="test-result" id="testResult"></div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · ' + APP_VER + '</p>'
     );
   }
@@ -1393,6 +1442,8 @@
       recordStudy(false);
       advanceSession();
       route();
+    } else if (act === 'audio-test') {
+      audioSelfTest();
     } else if (act === 'export-data') {
       var dump = {};
       Object.keys(localStorage).forEach(function (k) {
@@ -1484,7 +1535,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=9', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=10', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；

@@ -733,6 +733,20 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .fchip.on { background: var(--sage); border-color: var(--sage-d); color: #fdfcf8; }
 
+.test-result {
+  max-width: 520px;
+  margin: 12px auto 0;
+  font-size: 13px;
+  color: var(--ink2);
+  background: var(--card);
+  border: 1px dashed var(--line-d);
+  border-radius: 10px;
+  padding: 10px 14px;
+  line-height: 1.9;
+  text-align: left;
+}
+.test-result:empty { display: none; }
+
 /* 数据导出/导入 */
 .data-row { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
 .mini-btn {
