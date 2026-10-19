@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-19.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-19.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -345,6 +345,8 @@
     var lines = [];
     function render() { box.innerHTML = lines.map(function (s) { return '<div>' + esc(s) + '</div>'; }).join(''); }
 
+    lines.push('⓪ 当前版本：' + APP_VER); render();
+
     lines.push('① 系统朗读：' + (window.speechSynthesis ? '支持' : '不支持') +
       '；语音包 ' + voicesCache.length + ' 个' +
       (voicesCache.length ? '（' + voicesCache.slice(0, 6).map(function (v) { return v.lang; }).join(' / ') + '…）' : '——韩/日系统朗读必无声'));
@@ -383,6 +385,12 @@
     } catch (err) {
       lines.push('③ 提示音：失败 ' + (err && err.message)); render();
     }
+
+    // ④ 用正式发音通道播一个真词（和词页面🔊完全同一条路径）
+    setTimeout(function () {
+      lines.push('④ 正式通道播放 crucial（3 秒后）：听到人声了吗？'); render();
+      speak('ielts-core/crucial');
+    }, 3000);
   }
 
   function pendingCount(l) {
@@ -1539,7 +1547,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=11', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=12', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；
