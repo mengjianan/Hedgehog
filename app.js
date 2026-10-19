@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-19.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-19.6'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1150,7 +1150,7 @@
     if (!t) return viewCategories();
     var body = (t.sections || []).map(renderSection).join('');
     return (
-      '<a class="back-link" href="#/categories">← 词库</a>' +
+      '<a class="back-link" href="#/tables">← 基础表</a>' +
       '<div class="table-head lang-' + t.lang + '">' +
       '<h2>' + esc(t.title) + '</h2>' +
       '<em class="lang-tag lang-' + t.lang + '">' + (LANG_NAME[t.lang] || t.lang) + '</em>' +
@@ -1499,7 +1499,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=14', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=15', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；

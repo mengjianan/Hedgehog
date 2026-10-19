@@ -1313,25 +1313,52 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .room .door { display: none; }
   .minimap .stop { width: 28px; height: 28px; font-size: 12px; }
   .minimap .seg { width: 8px; }
-  /* 基础表手机适配：更紧凑 + 滑动提示 */
-  .scroll-hint {
-    display: block;
-    text-align: center;
-    font-size: 12px;
-    color: var(--stone);
-    letter-spacing: 0.1em;
-    margin: 8px 0 2px;
+  /* 基础表手机适配：整表直读，不横滚 */
+  .scroll-hint { display: none; }
+  .table-wrap { border: 0; box-shadow: none; background: transparent; }
+  /* 四列文字表（한글等）→ 每行一张小卡：字母大字 + 名称/罗马同行 + 要点整行 */
+  .data-table { min-width: 0; width: 100%; }
+  .data-table thead { display: none; }
+  .data-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 8px;
   }
-  .data-table,
-  .matrix-table { min-width: 460px; font-size: 13px; }
-  .matrix-table { min-width: 520px; }
-  .data-table th,
-  .data-table td,
+  .data-table tbody th {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 19px;
+    color: var(--ink);
+  }
+  .data-table tbody td {
+    border: 0;
+    padding: 0;
+    font-size: 13.5px;
+    color: var(--mut);
+  }
+  .data-table tbody td:last-child { flex-basis: 100%; }
+  /* 矩阵表（五十音等）→ 压缩到一屏放下 */
+  .matrix-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+    font-size: 12px;
+  }
   .matrix-table th,
-  .matrix-table td { padding: 7px 8px; }
-  .matrix-table td b { font-size: 18px; }
-  .matrix-table td i { font-size: 12.5px; }
-  .matrix-table td small { font-size: 10px; }
+  .matrix-table td { padding: 5px 2px; }
+  .matrix-table thead th { font-size: 10.5px; letter-spacing: 0; padding: 5px 2px; }
+  .matrix-table thead th.corner,
+  .matrix-table tbody th { width: 34px; font-size: 10.5px; padding: 5px 2px; letter-spacing: 0; }
+  .matrix-table td b { font-size: 16px; }
+  .matrix-table td i { font-size: 11px; }
+  .matrix-table td small { font-size: 9px; }
   .hero h2 { font-size: 19px; }
   .hero-sticker { width: 150px; }
   .word-head h2 { font-size: 24px; }
