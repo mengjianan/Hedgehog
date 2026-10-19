@@ -8,7 +8,7 @@
 
 | 语言 | 词表 id | 目标 | 已入库（计入） | 批次进度 |
 |---|---|---|---|---|
-| 英语（8 分向） | `ielts-core` | 5,500 | 630（旧30+批1-5的600） | awl-01~05 ✅（批5起6写手并行，240词/轮，熔断线10%） |
+| 英语（8 分向） | `ielts-core` | 5,500 | 851（旧30+批1-6净增821，批6拦下19个跨轮重复） | awl-01~06 ✅（6写手并行240词/轮；合并去重兜底验证有效） |
 | 日语 N1 | `jlpt-core` | 4,042 | 30（旧核心，非 N1 不计入）→ 0 | 未开始 |
 | 韩语 TOPIK | `topik-core` | ~2,500 | 30（旧核心，基础词不计入）→ 0 | 未开始 |
 | 场景厅/语法宫/基础表 | — | 不动 | — | — |
@@ -22,7 +22,8 @@
 | awl-03 | words-en-awl-03a/b.json | 下 80 词（interpret→significant） | ✅ 2026-10-19 |
 | awl-04 | words-en-awl-04a/b/c.json | 120 词（via→electronic + significant 后续高频群），并行写手产出 | ✅ 2026-10-19 |
 | awl-05 | words-en-awl-05a~f.json | 240 词（emotional→public），6写手并行，质检零缺陷 | ✅ 2026-10-19 |
-| awl-06 | words-en-awl-06a~f.json | 240 词（promise→warm 高频群） | 进行中 |
+| awl-06 | words-en-awl-06a~f.json | 240 词（promise→well 高频群），净增221 | ✅ 2026-10-19 |
+| awl-07 | words-en-awl-07a~f.json | 240 词（whether→democracy 高频群） | 进行中 |
 | … | | 频度递减，直到 5,500 | |
 
 ## 日语 / 韩语
