@@ -8,7 +8,7 @@
 
 | 语言 | 词表 id | 目标 | 已入库（计入） | 批次进度 |
 |---|---|---|---|---|
-| 英语（8 分向） | `ielts-core` | 5,500 | 270（旧30+批1-3的240） | awl-01/02/03 ✅ 3/69 |
+| 英语（8 分向） | `ielts-core` | 5,500 | 390（旧30+批1-4的360） | awl-01~04 ✅ 4/69（批4起用并行写手，120词/轮） |
 | 日语 N1 | `jlpt-core` | 4,042 | 30（旧核心，非 N1 不计入）→ 0 | 未开始 |
 | 韩语 TOPIK | `topik-core` | ~2,500 | 30（旧核心，基础词不计入）→ 0 | 未开始 |
 | 场景厅/语法宫/基础表 | — | 不动 | — | — |
@@ -20,7 +20,8 @@
 | awl-01 | words-en-awl-01a/b.json | AWL 子列表1-2 前 80 词（abandon→channel，不含已有10词） | ✅ 2026-10-17 |
 | awl-02 | words-en-awl-02a/b.json | 下 80 词（cease→integrate） | ✅ 2026-10-17 |
 | awl-03 | words-en-awl-03a/b.json | 下 80 词（interpret→significant） | ✅ 2026-10-19 |
-| awl-04 | words-en-awl-04a/b.json | 下 80 词（significant 后续） | 待做 |
+| awl-04 | words-en-awl-04a/b/c.json | 120 词（via→electronic + significant 后续高频群），并行写手产出 | ✅ 2026-10-19 |
+| awl-05 | words-en-awl-05a/b/c.json | 下 120 词（electronic 后续） | 待做 |
 | … | | 频度递减，直到 5,500 | |
 
 ## 日语 / 韩语
