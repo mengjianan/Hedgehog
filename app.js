@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-19.8'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-21.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -251,7 +251,8 @@
     var saltResp = await fetch('data/salt');
     if (!saltResp.ok) throw new Error('salt missing');
     var salt = new Uint8Array(await saltResp.arrayBuffer());
-    var blob = await (await fetch('data/words.enc')).json();
+    var encResp = await fetch('data/words.enc', { cache: 'no-store' });
+    var blob = await encResp.json();
     var base = await crypto.subtle.importKey('raw', te.encode(password), 'PBKDF2', false, ['deriveKey']);
     var key = await crypto.subtle.deriveKey(
       { name: 'PBKDF2', salt: salt, iterations: blob.iter, hash: 'SHA-256' },
@@ -265,6 +266,11 @@
       key,
       b64ToU8(blob.data)
     );
+    // 记下词库指纹：下次启动对比线上，词库更新过就要求重新解锁
+    try {
+      var et = encResp.headers.get('ETag') || encResp.headers.get('Last-Modified');
+      if (et) localStorage.setItem('hedgehog:etag', et);
+    } catch (e) {}
     return JSON.parse(td.decode(plain));
   }
 
@@ -431,6 +437,7 @@
       '<div class="data-row">' +
       '<button class="mini-btn" data-act="export-data">导出进度</button>' +
       '<button class="mini-btn" data-act="import-data">导入进度</button>' +
+      '<button class="mini-btn" data-act="refresh-words">刷新词库</button>' +
       '<input type="file" id="importFile" accept=".json,application/json" hidden />' +
       '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · ' + APP_VER + '</p>'
@@ -1510,6 +1517,12 @@
         fi.value = '';
         fi.click();
       }
+    } else if (act === 'refresh-words') {
+      // 手动兜底：作废词库缓存回密码门，重输密码即拉最新词库
+      idbDel('data').catch(function () {});
+      try { localStorage.removeItem('hedgehog:data'); } catch (e) {}
+      try { localStorage.removeItem('hedgehog:etag'); } catch (e2) {}
+      location.reload();
     } else if (act === 'cb-save') {
       var cv = $('cbCanvas');
       if (cv) {
@@ -1583,9 +1596,10 @@
     navigator.serviceWorker.register('sw.js?v=17', { updateViaCache: 'none' }).catch(function () {});
   }
 
-  // 本机已解锁过则直接进入（数据存 IndexedDB：解锁一次本机永久记住；
-  // 版本守卫：旧结构缓存自动作废，词库大更新后会要求重输一次密码）
-  // 旧版 localStorage 缓存自动搬进 IDB 后删除，用户不用重输密码
+  // 本机已解锁过则直接进入（数据存 IndexedDB：解锁一次本机永久记住）。
+  // 更新守卫：启动时 HEAD 对比 words.enc 的 ETag，词库更新过就作废缓存回密码门
+  // （旧缓存没有 ETag 记录也视作过期，部署后各设备重输一次密码即拿新词库）。
+  // 旧版 localStorage 缓存自动搬进 IDB 后删除；断网时跳过对比直接用缓存。
   (function bootFromCache() {
     function adopt(cd) {
       if (cd && cd.version >= 6 && cd.tables && cd.tables.length) {
@@ -1595,8 +1609,17 @@
       }
       return false;
     }
-    idbGet('data')
-      .then(function (cd) {
+    function evict() {
+      idbDel('data').catch(function () {});
+      try { localStorage.removeItem('hedgehog:data'); } catch (e) {}
+      var hint = $('gateHint');
+      if (hint) {
+        hint.style.color = 'var(--mut)';
+        hint.textContent = '词库已更新，请重新解锁';
+      }
+    }
+    function loadCached() {
+      return idbGet('data').then(function (cd) {
         if (adopt(cd)) return;
         // IDB 无有效缓存：看看 localStorage 里有没有旧版缓存，有就搬过来
         var legacy = null;
@@ -1607,9 +1630,24 @@
           if (adopt(lcd)) return idbSet('data', lcd).catch(function () {});
         }
         if (cd) idbDel('data').catch(function () {});
+      });
+    }
+    fetch('data/words.enc', { method: 'HEAD', cache: 'no-store' })
+      .then(function (resp) {
+        if (!resp.ok) throw new Error('head');
+        var remote = resp.headers.get('ETag') || resp.headers.get('Last-Modified');
+        if (!remote) return loadCached(); // 服务器没给指纹：无法比对，宁可不折腾
+        var mine = null;
+        try { mine = localStorage.getItem('hedgehog:etag'); } catch (e) {}
+        if (mine && remote === mine) return loadCached();
+        // 词库更新过（或旧缓存没有指纹）：作废缓存，要求重新解锁
+        idbGet('data').then(function (cd) {
+          if (cd || localStorage.getItem('hedgehog:data')) evict();
+        }).catch(function () {});
       })
       .catch(function () {
-        try { localStorage.removeItem('hedgehog:data'); } catch (e3) {}
+        // 断网/HEAD 失败：离线可用优先，直接用本地缓存
+        loadCached();
       });
   })();
 
