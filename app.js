@@ -87,6 +87,51 @@
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
   }
 
+  // ---------- 词库缓存（IndexedDB）----------
+  // localStorage 只有 5MB，三语全量词库解密后装不下，大对象一律进 IDB
+  var IDB_NAME = 'hedgehog';
+  var idbDb = null;
+  function idbOpen() {
+    if (!idbDb) {
+      idbDb = new Promise(function (resolve, reject) {
+        var rq = indexedDB.open(IDB_NAME, 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore('kv'); };
+        rq.onsuccess = function () { resolve(rq.result); };
+        rq.onerror = function () { reject(rq.error); };
+      });
+    }
+    return idbDb;
+  }
+  function idbGet(key) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var rq = db.transaction('kv').objectStore('kv').get(key);
+        rq.onsuccess = function () { resolve(rq.result || null); };
+        rq.onerror = function () { reject(rq.error); };
+      });
+    });
+  }
+  function idbSet(key, val) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(val, key);
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  function idbDel(key) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').delete(key);
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+
   function favs() { return lsGet('hedgehog:favs', []); }
   function known() { return lsGet('hedgehog:known', {}); }
   function isFav(ref) { return favs().indexOf(ref) !== -1; }
@@ -1347,6 +1392,7 @@
             if (!d || typeof d !== 'object') throw new Error('bad');
             var n = 0;
             Object.keys(d).forEach(function (k) {
+              if (k === 'hedgehog:data') return; // 词库缓存不走导入/导出，避免塞爆 localStorage
               if (k.indexOf('hedgehog:') === 0 && d[k] != null) {
                 lsSet(k, d[k]);
                 n++;
@@ -1445,6 +1491,7 @@
     } else if (act === 'export-data') {
       var dump = {};
       Object.keys(localStorage).forEach(function (k) {
+        if (k === 'hedgehog:data') return; // 词库缓存不进进度导出
         if (k.indexOf('hedgehog:') === 0) dump[k] = lsGet(k, null);
       });
       var blob = new Blob([JSON.stringify({ v: 1, t: now(), data: dump })], {
@@ -1514,7 +1561,7 @@
       var data = await unlock($('gatePassword').value);
       if (!data || !data.lists || !data.lists.length) throw new Error('empty');
       setData(data);
-      try { localStorage.setItem('hedgehog:data', JSON.stringify(data)); } catch (err) {}
+      idbSet('data', data).catch(function () {});
       $('gatePassword').value = '';
       hint.textContent = '';
       openApp();
@@ -1536,20 +1583,38 @@
     navigator.serviceWorker.register('sw.js?v=17', { updateViaCache: 'none' }).catch(function () {});
   }
 
-  // 本机已解锁过则直接进入（数据存 localStorage：解锁一次本机永久记住；
+  // 本机已解锁过则直接进入（数据存 IndexedDB：解锁一次本机永久记住；
   // 版本守卫：旧结构缓存自动作废，词库大更新后会要求重输一次密码）
-  try {
-    var cached = localStorage.getItem('hedgehog:data');
-    if (cached) {
-      var cd = JSON.parse(cached);
+  // 旧版 localStorage 缓存自动搬进 IDB 后删除，用户不用重输密码
+  (function bootFromCache() {
+    function adopt(cd) {
       if (cd && cd.version >= 6 && cd.tables && cd.tables.length) {
         setData(cd);
         openApp();
-      } else {
-        localStorage.removeItem('hedgehog:data');
+        return true;
       }
+      return false;
     }
-  } catch (e) {
-    try { localStorage.removeItem('hedgehog:data'); } catch (e2) {}
+    idbGet('data')
+      .then(function (cd) {
+        if (adopt(cd)) return;
+        // IDB 无有效缓存：看看 localStorage 里有没有旧版缓存，有就搬过来
+        var legacy = null;
+        try { legacy = localStorage.getItem('hedgehog:data'); } catch (e) {}
+        if (legacy) {
+          try { localStorage.removeItem('hedgehog:data'); } catch (e2) {}
+          var lcd = JSON.parse(legacy);
+          if (adopt(lcd)) return idbSet('data', lcd).catch(function () {});
+        }
+        if (cd) idbDel('data').catch(function () {});
+      })
+      .catch(function () {
+        try { localStorage.removeItem('hedgehog:data'); } catch (e3) {}
+      });
+  })();
+
+  // PWA 壳 + 词库缓存一起申请持久化存储，防止浏览器回收
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(function () {});
   }
 })();
