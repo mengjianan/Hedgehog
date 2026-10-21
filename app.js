@@ -19,7 +19,7 @@
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-21.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-21.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -247,15 +247,138 @@
   }
 
   // ---------- 密码解密（PBKDF2 -> AES-GCM） ----------
-  async function unlock(password) {
-    var saltResp = await fetch('data/salt');
-    if (!saltResp.ok) throw new Error('salt missing');
-    var salt = new Uint8Array(await saltResp.arrayBuffer());
-    var encResp = await fetch('data/words.enc', { cache: 'no-store' });
-    var blob = await encResp.json();
+  // 词库密文 2.8MB，从 GitHub Pages 下载常要几十秒——下载与解密分段提示，
+  // 下载带进度 + 60 秒无新数据看门狗 + 自动重试，不再无限卡在「解密中」。
+  // 下载成功后密文暂存 Cache Storage（按 ETag 指纹校验）：
+  // 同一版词库内输错密码重试时直接读本地，不用再下一遍。
+  var ENC_CACHE = 'hedgehog-enc';
+  function withTimeout(p, ms) {
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () { reject(new Error('timeout')); }, ms);
+      p.then(function (v) { clearTimeout(t); resolve(v); },
+             function (e) { clearTimeout(t); reject(e); });
+    });
+  }
+  function netErr(e) {
+    var err = e instanceof Error ? e : new Error(String(e));
+    err.net = true; // 标记网络失败：界面提示「网络太慢」而非「密码不对」
+    return err;
+  }
+
+  // 带进度与看门狗的密文下载：单个数据块 60 秒不到判连接卡死，
+  // 整体最多尝试 3 次（间隔 1 秒）；onProgress(got, total) 汇报字节进度
+  function downloadEnc(onProgress) {
+    var attempt = 0;
+    function once() {
+      attempt++;
+      return fetch('data/words.enc', { cache: 'no-store' }).then(function (res) {
+        if (!res.ok) throw new Error('enc http ' + res.status);
+        var total = parseInt(res.headers.get('Content-Length'), 10) || 0;
+        if (!res.body || typeof res.body.getReader !== 'function' || !total) {
+          // 老浏览器不支持流式读取：整块拿，总时长 120 秒看门狗
+          return withTimeout(res.arrayBuffer(), 120000).then(function (buf) {
+            onProgress(buf.byteLength, buf.byteLength);
+            return new Uint8Array(buf);
+          });
+        }
+        var reader = res.body.getReader();
+        var chunks = [], got = 0;
+        function readChunk() {
+          return new Promise(function (resolve, reject) {
+            var t = setTimeout(function () {
+              try { reader.cancel(); } catch (e) {}
+              reject(new Error('enc read timeout'));
+            }, 60000);
+            reader.read().then(
+              function (r) { clearTimeout(t); resolve(r); },
+              function (e) { clearTimeout(t); reject(e); }
+            );
+          });
+        }
+        function loop() {
+          return readChunk().then(function (r) {
+            if (r.done) {
+              var out = new Uint8Array(got), off = 0;
+              chunks.forEach(function (c) { out.set(c, off); off += c.length; });
+              return out;
+            }
+            chunks.push(r.value); got += r.value.length;
+            onProgress(got, total);
+            return loop();
+          });
+        }
+        return loop();
+      }).catch(function (e) {
+        if (attempt < 3) {
+          return new Promise(function (r) { setTimeout(r, 1000); }).then(once);
+        }
+        throw netErr(e);
+      });
+    }
+    return once();
+  }
+
+  // 取密文：HEAD 拿指纹 → Cache Storage 命中且指纹一致直接用（瞬间）；
+  // 否则现下。返回 { salt, etag, blob }。网络失败以 err.net 抛出。
+  function loadEnc(onProgress) {
+    return withTimeout(fetch('data/salt'), 30000).then(function (saltResp) {
+      if (!saltResp.ok) throw new Error('salt missing');
+      return withTimeout(saltResp.arrayBuffer(), 30000);
+    }).then(function (saltBuf) {
+      var salt = new Uint8Array(saltBuf);
+      return withTimeout(fetch('data/words.enc', { method: 'HEAD', cache: 'no-store' }), 30000)
+        .then(function (head) {
+          var et = head.ok ? (head.headers.get('ETag') || head.headers.get('Last-Modified')) : null;
+          if (typeof caches === 'undefined') return { salt: salt, etag: et, blob: null };
+          return caches.open(ENC_CACHE).then(function (c) {
+            return c.match('data/words.enc').then(function (hit) {
+              if (!hit) return null;
+              var cet = hit.headers.get('ETag') || hit.headers.get('Last-Modified');
+              // et 为空（HEAD 失败，如离线）时有缓存就用；否则指纹必须一致
+              if (!et || (cet && cet === et)) {
+                return withTimeout(hit.json(), 30000).then(function (blob) {
+                  return { salt: salt, etag: et, blob: blob };
+                });
+              }
+              return null;
+            });
+          }).catch(function () { return null; })
+            .then(function (cached) { return cached || { salt: salt, etag: et, blob: null }; });
+        }).catch(function () {
+          // HEAD 失败（离线等）：没有可靠指纹，直接走现下，成败由 downloadEnc 决定
+          return { salt: salt, etag: null, blob: null };
+        });
+    }).then(function (ctx) {
+      if (ctx.blob) {
+        onProgress(-1, -1); // 缓存命中：没有下载过程
+        return ctx;
+      }
+      return downloadEnc(onProgress).then(function (bytes) {
+        var json;
+        try { json = JSON.parse(td.decode(bytes)); } catch (e) { throw netErr(e); }
+        // 暂存密文备输错密码重试（失败不影响解锁）
+        if (ctx.etag && typeof caches !== 'undefined') {
+          try {
+            var store = new Response(bytes.slice(0), {
+              headers: { 'Content-Type': 'application/json', 'ETag': ctx.etag }
+            });
+            caches.open(ENC_CACHE).then(function (c) { c.put('data/words.enc', store); }).catch(function () {});
+          } catch (e2) {}
+        }
+        return { salt: ctx.salt, etag: ctx.etag, blob: json };
+      });
+    });
+  }
+
+  // onStage('download'|'decrypt') 驱动界面分段提示；onProgress(got, total) 汇报下载进度
+  async function unlock(password, onStage, onProgress) {
+    onStage('download');
+    var ctx = await loadEnc(onProgress);
+    onStage('decrypt');
+    var blob = ctx.blob;
     var base = await crypto.subtle.importKey('raw', te.encode(password), 'PBKDF2', false, ['deriveKey']);
     var key = await crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: salt, iterations: blob.iter, hash: 'SHA-256' },
+      { name: 'PBKDF2', salt: ctx.salt, iterations: blob.iter, hash: 'SHA-256' },
       base,
       { name: 'AES-GCM', length: 256 },
       false,
@@ -268,8 +391,7 @@
     );
     // 记下词库指纹：下次启动对比线上，词库更新过就要求重新解锁
     try {
-      var et = encResp.headers.get('ETag') || encResp.headers.get('Last-Modified');
-      if (et) localStorage.setItem('hedgehog:etag', et);
+      if (ctx.etag) localStorage.setItem('hedgehog:etag', ctx.etag);
     } catch (e) {}
     return JSON.parse(td.decode(plain));
   }
@@ -1522,6 +1644,7 @@
       idbDel('data').catch(function () {});
       try { localStorage.removeItem('hedgehog:data'); } catch (e) {}
       try { localStorage.removeItem('hedgehog:etag'); } catch (e2) {}
+      if (typeof caches !== 'undefined') caches.delete('hedgehog-enc').catch(function () {});
       location.reload();
     } else if (act === 'cb-save') {
       var cv = $('cbCanvas');
@@ -1569,9 +1692,18 @@
     var hint = $('gateHint');
     btn.disabled = true;
     hint.style.color = 'var(--mut)';
-    hint.textContent = '解密中…';
+    hint.textContent = '下载词库中…';
     try {
-      var data = await unlock($('gatePassword').value);
+      var data = await unlock(
+        $('gatePassword').value,
+        function (stage) {
+          hint.textContent = stage === 'decrypt' ? '解密中…' : '下载词库中…';
+        },
+        function (got, total) {
+          if (got < 0) return; // 缓存命中，无下载过程
+          if (total > 0) hint.textContent = '下载词库中… ' + Math.round((got * 100) / total) + '%';
+        }
+      );
       if (!data || !data.lists || !data.lists.length) throw new Error('empty');
       setData(data);
       idbSet('data', data).catch(function () {});
@@ -1580,8 +1712,13 @@
       openApp();
     } catch (err) {
       hint.style.color = 'var(--red)';
-      hint.textContent = '密码不对';
-      $('gatePassword').select();
+      if (err && err.net) {
+        hint.textContent = '网络太慢或中断，请点重试';
+        // 保留已输密码，方便直接重试
+      } else {
+        hint.textContent = '密码不对';
+        $('gatePassword').select();
+      }
     }
     btn.disabled = false;
   });
