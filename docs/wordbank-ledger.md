@@ -9,7 +9,7 @@
 
 | 语言 | 词表 id | 目标 | 已入库（计入） | 批次进度 |
 |---|---|---|---|---|
-| 英语（8 分向） | `ielts-core` | 5,500 | 4,822（批23净增238零重复，真经词表清空） | awl-01~19 + zj-20~23 ✅（87.7%） |
+| 英语（8 分向） | `ielts-core` | 5,500 | 5,062（批24净增240零重复） | awl-01~19 + zj-20~23 + ext-24 ✅（92.0%） |
 | 日语 N1 | `jlpt-core` | 4,042 | 30（旧核心，非 N1 不计入）→ 0 | 未开始 |
 | 韩语 TOPIK | `topik-core` | ~2,500 | 30（旧核心，基础词不计入）→ 0 | 未开始 |
 | 场景厅/语法宫/基础表 | — | 不动 | — | — |
@@ -41,7 +41,8 @@
 | zj-21 | words-en-zj-21a~d.json | 240 词（leap→leaflet，frigde typo 修正、drift 撞库换 leap），净增240零重复 | ✅ 2026-10-22 |
 | zj-22 | words-en-zj-22a~d.json | 240 词（radiate→radar，3 typo 修正；practical/prevail typo 修后撞库换 radioactive/radius），净增240零重复 | ✅ 2026-10-22 |
 | zj-23 | words-en-zj-23a~d.json | 238 词（rainbow→zoologist 收尾；wax/vegetation 撞库剔除），净增238零重复；真经词表 963 词全部消化 | ✅ 2026-10-22 |
-| 扩词表批 | 待建 | 扩词表补最后 678 词到 5,500 | 待词源确认 |
+| ext-24 | words-en-ext-24a~d.json | 240 词（4写手×60，say→boot，ECDICT 词频回填基础层，「替换梯度」写法），净增240零重复 | ✅ 2026-10-22 |
+| ext-25~26 | 待建 | ECDICT 池剩 960 词，取 2 批（438 词）到 5,500 | 待开始 |
 
 ## 日语 / 韩语
 
@@ -59,3 +60,4 @@
 - 2026-10-22：zj-21 入库（240 词），ielts-core 4,344（79.0%）；frigde typo 修正、drift 撞库换 leap
 - 2026-10-22：zj-22 入库（240 词），ielts-core 4,584（83.3%）；3 typo 修正；practical/prevail 修后撞库换 radioactive/radius
 - 2026-10-22：zj-23 入库（238 词收尾），ielts-core 4,822（87.7%）；真经词表 963 词全部消化；剩 678 词待扩词表补齐
+- 2026-10-22：ext-24 入库（240 词，ECDICT 词频回填基础层），ielts-core 5,062（92.0%）；ECDICT 池 1,200 词已建（BNC/COCA 双频+IELTS 加权+虚词过滤）
