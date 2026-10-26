@@ -9,12 +9,15 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const zlib = require('node:zlib');
 const { webcrypto } = require('node:crypto');
 const crypto = webcrypto;
 
 const ROOT = path.join(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'src');
-const OUT = path.join(ROOT, 'data', 'words.enc');
+// words.enc.gz：预 gzip（GitHub Pages 对 octet-stream 不压缩，裸传 10.5MB 太慢；
+// gzip 后 ~3.5MB，且 gzip 字节与 Content-Length 同单位，进度条不再超 100%）
+const OUT = path.join(ROOT, 'data', 'words.enc.gz');
 const SALT = path.join(ROOT, 'data', 'salt');
 const ITER = 200000;
 
@@ -62,17 +65,19 @@ async function main() {
 
   if (verify) {
     if (!fs.existsSync(OUT)) {
-      console.error('data/words.enc 不存在，请先加密');
+      console.error('data/words.enc.gz 不存在，请先加密');
       process.exit(1);
     }
-    const blob = JSON.parse(fs.readFileSync(OUT, 'utf8'));
+    const blob = JSON.parse(zlib.gunzipSync(fs.readFileSync(OUT)).toString('utf8'));
     try {
       const plain = await crypto.subtle.decrypt(
         { name: 'AES-GCM', iv: new Uint8Array(Buffer.from(blob.iv, 'base64')) },
         key,
         new Uint8Array(Buffer.from(blob.data, 'base64'))
       );
-      const data = JSON.parse(new TextDecoder().decode(plain));
+      // z:1 = 明文在加密前做过 gzip
+      const plainBuf = blob.z ? zlib.gunzipSync(Buffer.from(plain)) : Buffer.from(plain);
+      const data = JSON.parse(plainBuf.toString('utf8'));
       const parts = data.lists.map((l) => `${l.id}=${l.words.length}词`);
       (data.tables || []).forEach((t) =>
         parts.push(`${t.id}=${(t.sections || []).length}节`)
@@ -142,21 +147,26 @@ async function main() {
     grammars,
     hooks,
   });
+  // 明文先 gzip 再加密（JSON 结构高度可压，密文因此缩小 ~60-70%）
+  const plainZ = zlib.gzipSync(Buffer.from(json, 'utf8'));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
     key,
-    new TextEncoder().encode(json)
+    plainZ
   );
   const blob = {
     v: 1,
+    z: 1,
     iter: ITER,
     iv: bufToB64(iv),
     data: bufToB64(ct),
   };
-  fs.writeFileSync(OUT, JSON.stringify(blob));
+  fs.writeFileSync(OUT, zlib.gzipSync(JSON.stringify(blob)));
+  const legacy = path.join(ROOT, 'data', 'words.enc');
+  if (fs.existsSync(legacy)) fs.rmSync(legacy); // 旧裸文件退役
   console.log(
-    `encrypted: ${Buffer.byteLength(json)} B -> ${fs.statSync(OUT).size} B (words.enc)`
+    `encrypted: ${Buffer.byteLength(json)} B -> ${fs.statSync(OUT).size} B (words.enc.gz)`
   );
 }
 

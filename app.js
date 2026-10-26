@@ -17,6 +17,8 @@
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
+  var listShown = 100; // 词库列表懒渲染：首屏 100，滚动加载更多
+  var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
   var APP_VER = 'v2026-10-21.2'; // 页脚版本号：看到它就知道手机跑的是哪版
@@ -247,11 +249,16 @@
   }
 
   // ---------- 密码解密（PBKDF2 -> AES-GCM） ----------
-  // 词库密文 2.8MB，从 GitHub Pages 下载常要几十秒——下载与解密分段提示，
-  // 下载带进度 + 60 秒无新数据看门狗 + 自动重试，不再无限卡在「解密中」。
-  // 下载成功后密文暂存 Cache Storage（按 ETag 指纹校验）：
-  // 同一版词库内输错密码重试时直接读本地，不用再下一遍。
+  // data/words.enc.gz：明文预压缩 + 双层 gzip（原 10.5MB → 3.1MB）。
+  // 下载源链：国内代理优先（gh-proxy/ghfast）→ GitHub Pages 兜底，按字节数校验防串源；
+  // 进度按同字节单位计算，不再超 100%。密文暂存 Cache Storage（按 ETag 指纹）。
   var ENC_CACHE = 'hedgehog-enc';
+  var ENC_PATH = 'data/words.enc.gz';
+  var ENC_SOURCES = [
+    'https://gh-proxy.com/https://raw.githubusercontent.com/mengjianan/hedgehog/main/data/words.enc.gz',
+    'https://ghfast.top/https://raw.githubusercontent.com/mengjianan/hedgehog/main/data/words.enc.gz',
+    'data/words.enc.gz'
+  ];
   function withTimeout(p, ms) {
     return new Promise(function (resolve, reject) {
       var t = setTimeout(function () { reject(new Error('timeout')); }, ms);
@@ -265,112 +272,154 @@
     return err;
   }
 
-  // 带进度与看门狗的密文下载：单个数据块 60 秒不到判连接卡死，
-  // 整体最多尝试 3 次（间隔 1 秒）；onProgress(got, total) 汇报字节进度
-  function downloadEnc(onProgress) {
-    var attempt = 0;
-    function once() {
-      attempt++;
-      return fetch('data/words.enc', { cache: 'no-store' }).then(function (res) {
-        if (!res.ok) throw new Error('enc http ' + res.status);
-        var total = parseInt(res.headers.get('Content-Length'), 10) || 0;
-        if (!res.body || typeof res.body.getReader !== 'function' || !total) {
-          // 老浏览器不支持流式读取：整块拿，总时长 120 秒看门狗
-          return withTimeout(res.arrayBuffer(), 120000).then(function (buf) {
-            onProgress(buf.byteLength, buf.byteLength);
-            return new Uint8Array(buf);
-          });
-        }
-        var reader = res.body.getReader();
-        var chunks = [], got = 0;
-        function readChunk() {
-          return new Promise(function (resolve, reject) {
-            var t = setTimeout(function () {
-              try { reader.cancel(); } catch (e) {}
-              reject(new Error('enc read timeout'));
-            }, 60000);
-            reader.read().then(
-              function (r) { clearTimeout(t); resolve(r); },
-              function (e) { clearTimeout(t); reject(e); }
-            );
-          });
-        }
-        function loop() {
-          return readChunk().then(function (r) {
-            if (r.done) {
-              var out = new Uint8Array(got), off = 0;
-              chunks.forEach(function (c) { out.set(c, off); off += c.length; });
-              return out;
-            }
-            chunks.push(r.value); got += r.value.length;
-            onProgress(got, total);
-            return loop();
-          });
-        }
-        return loop();
-      }).catch(function (e) {
-        if (attempt < 3) {
-          return new Promise(function (r) { setTimeout(r, 1000); }).then(once);
-        }
+  // gzip 解压（浏览器 DecompressionStream）
+  function gunzipBuf(buf) {
+    return new Promise(function (resolve, reject) {
+      if (typeof DecompressionStream === 'undefined') {
+        var e = new Error('浏览器过旧无法解压词库，请更新 Chrome/Safari/Edge');
+        e.friendly = true;
+        reject(e);
+        return;
+      }
+      try {
+        var ds = new DecompressionStream('gzip');
+        var stream = new Blob([buf]).stream().pipeThrough(ds);
+        new Response(stream).arrayBuffer().then(resolve, reject);
+      } catch (e2) { reject(e2); }
+    });
+  }
+
+  // 文件字节 → {iv, data, z}（外壳 gunzip + JSON）
+  function parseEncBytes(bytes) {
+    return gunzipBuf(bytes).then(function (ab) {
+      return JSON.parse(td.decode(ab));
+    });
+  }
+
+  // 多源下载：每源最多 2 次尝试，失败/尺寸不符换下一源
+  // expectSize 来自 GitHub HEAD（同文件字节数），尺寸不符视为串源/损坏
+  function downloadEnc(onProgress, expectSize) {
+    var srcIdx = 0;
+    function trySource() {
+      var url = ENC_SOURCES[srcIdx];
+      var attempt = 0;
+      function once() {
+        attempt++;
+        return fetch(url, { cache: 'no-store' }).then(function (res) {
+          if (!res.ok) throw new Error('http ' + res.status);
+          var total = expectSize || parseInt(res.headers.get('Content-Length'), 10) || 0;
+          if (!res.body || typeof res.body.getReader !== 'function' || !total) {
+            // 老浏览器不支持流式读取：整块拿，120 秒看门狗
+            return withTimeout(res.arrayBuffer(), 120000).then(function (buf) {
+              onProgress(buf.byteLength, total || buf.byteLength);
+              if (expectSize && buf.byteLength !== expectSize) {
+                var em = new Error('size mismatch'); em.srcFail = true; throw em;
+              }
+              return new Uint8Array(buf);
+            });
+          }
+          var reader = res.body.getReader();
+          var chunks = [], got = 0;
+          function readChunk() {
+            return new Promise(function (resolve, reject) {
+              var t = setTimeout(function () {
+                try { reader.cancel(); } catch (e) {}
+                reject(new Error('enc read timeout'));
+              }, 60000);
+              reader.read().then(
+                function (r) { clearTimeout(t); resolve(r); },
+                function (e) { clearTimeout(t); reject(e); }
+              );
+            });
+          }
+          function loop() {
+            return readChunk().then(function (r) {
+              if (r.done) {
+                // 尺寸不符且还有下一源 → 换源；最后一源接受（GCM 认证兜底）
+                if (expectSize && got !== expectSize && srcIdx < ENC_SOURCES.length - 1) {
+                  var em = new Error('size mismatch'); em.srcFail = true; throw em;
+                }
+                var out = new Uint8Array(got), off = 0;
+                chunks.forEach(function (c) { out.set(c, off); off += c.length; });
+                return out;
+              }
+              chunks.push(r.value); got += r.value.length;
+              onProgress(got, total);
+              return loop();
+            });
+          }
+          return loop();
+        }).catch(function (e) {
+          if (e.srcFail) throw e; // 尺寸错直接换源，不在本源重试
+          if (attempt < 2) {
+            return new Promise(function (r) { setTimeout(r, 1000); }).then(once);
+          }
+          var se = new Error('source fail: ' + e.message); se.srcFail = true; throw se;
+        });
+      }
+      return once().catch(function (e) {
+        if (e.srcFail && srcIdx < ENC_SOURCES.length - 1) { srcIdx++; return trySource(); }
         throw netErr(e);
       });
     }
-    return once();
+    return trySource();
   }
 
-  // 取密文：HEAD 拿指纹 → Cache Storage 命中且指纹一致直接用（瞬间）；
-  // 否则现下。返回 { salt, etag, blob }。网络失败以 err.net 抛出。
+  // 取密文：HEAD 拿指纹+尺寸 → Cache 命中且指纹一致直接用；否则多源现下
   function loadEnc(onProgress) {
     return withTimeout(fetch('data/salt'), 30000).then(function (saltResp) {
       if (!saltResp.ok) throw new Error('salt missing');
       return withTimeout(saltResp.arrayBuffer(), 30000);
     }).then(function (saltBuf) {
       var salt = new Uint8Array(saltBuf);
-      return withTimeout(fetch('data/words.enc', { method: 'HEAD', cache: 'no-store' }), 30000)
+      return withTimeout(fetch(ENC_PATH, { method: 'HEAD', cache: 'no-store' }), 30000)
         .then(function (head) {
           var et = head.ok ? (head.headers.get('ETag') || head.headers.get('Last-Modified')) : null;
-          if (typeof caches === 'undefined') return { salt: salt, etag: et, blob: null };
+          var size = head.ok ? (parseInt(head.headers.get('Content-Length'), 10) || 0) : 0;
+          if (typeof caches === 'undefined') return { salt: salt, etag: et, size: size, bytes: null };
           return caches.open(ENC_CACHE).then(function (c) {
-            return c.match('data/words.enc').then(function (hit) {
+            return c.match(ENC_PATH).then(function (hit) {
               if (!hit) return null;
               var cet = hit.headers.get('ETag') || hit.headers.get('Last-Modified');
               // et 为空（HEAD 失败，如离线）时有缓存就用；否则指纹必须一致
               if (!et || (cet && cet === et)) {
-                return withTimeout(hit.json(), 30000).then(function (blob) {
-                  return { salt: salt, etag: et, blob: blob };
+                return withTimeout(hit.arrayBuffer(), 30000).then(function (ab) {
+                  return { salt: salt, etag: et, size: size, bytes: new Uint8Array(ab) };
                 });
               }
               return null;
             });
           }).catch(function () { return null; })
-            .then(function (cached) { return cached || { salt: salt, etag: et, blob: null }; });
+            .then(function (cached) { return cached || { salt: salt, etag: et, size: size, bytes: null }; });
         }).catch(function () {
           // HEAD 失败（离线等）：没有可靠指纹，直接走现下，成败由 downloadEnc 决定
-          return { salt: salt, etag: null, blob: null };
+          return { salt: salt, etag: null, size: 0, bytes: null };
         });
     }).then(function (ctx) {
-      if (ctx.blob) {
-        onProgress(-1, -1); // 缓存命中：没有下载过程
-        return ctx;
+      if (ctx.bytes) {
+        onProgress(ctx.bytes.length, ctx.bytes.length); // 缓存命中：直接满格
+        return parseEncBytes(ctx.bytes).then(function (blob) {
+          return { salt: ctx.salt, etag: ctx.etag, blob: blob };
+        });
       }
-      return downloadEnc(onProgress).then(function (bytes) {
-        var json;
-        try { json = JSON.parse(td.decode(bytes)); } catch (e) { throw netErr(e); }
+      return downloadEnc(onProgress, ctx.size).then(function (bytes) {
         // 暂存密文备输错密码重试（失败不影响解锁）
         if (ctx.etag && typeof caches !== 'undefined') {
           try {
             var store = new Response(bytes.slice(0), {
-              headers: { 'Content-Type': 'application/json', 'ETag': ctx.etag }
+              headers: { 'Content-Type': 'application/gzip', 'ETag': ctx.etag }
             });
-            caches.open(ENC_CACHE).then(function (c) { c.put('data/words.enc', store); }).catch(function () {});
+            caches.open(ENC_CACHE).then(function (c) { c.put(ENC_PATH, store); }).catch(function () {});
           } catch (e2) {}
         }
-        return { salt: ctx.salt, etag: ctx.etag, blob: json };
+        return parseEncBytes(bytes).then(function (blob) {
+          return { salt: ctx.salt, etag: ctx.etag, blob: blob };
+        });
       });
     });
   }
 
-  // onStage('download'|'decrypt') 驱动界面分段提示；onProgress(got, total) 汇报下载进度
+  // onStage('download'|'decrypt') 驱动界面分段提示；onProgress(got, total) 汇报字节进度
   async function unlock(password, onStage, onProgress) {
     onStage('download');
     var ctx = await loadEnc(onProgress);
@@ -389,11 +438,13 @@
       key,
       b64ToU8(blob.data)
     );
+    // z:1 = 明文在加密前做过 gzip，需要再解一层
+    var bankBuf = blob.z ? await gunzipBuf(plain) : plain;
     // 记下词库指纹：下次启动对比线上，词库更新过就要求重新解锁
     try {
       if (ctx.etag) localStorage.setItem('hedgehog:etag', ctx.etag);
     } catch (e) {}
-    return JSON.parse(td.decode(plain));
+    return JSON.parse(td.decode(bankBuf));
   }
 
   function setData(data) {
@@ -651,7 +702,10 @@
     var l = LIST[listId];
     if (!l) return viewCategories();
     if (isScene(l)) return viewRoom(l);
-    var chips = l.words
+    // 懒渲染：整页 5,500+ 词块会卡 1-3 秒，首屏 100 +「加载更多」
+    if (listShownFor !== listId) { listShownFor = listId; listShown = 100; }
+    var shown = l.words.slice(0, listShown);
+    var chips = shown
       .map(function (x) {
         return (
           '<a class="word-chip" href="#/word/' + l.id + '/' + encodeURIComponent(x.w) + '">' +
@@ -659,10 +713,13 @@
         );
       })
       .join('');
+    var more = l.words.length > listShown
+      ? '<button class="mini-btn" data-act="list-more">加载更多（已显示 ' + shown.length + '/' + l.words.length + '）</button>'
+      : '';
     return (
       '<a class="back-link" href="#/categories">← 词库</a>' +
       '<h2>' + esc(l.title) + '</h2>' +
-      '<div class="wordlist">' + chips + '</div>'
+      '<div class="wordlist">' + chips + '</div>' + more
     );
   }
 
@@ -1561,6 +1618,9 @@
     if (act === 'speak') speak(ref);
     else if (act === 'star') {
       el.classList.toggle('on', toggleFav(ref));
+    } else if (act === 'list-more') {
+      listShown += 100;
+      route();
     } else if (act === 'scene-filter') {
       sceneLang = el.getAttribute('data-lang') || 'all';
       route();
@@ -1701,7 +1761,7 @@
         },
         function (got, total) {
           if (got < 0) return; // 缓存命中，无下载过程
-          if (total > 0) hint.textContent = '下载词库中… ' + Math.round((got * 100) / total) + '%';
+          if (total > 0) hint.textContent = '下载词库中… ' + Math.min(100, Math.round((got * 100) / total)) + '%';
         }
       );
       if (!data || !data.lists || !data.lists.length) throw new Error('empty');
@@ -1712,7 +1772,9 @@
       openApp();
     } catch (err) {
       hint.style.color = 'var(--red)';
-      if (err && err.net) {
+      if (err && err.friendly) {
+        hint.textContent = err.message; // 浏览器过旧等明确提示
+      } else if (err && err.net) {
         hint.textContent = '网络太慢或中断，请点重试';
         // 保留已输密码，方便直接重试
       } else {
@@ -1734,7 +1796,7 @@
   }
 
   // 本机已解锁过则直接进入（数据存 IndexedDB：解锁一次本机永久记住）。
-  // 更新守卫：启动时 HEAD 对比 words.enc 的 ETag，词库更新过就作废缓存回密码门
+  // 更新守卫：启动时 HEAD 对比 words.enc.gz 的 ETag，词库更新过就作废缓存回密码门
   // （旧缓存没有 ETag 记录也视作过期，部署后各设备重输一次密码即拿新词库）。
   // 旧版 localStorage 缓存自动搬进 IDB 后删除；断网时跳过对比直接用缓存。
   (function bootFromCache() {
@@ -1769,7 +1831,7 @@
         if (cd) idbDel('data').catch(function () {});
       });
     }
-    fetch('data/words.enc', { method: 'HEAD', cache: 'no-store' })
+    fetch('data/words.enc.gz', { method: 'HEAD', cache: 'no-store' })
       .then(function (resp) {
         if (!resp.ok) throw new Error('head');
         var remote = resp.headers.get('ETag') || resp.headers.get('Last-Modified');
