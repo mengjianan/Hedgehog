@@ -87,8 +87,9 @@ async function main() {
       );
       const scenes = data.lists.filter((l) => l.group === 'scene').length;
       const hookN = Object.keys(data.hooks || {}).length;
+      const tagN = Object.keys(data.tags || {}).length;
       console.log(
-        `verify OK (v${data.version}, 场景厅${scenes}, 钩子${hookN}): ` +
+        `verify OK (v${data.version}, 场景厅${scenes}, 钩子${hookN}, 标签${tagN}): ` +
           parts.join(', ')
       );
     } catch (e) {
@@ -139,6 +140,11 @@ async function main() {
   files.filter((f) => f.startsWith('hooks')).forEach((f) => {
     Object.assign(hooks, JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).hooks || {});
   });
+  // 场景标签（#2 场景厅装全库）：src/tags-*.json 合并
+  let tags = {};
+  files.filter((f) => f.startsWith('tags')).forEach((f) => {
+    Object.assign(tags, JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).tags || {});
+  });
   const json = JSON.stringify({
     version: 6,
     updated: new Date().toISOString().slice(0, 10),
@@ -146,6 +152,7 @@ async function main() {
     tables,
     grammars,
     hooks,
+    tags,
   });
   // 明文先 gzip 再加密（JSON 结构高度可压，密文因此缩小 ~60-70%）
   const plainZ = zlib.gzipSync(Buffer.from(json, 'utf8'));

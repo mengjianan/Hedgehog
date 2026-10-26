@@ -10,6 +10,7 @@
   var LIST = {}; // id -> list
   var IDX = {}; // "listId/w" -> {l, x}
   var ALL = []; // 扁平索引（跨语言搜索用）
+  var TAGS = {}; // 场景标签：ref -> edu/tech/env/health/travel/work（#2 场景厅装全库）
   var TABLES = []; // 基础表 [{id, lang, title, sections}]
   var TBY = {}; // id -> table
   var GRAMMARS = []; // 语法翼楼 [{id, lang, title, rooms}]
@@ -449,6 +450,7 @@
 
   function setData(data) {
     DATA = data;
+    TAGS = data.tags || {};
     LISTS = data.lists || [];
     LIST = {};
     IDX = {};
@@ -577,6 +579,23 @@
   function sceneLists() { return LISTS.filter(isScene); }
   function isLit(l) { return l.words.length > 0 && pendingCount(l) === 0; }
 
+  // 场景厅词条 = 同语言同主题的全库标签词（#2 选A：贴切才归类）+ 场景厅原精选词，按词形去重
+  function sceneEntries(l) {
+    var topic = (l.id.split('-').pop() || '').toLowerCase();
+    var out = [], seen = {};
+    (l.words || []).forEach(function (x) {
+      seen[x.w] = 1;
+      out.push({ l: l, x: x, ref: l.id + '/' + x.w });
+    });
+    ALL.forEach(function (e) {
+      if (e.l.lang === l.lang && TAGS[e.ref] === topic && !seen[e.x.w]) {
+        seen[e.x.w] = 1;
+        out.push(e);
+      }
+    });
+    return out;
+  }
+
   // ---------- 视图：首页（门厅搜索 + 快捷入口） ----------
   function viewHome() {
     var coreWords = coreLists().reduce(function (n, l) { return n + l.words.length; }, 0);
@@ -679,8 +698,10 @@
     var sceneCards = sceneLists()
       .filter(function (l) { return sceneLang === 'all' || l.lang === sceneLang; })
       .map(function (l) {
-        var total = l.words.length;
-        var mastered = total - pendingCount(l);
+        var es = sceneEntries(l); // 全库该场景词（#2）
+        var total = es.length;
+        var k = known();
+        var mastered = es.filter(function (e) { return k[e.ref]; }).length;
         var dc = listDueCount(l);
         return mini(
           l.title,
@@ -725,19 +746,26 @@
 
   // 场景厅房间页（展位号 + 陈设钩子）
   function viewRoom(l) {
-    var total = l.words.length;
-    var mastered = total - pendingCount(l);
+    // 场景厅 = 全库该场景标签词 + 原精选词（#2 选A），同样懒渲染
+    if (listShownFor !== 'room:' + l.id) { listShownFor = 'room:' + l.id; listShown = 100; }
+    var entries = sceneEntries(l);
+    var total = entries.length;
+    var k = known();
+    var mastered = entries.filter(function (e) { return k[e.ref]; }).length;
     var lit = isLit(l);
     var dc = listDueCount(l);
-    var chips = l.words
-      .map(function (x, i) {
+    var chips = entries.slice(0, listShown)
+      .map(function (e, i) {
         return (
-          '<a class="word-chip" href="#/word/' + l.id + '/' + encodeURIComponent(x.w) + '">' +
+          '<a class="word-chip" href="#/word/' + e.l.id + '/' + encodeURIComponent(e.x.w) + '">' +
           '<span class="slot">No.' + (i + 1) + ' 展台</span>' +
-          '<b>' + esc(x.w) + '</b><small>' + esc(x.zh) + '</small></a>'
+          '<b>' + esc(e.x.w) + '</b><small>' + esc(e.x.zh) + '</small></a>'
         );
       })
       .join('');
+    var more = entries.length > listShown
+      ? '<button class="mini-btn" data-act="list-more">加载更多（已显示 ' + Math.min(listShown, entries.length) + '/' + total + '）</button>'
+      : '';
     return (
       '<a class="back-link" href="#/home">← 宫殿总图</a>' +
       '<div class="room-head lang-' + l.lang + '">' +
@@ -748,7 +776,7 @@
       (dc ? ' · <span class="due-b">↻ ' + dc + ' 待复习</span>' : '') +
       '</span></div>' +
       '<div class="dress">' + esc(l.dress || '') + '</div>' +
-      '<div class="wordlist">' + chips + '</div>' +
+      '<div class="wordlist">' + chips + '</div>' + more +
       '<p class="footnote">走完整厅点亮房间 · 点词进详情看宫殿地址</p>'
     );
   }
