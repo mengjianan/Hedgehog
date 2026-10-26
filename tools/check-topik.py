@@ -5,7 +5,7 @@ import json, sys, glob, os, re
 sys.stdout.reconfigure(encoding='utf-8')
 
 FIELDS = {'w', 'pron', 'pos', 'zh', 'sense', 'trap', 'collo', 'ex'}
-POS_RE = re.compile(r'^(n|v|adj|adv|prep|conj|det|pron|intj|int|num|pref|suf|sfx|pfx|dep\.n|prn)\.(/(n|v|adj|adv|prep|conj|det|pron|intj|int|num|pref|suf|sfx|pfx|dep\.n|prn)\.)*$')
+POS_RE = re.compile(r'^(n|v|adj|adv|prep|conj|det|pron|intj|int|num|pref|prefix|suf|suff|sfx|pfx|dep\.n|prn)\.(/(n|v|adj|adv|prep|conj|det|pron|intj|int|num|pref|prefix|suf|suff|sfx|pfx|dep\.n|prn)\.)*$')
 round_no = sys.argv[1]
 seeds = sorted(glob.glob(f'data/.seeds-ko{round_no}*.json'))
 if not seeds:
