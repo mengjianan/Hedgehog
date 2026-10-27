@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.7'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.8'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1579,9 +1579,34 @@
         { key: 'l4', title: 'Listening · Part 4 学术讨论', qn: 10, minutes: 7, note: '听句子，选正确的中文意思' },
         { key: 'r1', title: 'Reading · Passage 1 词汇填空', qn: 14, minutes: 20, note: '句中挖空，选最贴切的词' },
         { key: 'r2', title: 'Reading · Passage 2 同义替换', qn: 13, minutes: 20, note: '看中文释义，选对应英文词' },
-        { key: 'r3', title: 'Reading · Passage 3 混合', qn: 13, minutes: 20, note: '填空 + 同义替换各半' }
-      ] // 80 题 · 90 分钟（真题结构：听力 40 + 阅读 40）· band 0~9、6.5 常见留学线
+        { key: 'r3', title: 'Reading · Passage 3 混合', qn: 13, minutes: 20, note: '填空 + 同义替换各半' },
+        { key: 'w1', title: 'Writing · Task 1 图表描述', qn: 1, minutes: 20, note: '150 词+，机打，不判分自评' },
+        { key: 'w2', title: 'Writing · Task 2 议论文', qn: 1, minutes: 40, note: '250 词+，机打，不判分自评' }
+      ] // 客观题 80 · 90 分钟 + 写作 2 题 60 分钟 · band 0~9 按客观题折算
     }
+  };
+  // 雅思写作原创题库（题干为文字数据描述——仿真练习用，不配真图表）；批改不可自动，考后自评
+  var IELTS_WRITING = {
+    w1: [ // Task 1：150 词+
+      'The table below shows the percentage of households owning a car in three countries between 2000 and 2020. Country A: 15%, 28%, 41%, 55%. Country B: 88%, 89%, 91%, 92%. Country C: 48%, 52%, 58%, 62%. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.',
+      'The chart below shows changes in the number of students enrolled in four subjects at a university over five years. Science: 1200, 1150, 1080, 1020, 980. Arts: 800, 850, 900, 980, 1050. Business: 600, 720, 860, 950, 1100. Engineering: 900, 880, 870, 860, 870. Summarise the main features and make comparisons. Write at least 150 words.',
+      'The table below gives information about the number of tourists visiting a European city from four regions in 2010 and 2020. Europe: 2.1m, 2.4m. Asia: 0.8m, 1.9m. Americas: 1.2m, 1.1m. Africa & Middle East: 0.3m, 0.7m. Summarise the information and make comparisons where relevant. Write at least 150 words.',
+      'The chart below shows the average daily minutes spent on three types of media by age groups in a country. 16-24: TV 45, social media 190, print 15. 25-44: TV 80, social media 120, print 30. 45-64: TV 130, social media 60, print 55. 65+: TV 190, social media 25, print 80. Summarise the main features. Write at least 150 words.',
+      'The table below shows water consumption (litres per person per day) in five countries and how it is used. Country X: total 400 (home 150, farm 200, factory 50). Country Y: total 300 (home 100, farm 150, factory 50). Country Z: total 500 (home 200, farm 220, factory 80). Country W: total 250 (home 90, farm 120, factory 40). Country V: total 350 (home 130, farm 160, factory 60). Summarise the information. Write at least 150 words.',
+      'The chart below shows the number of public libraries in a city and visitor numbers (millions per year) from 2005 to 2025. Libraries: 42, 40, 36, 33, 30. Visitors: 5.2, 4.8, 4.1, 3.9, 4.5. Summarise the main features and comment on possible reasons for the changes. Write at least 150 words.'
+    ],
+    w2: [ // Task 2：250 词+
+      'Some people believe that universities should focus on preparing students for employment, while others think their main role is to advance knowledge. Discuss both views and give your own opinion.',
+      'In many cities, cycling is encouraged as a green transport choice. What are the advantages and disadvantages of this policy for ordinary residents?',
+      'Some people think that children should start learning a foreign language at primary school, while others believe it should begin later. Discuss both views and give your opinion.',
+      'Nowadays more people work from home than ever before. Is this a positive or negative development for employees and employers?',
+      'Governments spend a lot of money on the arts (music, theatre, museums) rather than on public services like hospitals and schools. To what extent do you agree or disagree that arts funding should be reduced?',
+      'Some people argue that strict laws are the only way to reduce traffic accidents, while others think education and better road design matter more. Discuss both views and give your opinion.',
+      'In many countries, the gap between the rich and the poor is widening. What problems does this cause, and what measures can governments take to reduce it?',
+      'Some people believe that international travel makes people more tolerant, while others say it has little effect on attitudes. Discuss both views and give your own opinion.',
+      'Many young people today choose to delay marriage and children until their thirties or later. What are the reasons for this trend, and is it positive or negative for society?',
+      'With the development of artificial intelligence, some people worry that machines will replace most human jobs. To what extent do you agree or disagree that governments should prepare for mass job losses?'
+    ]
   };
   var examSels = {};
   Object.keys(EXAM_TYPES).forEach(function (k) {
@@ -1751,6 +1776,16 @@
             options: optSet(pick.zh, disLC), ref: wordList.id + '/' + l2.w
           });
         }
+      } else if (s.key === 'w1' || s.key === 'w2') {
+        // 写作：抽一道原创题；无选项，机打作文，不判分自评
+        var wPool = IELTS_WRITING[s.key];
+        if (wPool && wPool.length) {
+          qs.push({
+            type: s.key === 'w1' ? 'Task 1 图表描述（150 词+）' : 'Task 2 议论文（250 词+）',
+            stem: wPool[Math.floor(Math.random() * wPool.length)],
+            writing: true, options: [], ref: null
+          });
+        }
       } else if (s.key === 'l3' || s.key === 'r1' || s.key === 'r2' || s.key === 'r3') {
         // 雅思填空/同义：听整句选空格词（l3，朗读完整句）/ 阅读挖空（r1）/ 同义替换（r2 全部、r3 后半）
         var poolR = ctxW.length ? ctxW : all;
@@ -1790,12 +1825,15 @@
     if (!secs.length) return null;
     var totalQ = secs.reduce(function (n, s) { return n + s.qs.length; }, 0);
     var totalMin = secs.reduce(function (n, s) { return n + s.minutes; }, 0);
+    var objQ = 0; // 客观题数（写作不判分，band 只按客观题折算）
+    secs.forEach(function (s) { s.qs.forEach(function (q) { if (!q.writing) objQ++; }); });
     return {
       typeKey: typeKey, name: spec.name,
       scale: spec.scale || 0, pass: spec.pass || 0, band: spec.scale === 9, // IELTS 用 band 0~9
-      secs: secs, totalQ: totalQ, totalMin: totalMin,
+      secs: secs, totalQ: totalQ, totalMin: totalMin, objQ: objQ,
       secIdx: 0, qi: 0,
       answers: secs.map(function (s) { return s.qs.map(function () { return -1; }); }),
+      texts: secs.map(function (s) { return s.qs.map(function () { return ''; }); }), // 写作用
       deadline: Date.now() + totalMin * 60000,
       phase: 'run', spoken: null
     };
@@ -1817,6 +1855,11 @@
     if (!exam || exam.phase !== 'run') return;
     exam.phase = 'result';
     exam.result = exam.secs.map(function (s, si) {
+      if (s.qs.length && s.qs[0].writing) { // 写作板块：报字数，不判分不入错题
+        var et = (exam.texts && exam.texts[si] && exam.texts[si][0]) || '';
+        var ewc = et.trim() ? et.trim().split(/\s+/).length : 0;
+        return { title: s.title, qn: 1, correct: 0, scaled: 0, words: ewc };
+      }
       var correct = 0;
       s.qs.forEach(function (q, qi) {
         var a = exam.answers[si][qi];
@@ -1831,14 +1874,27 @@
           } catch (e) {}
         }
       });
-      // 板块折分 = 按题量占比分摊总分（导入卷无标尺，报 0）
-      return { title: s.title, qn: s.qs.length, correct: correct,
-        scaled: exam.scale ? Math.round((correct / exam.totalQ) * exam.scale * 10) / 10 : 0 };
+      // 板块折分先占位 0，下面按客观题总分统一重算（写作板块保持 0）
+      return { title: s.title, qn: s.qs.length, correct: correct, scaled: 0 };
     });
-    exam.wrongN = exam.result.reduce(function (n, r) { return n + (r.qn - r.correct); }, 0);
-    exam.correctN = exam.result.reduce(function (n, r) { return n + r.correct; }, 0);
-    if (exam.scale) { // 按卷标尺换算（导入卷无标尺只报对错）
-      exam.approx = Math.round((exam.correctN / exam.totalQ) * exam.scale * 10) / 10;
+    // 板块折分重算：每板块 correct/该场客观题总数 × 总分
+    var objTotal = 0;
+    exam.secs.forEach(function (s, si) {
+      if (s.qs.length && s.qs[0].writing) return;
+      objTotal += exam.result[si].correct;
+    });
+    var objCount = exam.secs.reduce(function (n, s) {
+      return n + ((s.qs.length && s.qs[0].writing) ? 0 : s.qs.length);
+    }, 0);
+    exam.result.forEach(function (r, si) {
+      if (r.words != null) return;
+      r.scaled = exam.scale ? Math.round((r.correct / (objCount || 1)) * exam.scale * 10) / 10 : 0;
+    });
+    exam.wrongN = exam.result.reduce(function (n, r) { return r.words != null ? n : n + (r.qn - r.correct); }, 0);
+    exam.correctN = objTotal;
+    exam.objQ = objCount;
+    if (exam.scale) { // 按卷标尺换算（导入卷无标尺只报对错；写作不计入）
+      exam.approx = Math.round((exam.correctN / (objCount || 1)) * exam.scale * 10) / 10;
       if (exam.band) exam.approx = Math.round(exam.approx * 2) / 2; // 雅思半分档
     }
     try { localStorage.removeItem('hedgehog:exam'); } catch (e) {}
@@ -1961,6 +2017,10 @@
     }
     if (exam.phase === 'result') {
       var rows = (exam.result || []).map(function (r) {
+        if (r.words != null) { // 写作板块：报字数自评
+          return '<div class="exam-row"><span>' + esc(r.title) + '</span>' +
+            '<span>' + r.words + ' 词</span><span>自评</span></div>';
+        }
         return '<div class="exam-row"><span>' + esc(r.title) + '</span>' +
           '<span>' + r.correct + '/' + r.qn + '</span>' +
           (exam.scale ? '<span>折 ' + r.scaled + ' 分</span>' : '') + '</div>';
@@ -1976,17 +2036,25 @@
             : '<p class="exam-passline">' + esc(exam.name || '') + ' · 参考合格线 ' + exam.pass + ' · ' +
               (pass ? '达标线以上 ✓' : '距合格线还差 ' + Math.round((exam.pass - exam.approx) * 10) / 10 + ' 分') + '</p>')
         : '<p class="exam-passline">' + esc(exam.name || '') + ' · 真题卷按对错计分，无换算标尺</p>';
-      // 逐题解析（默认折叠）：听力原文 raw 此时才出现；错题行标出正确答案
+      // 逐题解析（默认折叠）：听力原文 raw 此时才出现；错题行标出正确答案；写作显示作文全文
       var revBase = 0;
       var review = exam.secs.map(function (s, si) {
         var revRows = s.qs.map(function (q, qi) {
+          var no = '<b>' + (revBase + qi + 1) + '.</b>';
+          if (q.writing) {
+            var myEssay = (exam.texts && exam.texts[si] && exam.texts[si][qi]) || '';
+            var mwc = myEssay.trim() ? myEssay.trim().split(/\s+/).length : 0;
+            return '<div class="rev-row rev-essay">' + no +
+              '<span class="rev-stem">' + esc(q.stem) +
+              '<div class="rev-myessay">' + (myEssay ? esc(myEssay) : '（未写）') + '</div>' +
+              '</span><span class="rev-pick">' + mwc + ' 词 · 自评</span></div>';
+          }
           var a = exam.answers[si][qi];
           var ok = a >= 0 && q.options[a] && q.options[a].ok;
           var okT = '';
           q.options.forEach(function (o) { if (o.ok) okT = o.t; });
           var yourT = a >= 0 && q.options[a] ? q.options[a].t : '未答';
-          return '<div class="rev-row' + (ok ? '' : ' wrong') + '">' +
-            '<b>' + (revBase + qi + 1) + '.</b>' +
+          return '<div class="rev-row' + (ok ? '' : ' wrong') + '">' + no +
             '<span class="rev-stem">' + esc(q.raw || q.stem) +
             (q.spoken ? ' <button class="mini-btn" data-act="exam-rev-play" data-si="' + si + '" data-qi="' + qi + '">🔊</button>' : '') +
             '</span>' +
@@ -2003,7 +2071,8 @@
         '<div class="exam-score' + (pass ? ' pass' : '') + '">' + scoreHtml + '</div>' +
         passHtml +
         rows +
-        '<div class="exam-total">总正确 ' + exam.correctN + '/' + exam.totalQ +
+        '<div class="exam-total">总正确 ' + exam.correctN + '/' + (exam.objQ || exam.totalQ) +
+        (exam.objQ && exam.objQ !== exam.totalQ ? '（客观题）' : '') +
         ' · 错 ' + exam.wrongN +
         (exam.imported ? '（真题卷 · 错题不自动入复习）'
           : exam.wrongRefN ? '（' + exam.wrongRefN + ' 题错词已进复习）' : '（已进复习队列）') + '</div>' +
@@ -2027,7 +2096,7 @@
     var qNo = 0, i;
     for (i = 0; i < exam.secIdx; i++) qNo += exam.secs[i].qs.length;
     qNo += exam.qi + 1;
-    var opts = q.options.map(function (o, idx) {
+    var opts = q.writing ? '' : q.options.map(function (o, idx) {
       var cls = 'exam-opt';
       if (ans === idx) cls += o.ok ? ' right' : ' wrong';
       else if (ans >= 0 && o.ok) cls += ' reveal';
@@ -2038,15 +2107,27 @@
     var sheet = exam.secs.map(function (s, si) {
       var base = off; off += s.qs.length;
       return '<div class="exam-sheet-sec"><b>' + esc(s.title.split(' · ').pop()) + '</b>' +
-        s.qs.map(function (_, qi) {
+        s.qs.map(function (q2, qi) {
           var a = exam.answers[si][qi];
-          var cls = 'sheet-no' + (si === exam.secIdx && qi === exam.qi ? ' cur' : '') + (a >= 0 ? ' done' : '');
+          var hasText = q2.writing && exam.texts && exam.texts[si] && (exam.texts[si][qi] || '').trim();
+          var cls = 'sheet-no' + (si === exam.secIdx && qi === exam.qi ? ' cur' : '') + (a >= 0 || hasText ? ' done' : '');
           return '<button class="' + cls + '" data-act="exam-goto" data-si="' + si + '" data-qi="' + qi + '">' +
             (base + qi + 1) + '</button>';
         }).join('') + '</div>';
     }).join('');
     var lastSec = exam.secIdx === exam.secs.length - 1;
     var lastQ = exam.qi === exam.secs[exam.secIdx].qs.length - 1;
+    var mid;
+    if (q.writing) { // 写作：机打作文 + 实时字数（输入不整页重渲染，防丢焦点）
+      var etxt = (exam.texts && exam.texts[exam.secIdx] && exam.texts[exam.secIdx][exam.qi]) || '';
+      var ewc = etxt.trim() ? etxt.trim().split(/\s+/).length : 0;
+      mid =
+        '<textarea id="examEssay" class="exam-essay" spellcheck="false" ' +
+        'placeholder="在此机打作文。不自动判分，交卷后可回看自评。">' + esc(etxt) + '</textarea>' +
+        '<div class="exam-wc" id="examWc">已写 ' + ewc + ' 词</div>';
+    } else {
+      mid = '<div class="exam-opts">' + opts + '</div>';
+    }
     return (
       '<div class="exam-head">' +
       '<span class="exam-secname">' + esc(sec.title) + '</span>' +
@@ -2060,7 +2141,7 @@
       '<div class="exam-stem">' + esc(q.stem) +
       (q.spoken ? ' <button class="mini-btn" data-act="exam-replay">🔁 重播</button>' : '') +
       '</div>' +
-      '<div class="exam-opts">' + opts + '</div>' +
+      mid +
       '<div class="exam-nav">' +
       '<button class="btn ghost" data-act="exam-prev"' +
       (exam.qi === 0 && exam.secIdx === 0 ? ' disabled' : '') + '>上一题</button>' +
@@ -2144,6 +2225,25 @@
           var b = $('spellCheckBtn');
           if (b) b.click();
         }
+      });
+    }
+
+    var essay = $('examEssay'); // 写作题：输入存 exam.texts 并更新字数（不整页重渲染防丢焦点）
+    if (essay) {
+      essay.addEventListener('input', function () {
+        if (!exam || exam.phase !== 'run') return;
+        exam.texts = exam.texts || [];
+        exam.texts[exam.secIdx] = exam.texts[exam.secIdx] || [];
+        exam.texts[exam.secIdx][exam.qi] = essay.value;
+        examPersist();
+        var wcEl = $('examWc');
+        if (wcEl) {
+          var n = essay.value.trim() ? essay.value.trim().split(/\s+/).length : 0;
+          wcEl.textContent = '已写 ' + n + ' 词';
+        }
+        // 答题卡标记：写满才算已答样式（页内局部改 class）
+        var cur = document.querySelector('.sheet-no.cur');
+        if (cur) cur.classList.toggle('done', !!essay.value.trim());
       });
     }
 

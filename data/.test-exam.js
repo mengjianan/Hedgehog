@@ -124,6 +124,32 @@ assert(r2.qs.every(q => /^雅思义项/.test(q.stem) && q.options.every(o => /^i
     k + ' 题干无原文，raw 已存');
 });
 assert(l3.qs.every(q => q.raw && q.raw.indexOf(q.stem.replace('🔊 ', '').split('（　）')[0]) >= 0), 'l3 raw 存完整句');
+
+console.log('场景6: IELTS 写作板块（w1/w2，不判分）');
+const p4 = api.buildPaper('ielts', { w1: true, w2: true, l1: true });
+console.log('  分段:', p4.secs.map(s => s.key + '=' + s.qs.length).join(', '));
+assert(p4.secs.length === 3 && p4.totalQ === 12, '写作2+听力10 = 12 题位');
+assert(p4.objQ === 10, '客观题只算 10（写作不计入）= ' + p4.objQ);
+const w1q = p4.secs.find(s => s.key === 'w1').qs[0];
+assert(w1q.writing === true && w1q.options.length === 0 && w1q.stem.length > 100, 'w1 写作题：无选项、长题干');
+// 判分：听力全对 + 写作留空 → correctN=10，写作行报字数 0，错题不回收写作
+api.setExam(p4);
+const e5 = api.getExam();
+e5.secs.forEach((s, si) => s.qs.forEach((q, qi) => {
+  if (q.writing) return;
+  e5.answers[si][qi] = q.options.findIndex(o => o.ok);
+}));
+e5.texts[e5.secIdx] = e5.texts[e5.secIdx] || []; // 模拟写了 w1
+const wi = e5.secs.findIndex(s => s.key === 'w1');
+e5.texts[wi] = e5.texts[wi] || [];
+e5.texts[wi][0] = Array(21).join('word ').trim(); // 20 词
+scheduled.length = 0;
+api.examFinish();
+const e6 = api.getExam();
+const wRow = e6.result.find(r => r.words != null);
+assert(e6.correctN === 10, '听力全对 10，写作不计 = ' + e6.correctN);
+assert(wRow && wRow.words === 20, 'w1 成绩单报 20 词 = ' + (wRow && wRow.words));
+assert(typeof e6.approx === 'number' && e6.approx === 9, '客观题全对 → band 9 = ' + e6.approx);
 // band 判分：半对→band≈4.5
 api.setExam(p3);
 const e3 = api.getExam();
