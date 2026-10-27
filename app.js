@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-21.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
