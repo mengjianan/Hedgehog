@@ -1383,6 +1383,15 @@ a.entry-card { text-decoration: none; color: var(--ink); }
 
 /* ---------- 考场（仿真卷 + 本机真题卷） ---------- */
 .exam-type.on, .exam-sec.on { outline: 2px solid var(--accent, #4a7); outline-offset: -2px; }
+.exam-review { margin: 12px 0 4px; text-align: left; }
+.exam-review summary { cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--mut); padding: 6px 0; }
+.rev-sec { margin: 10px 0 4px; }
+.rev-sec > b { font-size: 13px; color: var(--mut); }
+.rev-row { display: flex; gap: 8px; align-items: baseline; font-size: 13px; padding: 7px 2px; border-top: 1px dashed var(--line, #ddd); line-height: 1.55; }
+.rev-row.wrong { background: rgba(200, 80, 50, 0.06); }
+.rev-stem { flex: 1; min-width: 0; }
+.rev-pick { flex: none; color: var(--mut); }
+.rev-ok { flex: none; color: var(--accent, #4a7); font-weight: 600; }
 .exam-start { margin: 14px 0 8px; }
 .exam-head { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
 .exam-secname { font-weight: 700; font-size: 14.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

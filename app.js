@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.6'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.7'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1743,8 +1743,11 @@
             return x.w === l2.w || x.zh === pick.zh ? null : x.zh;
           }).map(function (x) { return x.zh; });
           if (disLC.length < 3) break;
+          // 雅思听力（l1/l2/l4）不把原文打上屏幕（否则看着句子选中文不用听）；原文存 raw，交卷后解析区才显示
           qs.push({
-            type: s.key === 'l-cont' ? '내용 파악' : '听句选义', stem: '🔊 ' + pick.en, spoken: pick.en,
+            type: s.key === 'l-cont' ? '내용 파악' : '听句选义',
+            stem: s.key === 'l-cont' ? '🔊 ' + pick.en : '听句子，选出正确的中文意思',
+            spoken: pick.en, raw: s.key === 'l-cont' ? null : pick.en,
             options: optSet(pick.zh, disLC), ref: wordList.id + '/' + l2.w
           });
         }
@@ -1777,6 +1780,7 @@
             type: s.key === 'l3' ? '选词填空' : '词汇填空',
             stem: (s.key === 'l3' ? '🔊 ' : '') + fsent.split(fw.w).join('（　）'),
             spoken: s.key === 'l3' ? fsent : null,
+            raw: s.key === 'l3' ? fsent : null, // 完整句（含答案词），交卷后解析区显示
             options: optSet(fw.w, disF), ref: wordList.id + '/' + fw.w
           });
         }
@@ -1972,6 +1976,27 @@
             : '<p class="exam-passline">' + esc(exam.name || '') + ' · 参考合格线 ' + exam.pass + ' · ' +
               (pass ? '达标线以上 ✓' : '距合格线还差 ' + Math.round((exam.pass - exam.approx) * 10) / 10 + ' 分') + '</p>')
         : '<p class="exam-passline">' + esc(exam.name || '') + ' · 真题卷按对错计分，无换算标尺</p>';
+      // 逐题解析（默认折叠）：听力原文 raw 此时才出现；错题行标出正确答案
+      var revBase = 0;
+      var review = exam.secs.map(function (s, si) {
+        var revRows = s.qs.map(function (q, qi) {
+          var a = exam.answers[si][qi];
+          var ok = a >= 0 && q.options[a] && q.options[a].ok;
+          var okT = '';
+          q.options.forEach(function (o) { if (o.ok) okT = o.t; });
+          var yourT = a >= 0 && q.options[a] ? q.options[a].t : '未答';
+          return '<div class="rev-row' + (ok ? '' : ' wrong') + '">' +
+            '<b>' + (revBase + qi + 1) + '.</b>' +
+            '<span class="rev-stem">' + esc(q.raw || q.stem) +
+            (q.spoken ? ' <button class="mini-btn" data-act="exam-rev-play" data-si="' + si + '" data-qi="' + qi + '">🔊</button>' : '') +
+            '</span>' +
+            '<span class="rev-pick">你选 ' + esc(yourT) + (ok ? ' ✓' : '') + '</span>' +
+            (ok ? '' : '<span class="rev-ok">正确 ' + esc(okT) + '</span>') +
+            '</div>';
+        }).join('');
+        revBase += s.qs.length;
+        return '<div class="rev-sec"><b>' + esc(s.title) + '</b>' + revRows + '</div>';
+      }).join('');
       return (
         '<h2>考场 · 成绩单</h2>' +
         '<div class="card exam-result">' +
@@ -1982,6 +2007,7 @@
         ' · 错 ' + exam.wrongN +
         (exam.imported ? '（真题卷 · 错题不自动入复习）'
           : exam.wrongRefN ? '（' + exam.wrongRefN + ' 题错词已进复习）' : '（已进复习队列）') + '</div>' +
+        '<details class="exam-review"><summary>解析 · 逐题对照（含听力原文）</summary>' + review + '</details>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="exam-again">再战一场</button>' +
         '<button class="btn ghost" data-act="exam-reset">换一份卷</button>' +
@@ -2218,6 +2244,12 @@
       route();
     } else if (act === 'exam-replay') {
       if (exam && exam.phase === 'run') examSpeak(examCurQ().spoken || '');
+    } else if (act === 'exam-rev-play') { // 成绩单解析区重播
+      if (exam && exam.phase === 'result') {
+        var rsi = parseInt(el.getAttribute('data-si'), 10), rqi = parseInt(el.getAttribute('data-qi'), 10);
+        var rq = exam.secs[rsi] && exam.secs[rsi].qs[rqi];
+        if (rq && rq.spoken) examSpeak(rq.spoken);
+      }
     } else if (act === 'exam-exit') {
       if (exam && exam.phase === 'run' && confirm('现在交卷？未答的题按错计并进入复习。')) examFinish();
     } else if (act === 'exam-again') {

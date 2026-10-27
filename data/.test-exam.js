@@ -117,6 +117,13 @@ const l3 = p3.secs.find(s => s.key === 'l3');
 assert(l3.qs.every(q => q.stem.indexOf('（　）') >= 0 && q.spoken && !q.spoken.includes('（　）')), 'l3 挖空题干+朗读完整句');
 const r2 = p3.secs.find(s => s.key === 'r2');
 assert(r2.qs.every(q => /^雅思义项/.test(q.stem) && q.options.every(o => /^ieltsw/.test(o.t))), 'r2 中文释义→英文词');
+// 听力 l1/l2/l4：考中不显示英文原文（raw 存起来，交卷后解析才用）
+['l1', 'l2', 'l4'].forEach(k => {
+  const sec = p3.secs.find(s => s.key === k);
+  assert(sec.qs.every(q => q.stem === '听句子，选出正确的中文意思' && q.raw && q.spoken === q.raw),
+    k + ' 题干无原文，raw 已存');
+});
+assert(l3.qs.every(q => q.raw && q.raw.indexOf(q.stem.replace('🔊 ', '').split('（　）')[0]) >= 0), 'l3 raw 存完整句');
 // band 判分：半对→band≈4.5
 api.setExam(p3);
 const e3 = api.getExam();
