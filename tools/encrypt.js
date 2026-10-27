@@ -142,6 +142,12 @@ async function main() {
     const parsed = JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'));
     if (Array.isArray(parsed.passages)) passages.push(...parsed.passages);
   });
+  // 听力情景脚本库（考场真题型）：src/scripts-*.json → data.scripts
+  const scripts = [];
+  files.filter((f) => f.startsWith('scripts-')).forEach((f) => {
+    const parsed = JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'));
+    if (Array.isArray(parsed.scripts)) scripts.push(...parsed.scripts);
+  });
   let hooks = {};
   files.filter((f) => f.startsWith('hooks')).forEach((f) => {
     Object.assign(hooks, JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).hooks || {});
@@ -158,6 +164,7 @@ async function main() {
     tables,
     grammars,
     passages,
+    scripts,
     hooks,
     tags,
   });

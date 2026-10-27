@@ -1411,6 +1411,12 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   white-space: pre-wrap; font-size: 13px; line-height: 1.6; color: var(--mut);
 }
 .rev-essay { align-items: flex-start; }
+.rev-script {
+  margin: 6px 0 4px; padding: 8px 10px; background: #eef1ea; border-radius: 6px;
+  font-size: 13px; line-height: 1.65; color: var(--mut);
+}
+.rev-script-t { display: block; font-weight: 600; color: inherit; margin-bottom: 4px; }
+.rev-script p { margin: 0; white-space: pre-wrap; }
 .exam-review { margin: 12px 0 4px; text-align: left; }
 .exam-review summary { cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--mut); padding: 6px 0; }
 .rev-sec { margin: 10px 0 4px; }

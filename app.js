@@ -15,6 +15,7 @@
   var TBY = {}; // id -> table
   var GRAMMARS = []; // 语法翼楼 [{id, lang, title, rooms}]
   var PASSAGES = []; // 雅思阅读真题文章库 [{id, lang, title, paras, qs}]
+  var SCRIPTS = []; // 雅思听力情景脚本库 [{id, lang, part, title, script, qs}]
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
@@ -24,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.9'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.10'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -473,6 +474,7 @@
     GBY = {};
     GRAMMARS.forEach(function (g) { GBY[g.id] = g; });
     PASSAGES = data.passages || []; // 雅思阅读真题文章库
+    SCRIPTS = data.scripts || []; // 雅思听力情景脚本库
     // 图像钩子 / 助记 旁路表挂到词条上
     var hooks = data.hooks || {};
     LISTS.forEach(function (l) {
@@ -1586,10 +1588,10 @@
     'ielts': {
       name: 'IELTS 仿真卷', grammarLang: 'en', speech: 'en-GB', scale: 9, pass: 6.5,
       sections: [
-        { key: 'l1', title: 'Listening · Part 1 日常对话', qn: 10, minutes: 7, note: '听句子，选正确的中文意思' },
-        { key: 'l2', title: 'Listening · Part 2 场景独白', qn: 10, minutes: 8, note: '听句子，选正确的中文意思' },
-        { key: 'l3', title: 'Listening · Part 3 选词填空', qn: 10, minutes: 8, note: '听完整句，选空格处的词（可重播）' },
-        { key: 'l4', title: 'Listening · Part 4 学术讨论', qn: 10, minutes: 7, note: '听句子，选正确的中文意思' },
+        { key: 'l1', title: 'Listening · Part 1 日常对话', qn: 10, minutes: 7, note: '情景对话整段朗读 · 填表+选择' },
+        { key: 'l2', title: 'Listening · Part 2 场景独白', qn: 10, minutes: 8, note: '场景独白整段朗读 · 填表+选择' },
+        { key: 'l3', title: 'Listening · Part 3 学术讨论', qn: 10, minutes: 8, note: '师生讨论整段朗读 · 选择+填空' },
+        { key: 'l4', title: 'Listening · Part 4 学术讲座', qn: 10, minutes: 7, note: '讲座整段朗读 · 填空+选择' },
         { key: 'r1', title: 'Reading · Passage 1', qn: 13, minutes: 20, note: '真题文章 + 判断/配对标题/填空/选择' },
         { key: 'r2', title: 'Reading · Passage 2', qn: 13, minutes: 20, note: '真题文章 + 判断/配对标题/填空/选择' },
         { key: 'r3', title: 'Reading · Passage 3', qn: 13, minutes: 20, note: '真题文章 + 判断/配对标题/填空/选择' },
@@ -1687,17 +1689,30 @@
 
     // 雅思阅读：文章库洗牌副本，r1/r2/r3 依次 splice 取（三篇互不重复）
     var passPool = [];
+    // 雅思听力：各 Part 脚本洗牌副本，l1~l4 各抽一篇（情景脚本真题型）
+    var scriptPool = {};
     if (typeKey === 'ielts') {
       PASSAGES.forEach(function (p) { if (p.lang === 'en') passPool.push(p); });
       passPool = shuffle(passPool);
+      ['l1', 'l2', 'l3', 'l4'].forEach(function (k) {
+        scriptPool[k] = shuffle(SCRIPTS.filter(function (s) { return s.lang === 'en' && s.part === k; }));
+      });
     }
     var secs = [];
     spec.sections.forEach(function (s) {
       if (!sel[s.key]) return;
       var qs = [];
       var secPassage = null;
+      var secScript = null;
       var i;
-      if (s.key === 'kanji') {
+      if (typeKey === 'ielts' && scriptPool[s.key] && scriptPool[s.key].length) {
+        // 听力真题型：抽一篇情景脚本（整段朗读一次），10 题挂脚本上（填空+选择）
+        var scp = scriptPool[s.key].shift();
+        secScript = { title: scp.title, text: scp.script };
+        (scp.qs || []).forEach(function (pq) {
+          qs.push({ type: pq.type, stem: pq.stem, options: pq.options || [], fill: pq.fill || null, ref: null });
+        });
+      } else if (s.key === 'kanji') {
         var usedW = {};
         for (i = 0; i < s.qn; i++) {
           var usedOpt = {};
@@ -1839,7 +1854,7 @@
           });
         }
       }
-      if (qs.length) secs.push({ key: s.key, title: s.title, minutes: s.minutes, qs: qs, passage: secPassage });
+      if (qs.length) secs.push({ key: s.key, title: s.title, minutes: s.minutes, qs: qs, passage: secPassage, script: secScript });
     });
     if (!secs.length) return null;
     var totalQ = secs.reduce(function (n, s) { return n + s.qs.length; }, 0);
@@ -2089,7 +2104,13 @@
             '</div>';
         }).join('');
         revBase += s.qs.length;
-        return '<div class="rev-sec"><b>' + esc(s.title) + '</b>' + revRows + '</div>';
+        // 听力脚本板块：解析区板块头显示整段脚本 + 重播（考中不显示的原文此时出现）
+        var revScript = s.script
+          ? '<div class="rev-script"><span class="rev-script-t">' + esc(s.script.title) +
+            ' <button class="mini-btn" data-act="exam-rev-script" data-si="' + si + '">🔊 重播</button></span>' +
+            '<p>' + esc(s.script.text) + '</p></div>'
+          : '';
+        return '<div class="rev-sec"><b>' + esc(s.title) + '</b>' + revScript + revRows + '</div>';
       }).join('');
       return (
         '<h2>考场 · 成绩单</h2>' +
@@ -2115,7 +2136,12 @@
     var sec = examCur();
     var q = examCurQ();
     var ans = exam.answers[exam.secIdx][exam.qi];
-    if (q.spoken && exam.spoken !== exam.secIdx + '-' + exam.qi) {
+    if (sec.script) { // 听力脚本板块：进板块第一题自动朗读整段（题干不显示脚本）
+      if (exam.qi === 0 && exam.spoken !== 'sec-' + exam.secIdx) {
+        exam.spoken = 'sec-' + exam.secIdx;
+        setTimeout(function () { examSpeak(sec.script.text); }, 150);
+      }
+    } else if (q.spoken && exam.spoken !== exam.secIdx + '-' + exam.qi) {
       exam.spoken = exam.secIdx + '-' + exam.qi;
       setTimeout(function () { examSpeak(q.spoken); }, 150);
     }
@@ -2179,7 +2205,7 @@
       '<div class="card exam-card">' +
       '<div class="exam-qtype">' + esc(q.type) + '</div>' +
       '<div class="exam-stem">' + esc(q.stem) +
-      (q.spoken ? ' <button class="mini-btn" data-act="exam-replay">🔁 重播</button>' : '') +
+      ((q.spoken || sec.script) ? ' <button class="mini-btn" data-act="exam-replay">🔁 重播</button>' : '') +
       '</div>' +
       mid +
       '<div class="exam-nav">' +
@@ -2394,12 +2420,21 @@
       exam.qi = parseInt(el.getAttribute('data-qi'), 10);
       route();
     } else if (act === 'exam-replay') {
-      if (exam && exam.phase === 'run') examSpeak(examCurQ().spoken || '');
-    } else if (act === 'exam-rev-play') { // 成绩单解析区重播
+      if (exam && exam.phase === 'run') {
+        var rq2 = examCurQ();
+        examSpeak(rq2.spoken || (examCur().script ? examCur().script.text : '') || '');
+      }
+    } else if (act === 'exam-rev-play') { // 成绩单解析区重播单题音频
       if (exam && exam.phase === 'result') {
         var rsi = parseInt(el.getAttribute('data-si'), 10), rqi = parseInt(el.getAttribute('data-qi'), 10);
         var rq = exam.secs[rsi] && exam.secs[rsi].qs[rqi];
         if (rq && rq.spoken) examSpeak(rq.spoken);
+      }
+    } else if (act === 'exam-rev-script') { // 解析区重播整段听力脚本
+      if (exam && exam.phase === 'result') {
+        var ssi = parseInt(el.getAttribute('data-si'), 10);
+        var ssec = exam.secs[ssi];
+        if (ssec && ssec.script) examSpeak(ssec.script.text);
       }
     } else if (act === 'exam-exit') {
       if (exam && exam.phase === 'run' && confirm('现在交卷？未答的题按错计并进入复习。')) examFinish();

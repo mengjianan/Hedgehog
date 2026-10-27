@@ -40,6 +40,25 @@ const PASSAGES = Array.from({ length: 4 }, (_, i) => ({
     { type: '选择题', stem: 'What does paragraph A discuss?', options: [{ t: 'Alpha', ok: true }, { t: 'Gamma', ok: false }, { t: 'Delta', ok: false }, { t: 'Theta', ok: false }] }
   ]
 }));
+// 雅思听力情景脚本库（每 Part 2 篇小样，10 题/篇：填空+选择）
+const mkScriptQs = () => [
+  { type: '表格填空', stem: "1. Name: ______", fill: { accept: ['Janeway'] } },
+  { type: '表格填空', stem: "2. Date: the ______", fill: { accept: ['17', 'seventeenth'] } },
+  { type: '选择题', stem: 'Where is the meeting?', options: [{ t: 'Room 4', ok: true }, { t: 'Room 2', ok: false }, { t: 'Room 6', ok: false }, { t: 'Room 9', ok: false }] },
+  { type: '选择题', stem: 'What time does it start?', options: [{ t: '9:30', ok: true }, { t: '10:30', ok: false }, { t: '8:30', ok: false }, { t: '11:30', ok: false }] },
+  { type: '表格填空', stem: "3. Ticket costs £______", fill: { accept: ['12', 'twelve'] } },
+  { type: '选择题', stem: 'Who should be contacted?', options: [{ t: 'The coordinator', ok: true }, { t: 'The tutor', ok: false }, { t: 'The librarian', ok: false }, { t: 'Nobody', ok: false }] },
+  { type: '表格填空', stem: "4. Bring a ______", fill: { accept: ['pen'] } },
+  { type: '选择题', stem: 'Where do they park?', options: [{ t: 'Behind the hall', ok: true }, { t: 'Under the bridge', ok: false }, { t: 'At the station', ok: false }, { t: 'Nowhere', ok: false }] },
+  { type: '表格填空', stem: "5. Deadline: ______ March", fill: { accept: ['21', 'twenty-first'] } },
+  { type: '选择题', stem: 'What is the weather forecast?', options: [{ t: 'Rain in the afternoon', ok: true }, { t: 'Snow all day', ok: false }, { t: 'Full sun', ok: false }, { t: 'Strong wind', ok: false }] }
+];
+const SCRIPTS = [];
+['l1', 'l2', 'l3', 'l4'].forEach(part => {
+  for (let n = 0; n < 2; n++) {
+    SCRIPTS.push({ id: 'en-' + part + '-' + n, lang: 'en', part, title: 'Script ' + part + '-' + n, script: 'Welcome to script ' + part + '-' + n + '. The answer is Janeway and twelve pounds.', qs: mkScriptQs() });
+  }
+});
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
 const scheduled = [];
 function scheduleRef(ref, good) { scheduled.push([ref, good]); }
@@ -51,9 +70,9 @@ function esc(s) { return String(s); }
 function pickVoice() { return null; } function toast() { }
 const window = { scrollTo() {}, speechSynthesis: null };
 
-const factory = new Function('LIST', 'DATA', 'PASSAGES', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
+const factory = new Function('LIST', 'DATA', 'PASSAGES', 'SCRIPTS', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
   code + '; return { buildPaper, getExam(){return exam;}, setExam(e){exam=e;}, examFinish };');
-const api = factory(LIST, DATA, PASSAGES, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
+const api = factory(LIST, DATA, PASSAGES, SCRIPTS, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('  ok -', msg); }
 
@@ -121,24 +140,22 @@ LIST['ielts-core'] = { id: 'ielts-core', lang: 'en', words: enWords };
 DATA.grammars.push({ lang: 'en', rooms: [{ name: 'r', points: Array.from({ length: 30 }, (_, i) => ({ t: 'en语法' + i, formula: 'en公式' + i, ex: [{ en: 'x', zh: 'x' }] })) }] });
 const p3 = api.buildPaper('ielts', { l1: true, l2: true, l3: true, l4: true, r1: true, r2: true, r3: true });
 console.log('  分段:', p3.secs.map(s => s.key + '=' + s.qs.length).join(', '));
-// 听力40 + 阅读3篇×4题（测试文章库每篇4题）= 52 题位，90 分钟
+// 听力4篇脚本×10题 + 阅读3篇×4题（测试库小样）= 52 题位，90 分钟
 assert(p3 && p3.secs.length === 7 && p3.totalQ === 52 && p3.totalMin === 90, 'IELTS 听力40+阅读12 = 52题位90分钟 = ' + p3.totalQ);
 assert(p3.scale === 9 && p3.band === true && p3.pass === 6.5, 'band 标尺 0~9 / 留学线 6.5');
+// 听力四板块：各抽一篇情景脚本（互不重复），section 带 script，题为填空+选择
+const lSecs = p3.secs.filter(s => s.key[0] === 'l');
+assert(lSecs.length === 4 && lSecs.every(s => s.script && s.script.text.indexOf('script') >= 0), '听力 4 section 均携带脚本');
+assert(new Set(lSecs.map(s => s.script.title)).size === 4, '四篇脚本互不重复（每 Part 抽 1）');
+assert(lSecs.every(s => s.qs.length === 10), '每篇脚本 10 题');
+assert(lSecs.every(s => s.qs.some(q => q.fill) && s.qs.some(q => q.options.length)), '脚本题含填空+选择');
+// 脚本题干不泄露原文（题干是表格空/问题，不是脚本内容）
+assert(lSecs.every(s => s.qs.every(q => q.stem.indexOf(s.script.text) < 0)), '题干不含脚本原文');
 // 阅读：三篇从文章库抽出、互不重复、section 带 passage、题含填空
 const rSecs = p3.secs.filter(s => s.key[0] === 'r');
 assert(rSecs.length === 3 && rSecs.every(s => s.passage && s.passage.paras.length === 2), '阅读 3 section 均携带文章');
 assert(new Set(rSecs.map(s => s.passage.title)).size === 3, '三篇文章互不重复');
 assert(rSecs.every(s => s.qs.some(q => q.fill && q.fill.accept.length)), '每篇含填空题（fill.accept）');
-// l3：题干有（　）且朗读全文
-const l3 = p3.secs.find(s => s.key === 'l3');
-assert(l3.qs.every(q => q.stem.indexOf('（　）') >= 0 && q.spoken && !q.spoken.includes('（　）')), 'l3 挖空题干+朗读完整句');
-// 听力 l1/l2/l4：考中不显示英文原文（raw 存起来，交卷后解析才用）
-['l1', 'l2', 'l4'].forEach(k => {
-  const sec = p3.secs.find(s => s.key === k);
-  assert(sec.qs.every(q => q.stem === '听句子，选出正确的中文意思' && q.raw && q.spoken === q.raw),
-    k + ' 题干无原文，raw 已存');
-});
-assert(l3.qs.every(q => q.raw && q.raw.indexOf(q.stem.replace('🔊 ', '').split('（　）')[0]) >= 0), 'l3 raw 存完整句');
 
 console.log('场景6: IELTS 写作板块（w1/w2，不判分）');
 const p4 = api.buildPaper('ielts', { w1: true, w2: true, l1: true });
@@ -152,7 +169,8 @@ api.setExam(p4);
 const e5 = api.getExam();
 e5.secs.forEach((s, si) => s.qs.forEach((q, qi) => {
   if (q.writing) return;
-  e5.answers[si][qi] = q.options.findIndex(o => o.ok);
+  if (q.fill) e5.answers[si][qi] = q.fill.accept[0]; // 脚本填空题：填对
+  else e5.answers[si][qi] = q.options.findIndex(o => o.ok);
 }));
 e5.texts[e5.secIdx] = e5.texts[e5.secIdx] || []; // 模拟写了 w1
 const wi = e5.secs.findIndex(s => s.key === 'w1');
@@ -183,7 +201,8 @@ e3.secs.forEach((s, si) => s.qs.forEach((q, qi) => {
 scheduled.length = 0;
 api.examFinish();
 const e4 = api.getExam();
-assert(e4.phase === 'result' && fillN === 3 && fillOkN === 3, '阅读填空 3 题全对（qi=2 偶数位）= ' + fillN + '/' + fillOkN);
+// 填空分布：听力 4 篇×5 个（偶数 qi 填对 4 个/篇）+ 阅读 3 篇×1（qi=2 偶数全对）
+assert(e4.phase === 'result' && fillN === 23 && fillOkN === 19, '填空 23 题对 19（偶数位规则）= ' + fillN + '/' + fillOkN);
 assert(typeof e4.approx === 'number' && e4.approx >= 0 && e4.approx <= 9, 'band 0~9 = ' + e4.approx);
 // 填空判分宽容：大小写+首尾空格
 api.setExam(api.buildPaper('ielts', { r1: true, r2: true }));
