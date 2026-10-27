@@ -1380,3 +1380,34 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .matrix-table td b { font-size: 18px; }
   .morph-form { font-size: 14px; }
 }
+
+/* ---------- 考场（模拟考试） ---------- */
+.exam-entry b::before { content: '📝 '; }
+.exam-sec.on { outline: 2px solid var(--accent, #4a7); }
+.exam-start { margin: 14px 0 8px; }
+.exam-head { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
+.exam-secname { font-weight: 700; font-size: 14.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exam-timer { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 17px; color: var(--accent, #4a7); }
+.exam-prog { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--mut); margin-bottom: 8px; }
+.exam-qtype { font-size: 12px; color: var(--mut); letter-spacing: .04em; margin-bottom: 6px; }
+.exam-stem { font-size: 16.5px; line-height: 1.65; margin-bottom: 14px; }
+.exam-opts { display: flex; flex-direction: column; gap: 8px; }
+.exam-opt { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px 12px; border: 1.5px solid var(--line, #ddd); border-radius: 10px; background: #fff; font-size: 15px; line-height: 1.5; cursor: pointer; }
+.exam-opt em { font-style: normal; font-weight: 700; color: var(--mut); flex: none; }
+.exam-opt.right { border-color: #2e9e5b; background: #e9f7ef; }
+.exam-opt.wrong { border-color: #d9534f; background: #fdecea; }
+.exam-opt.reveal { border-color: #2e9e5b; }
+.exam-nav { display: flex; gap: 10px; margin-top: 14px; }
+.exam-nav .btn { flex: 1; }
+.exam-sheet { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+.exam-sheet-sec b { display: block; font-size: 11.5px; color: var(--mut); margin-bottom: 4px; }
+.sheet-no { width: 30px; height: 30px; border: 1px solid var(--line, #ddd); border-radius: 7px; background: #fff; font-size: 12.5px; cursor: pointer; margin: 2px; }
+.sheet-no.done { background: var(--accent, #4a7); color: #fff; border-color: transparent; }
+.sheet-no.cur { outline: 2px solid var(--accent, #4a7); }
+.exam-result { text-align: center; }
+.exam-score { font-size: 44px; font-weight: 800; line-height: 1.1; }
+.exam-score small { font-size: 15px; font-weight: 400; color: var(--mut); margin-left: 6px; }
+.exam-score.pass { color: #2e9e5b; }
+.exam-passline { font-size: 13px; color: var(--mut); margin: 6px 0 14px; }
+.exam-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; padding: 8px 4px; border-top: 1px dashed var(--line, #ddd); text-align: left; }
+.exam-total { margin-top: 12px; font-size: 13.5px; font-weight: 600; }

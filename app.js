@@ -1035,6 +1035,8 @@
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
         '<b>串门混考</b>' +
         '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
+        '<a class="entry-card exam-entry" href="#/exam"><b>📝 考场 · JLPT N1 模拟</b>' +
+        '<small>按真题题型原创组卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
@@ -1537,6 +1539,326 @@
   }
 
   // ---------- 路由 ----------
+  // ---------- 考场（模拟考试 · JLPT N1 仿真卷） ----------
+  // 按真题题型原创组卷（词库+语法宫出题，TTS 听力）；倒计时/答题卡/成绩换算/错题入复习。
+  var exam = null;
+  var examTimerId = null;
+  var examSel = { kanji: true, context: true, meaning: true, grammar: true, listen: true };
+  var EXAM_SECTIONS = [
+    { key: 'kanji', title: '文字・語彙 · 漢字読み', qn: 20, minutes: 15, note: '看汉字词选正确读音' },
+    { key: 'context', title: '文字・語彙 · 文脈規定', qn: 20, minutes: 20, note: '句中挖空，选最贴切的词' },
+    { key: 'meaning', title: '文字・語彙 · 意味規定', qn: 15, minutes: 10, note: '选词语的正确中文义' },
+    { key: 'grammar', title: '文法', qn: 20, minutes: 20, note: '选出句子所用的语法形式' },
+    { key: 'listen', title: '聴解 · 即時応答', qn: 20, minutes: 15, note: '听发音选词义（可重播）' }
+  ]; // 共 95 题 · 80 分钟（题型按 N1 真题结构，题目原创）
+
+  function examSpeak(text) {
+    if (!window.speechSynthesis) return;
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    var v = pickVoice('ja-JP');
+    if (v) u.voice = v;
+    u.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setTimeout(function () {
+      try { if (window.speechSynthesis.speaking) window.speechSynthesis.resume(); } catch (err) {}
+    }, 300);
+  }
+
+  function exPick(arr, n, used, keyFn) {
+    var out = [], guard = 0;
+    while (out.length < n && guard++ < arr.length * 4) {
+      var it = arr[Math.floor(Math.random() * arr.length)];
+      var k = keyFn(it);
+      if (!k || used[k]) continue;
+      used[k] = 1;
+      out.push(it);
+    }
+    return out;
+  }
+
+  function optSet(correct, distractors) {
+    var opts = [{ t: correct, ok: true }];
+    distractors.forEach(function (d) { opts.push({ t: d, ok: false }); });
+    return shuffle(opts);
+  }
+
+  // 组卷：按选中板块生成题目
+  function buildPaper(sel) {
+    var core = LIST['jlpt-core'];
+    if (!core) return null;
+    var all = core.words;
+    var kanjiW = all.filter(function (x) { return /[一-龯]/.test(x.w); });
+    var ctxW = all.filter(function (x) {
+      return (x.ex || []).some(function (e) { return e.en && e.en.indexOf(x.w) >= 0; });
+    });
+    var gpts = [];
+    (DATA.grammars || []).forEach(function (g) {
+      if (g.lang !== 'ja') return;
+      (g.rooms || []).forEach(function (r) { (r.points || []).forEach(function (p) { gpts.push(p); }); });
+    });
+    if (!kanjiW.length || !ctxW.length || !gpts.length) return null;
+
+    var secs = [];
+    EXAM_SECTIONS.forEach(function (s) {
+      if (!sel[s.key]) return;
+      var qs = [];
+      var i;
+      if (s.key === 'kanji') {
+        var usedW = {};
+        for (i = 0; i < s.qn; i++) {
+          var usedOpt = {}; // 干扰项仅题内去重（跨题可重复）
+          var cand = exPick(kanjiW, 1, usedW, function (x) { return x.w; })[0];
+          if (!cand) break;
+          var correct = cand.pron.split(' / ')[0];
+          var dis = exPick(kanjiW, 3, usedOpt, function (x) {
+            var r = x.pron.split(' / ')[0];
+            return r === correct ? null : r;
+          }).map(function (x) { return x.pron.split(' / ')[0]; });
+          if (dis.length < 3) break;
+          qs.push({ type: '漢字読み', stem: cand.w, options: optSet(correct, dis), ref: 'jlpt-core/' + cand.w });
+        }
+      } else if (s.key === 'context') {
+        var usedC = {};
+        for (i = 0; i < s.qn; i++) {
+          var usedOptC = {};
+          var c = exPick(ctxW, 1, usedC, function (x) { return x.w; })[0];
+          if (!c) break;
+          var sent = null;
+          (c.ex || []).forEach(function (e) { if (!sent && e.en && e.en.indexOf(c.w) >= 0) sent = e.en; });
+          if (!sent) continue;
+          var stem = sent.split(c.w).join('（　）');
+          var disC = exPick(all, 3, usedOptC, function (x) { return x.w === c.w ? null : x.w; })
+            .map(function (x) { return x.w; });
+          if (disC.length < 3) break;
+          qs.push({ type: '文脈規定', stem: stem, options: optSet(c.w, disC), ref: 'jlpt-core/' + c.w });
+        }
+      } else if (s.key === 'meaning') {
+        var usedM = {};
+        for (i = 0; i < s.qn; i++) {
+          var usedOptM = {};
+          var m = exPick(all, 1, usedM, function (x) { return x.w; })[0];
+          if (!m) break;
+          var disM = exPick(all, 3, usedOptM, function (x) {
+            return x.w === m.w || x.zh === m.zh ? null : x.zh;
+          }).map(function (x) { return x.zh; });
+          if (disM.length < 3) break;
+          qs.push({
+            type: '意味規定',
+            stem: m.w + '（' + m.pron.split(' / ')[0] + '）',
+            options: optSet(m.zh, disM), ref: 'jlpt-core/' + m.w
+          });
+        }
+      } else if (s.key === 'grammar') {
+        var usedG = {};
+        for (i = 0; i < s.qn; i++) {
+          var usedOptG = {};
+          var g1 = exPick(gpts, 1, usedG, function (p) { return p.t; })[0];
+          if (!g1 || !(g1.ex && g1.ex[0] && g1.ex[0].en) || !g1.formula) continue;
+          var disG = exPick(gpts, 3, usedOptG, function (p) {
+            return p.t === g1.t || p.formula === g1.formula ? null : p.formula;
+          }).map(function (p) { return p.formula; });
+          if (disG.length < 3) break;
+          qs.push({
+            type: '文法', stem: g1.ex[0].en,
+            options: optSet(g1.formula, disG), ref: null
+          });
+        }
+      } else if (s.key === 'listen') {
+        var usedL = {};
+        for (i = 0; i < s.qn; i++) {
+          var usedOptL = {};
+          var l1 = exPick(all, 1, usedL, function (x) { return x.w; })[0];
+          if (!l1) break;
+          var spoken = (l1.collo && l1.collo[0]) ? l1.collo[0] : l1.w;
+          var disL = exPick(all, 3, usedOptL, function (x) {
+            return x.w === l1.w || x.zh === l1.zh ? null : x.zh;
+          }).map(function (x) { return x.zh; });
+          if (disL.length < 3) break;
+          qs.push({
+            type: '聴解・即時応答', stem: '🔊 ' + spoken, spoken: spoken,
+            options: optSet(l1.zh, disL), ref: 'jlpt-core/' + l1.w
+          });
+        }
+      }
+      if (qs.length) secs.push({ key: s.key, title: s.title, minutes: s.minutes, qs: qs });
+    });
+    if (!secs.length) return null;
+    var totalQ = secs.reduce(function (n, s) { return n + s.qs.length; }, 0);
+    var totalMin = secs.reduce(function (n, s) { return n + s.minutes; }, 0);
+    return {
+      name: 'JLPT N1 模拟卷（仿真）',
+      secs: secs, totalQ: totalQ, totalMin: totalMin,
+      secIdx: 0, qi: 0,
+      answers: secs.map(function (s) { return s.qs.map(function () { return -1; }); }),
+      deadline: Date.now() + totalMin * 60000,
+      phase: 'run', spoken: null
+    };
+  }
+
+  function examCur() { return exam.secs[exam.secIdx]; }
+  function examCurQ() { return examCur().qs[exam.qi]; }
+  function examRemaining() { return Math.max(0, Math.round((exam.deadline - Date.now()) / 1000)); }
+
+  function examPersist() {
+    try {
+      var copy = {};
+      for (var k in exam) { if (k !== 'timerId') copy[k] = exam[k]; }
+      lsSet('hedgehog:exam', copy);
+    } catch (e) {}
+  }
+
+  function examFinish() {
+    if (!exam || exam.phase !== 'run') return;
+    exam.phase = 'result';
+    exam.result = exam.secs.map(function (s, si) {
+      var correct = 0;
+      s.qs.forEach(function (q, qi) {
+        var a = exam.answers[si][qi];
+        var ok = a >= 0 && q.options[a] && q.options[a].ok;
+        if (ok) correct++;
+        // 错题（含未答）进复习队列
+        if (!ok && q.ref) {
+          try {
+            scheduleRef(q.ref, false);
+            var k = known();
+            if (k[q.ref]) { delete k[q.ref]; lsSet('hedgehog:known', k); }
+          } catch (e) {}
+        }
+      });
+      return { title: s.title, qn: s.qs.length, correct: correct, scaled: Math.round((correct / s.qs.length) * 60) };
+    });
+    exam.wrongN = exam.result.reduce(function (n, r) { return n + (r.qn - r.correct); }, 0);
+    exam.correctN = exam.result.reduce(function (n, r) { return n + r.correct; }, 0);
+    exam.approx = Math.round((exam.correctN / exam.totalQ) * 180); // 近似 180 制参考分
+    try { localStorage.removeItem('hedgehog:exam'); } catch (e) {}
+    if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
+    route();
+  }
+
+  function examTick() {
+    if (!exam || exam.phase !== 'run') {
+      if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
+      return;
+    }
+    var el = $('examTimer');
+    var rem = examRemaining();
+    if (el) {
+      var m = Math.floor(rem / 60), s = rem % 60;
+      el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    if (rem <= 0) examFinish();
+  }
+
+  function examStartTimer() {
+    if (examTimerId) clearInterval(examTimerId);
+    examTimerId = setInterval(examTick, 1000);
+    examTick();
+  }
+
+  function examScreen() {
+    if (!exam) exam = lsGet('hedgehog:exam', null);
+    if (!exam || !exam.secs || exam.phase === 'setup') {
+      // 组卷设置页
+      var cards = EXAM_SECTIONS.map(function (s) {
+        var on = examSel[s.key];
+        return (
+          '<button class="entry-card exam-sec' + (on ? ' on' : '') + '" data-act="exam-toggle" data-key="' + s.key + '">' +
+          '<b>' + (on ? '☑ ' : '☐ ') + s.title + '</b>' +
+          '<small>' + s.qn + ' 题 · ' + s.minutes + ' 分钟 · ' + s.note + '</small></button>'
+        );
+      }).join('');
+      var onKeys = EXAM_SECTIONS.filter(function (s) { return examSel[s.key]; });
+      var tq = onKeys.reduce(function (n, s) { return n + s.qn; }, 0);
+      var tm = onKeys.reduce(function (n, s) { return n + s.minutes; }, 0);
+      return (
+        '<a class="back-link" href="#/study">← 巡游</a>' +
+        '<h2>考场 · JLPT N1 模拟</h2>' +
+        '<p class="sub">题型按 N1 真题结构原创出题 · 选板块组卷 · 成绩近似换算</p>' +
+        cards +
+        '<div class="exam-start"><button class="btn" data-act="exam-begin"' + (tq ? '' : ' disabled') + '>' +
+        '开始考试（' + tq + ' 题 · ' + tm + ' 分钟）</button></div>' +
+        '<p class="footnote">倒计时中途刷新不丢 · 错题自动进复习队列</p>'
+      );
+    }
+    if (exam.phase === 'result') {
+      var rows = (exam.result || []).map(function (r) {
+        return '<div class="exam-row"><span>' + esc(r.title) + '</span>' +
+          '<span>' + r.correct + '/' + r.qn + '</span>' +
+          '<span>折 ' + r.scaled + ' 分</span></div>';
+      }).join('');
+      var pass = exam.approx >= 100;
+      return (
+        '<h2>考场 · 成绩单</h2>' +
+        '<div class="card exam-result">' +
+        '<div class="exam-score' + (pass ? ' pass' : '') + '">' + exam.approx + '<small>/180 近似分</small></div>' +
+        '<p class="exam-passline">参考合格线 100（单项 19+）· ' +
+        (pass ? '达标线以上 ✓' : '距合格线还差 ' + (100 - exam.approx) + ' 分') + '</p>' +
+        rows +
+        '<div class="exam-total">总正确 ' + exam.correctN + '/' + exam.totalQ +
+        ' · 错 ' + exam.wrongN + '（已进复习队列）</div>' +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="exam-again">再战一场</button>' +
+        '<a class="btn ghost" href="#/study">回巡游</a>' +
+        '</div></div>'
+      );
+    }
+    // 考试中
+    if (examTimerId == null) examStartTimer();
+    var sec = examCur();
+    var q = examCurQ();
+    var ans = exam.answers[exam.secIdx][exam.qi];
+    if (q.spoken && exam.spoken !== exam.secIdx + '-' + exam.qi) {
+      exam.spoken = exam.secIdx + '-' + exam.qi;
+      setTimeout(function () { examSpeak(q.spoken); }, 150);
+    }
+    var qNo = 0, i;
+    for (i = 0; i < exam.secIdx; i++) qNo += exam.secs[i].qs.length;
+    qNo += exam.qi + 1;
+    var opts = q.options.map(function (o, idx) {
+      var cls = 'exam-opt';
+      if (ans === idx) cls += o.ok ? ' right' : ' wrong';
+      else if (ans >= 0 && o.ok) cls += ' reveal';
+      return '<button class="' + cls + '" data-act="exam-pick" data-i="' + idx + '">' +
+        '<em>' + 'ABCD'[idx] + '</em>' + esc(o.t) + '</button>';
+    }).join('');
+    var off = 0;
+    var sheet = exam.secs.map(function (s, si) {
+      var base = off; off += s.qs.length;
+      return '<div class="exam-sheet-sec"><b>' + esc(s.title.split(' · ').pop()) + '</b>' +
+        s.qs.map(function (_, qi) {
+          var a = exam.answers[si][qi];
+          var cls = 'sheet-no' + (si === exam.secIdx && qi === exam.qi ? ' cur' : '') + (a >= 0 ? ' done' : '');
+          return '<button class="' + cls + '" data-act="exam-goto" data-si="' + si + '" data-qi="' + qi + '">' +
+            (base + qi + 1) + '</button>';
+        }).join('') + '</div>';
+    }).join('');
+    var lastSec = exam.secIdx === exam.secs.length - 1;
+    var lastQ = exam.qi === exam.secs[exam.secIdx].qs.length - 1;
+    return (
+      '<div class="exam-head">' +
+      '<span class="exam-secname">' + esc(sec.title) + '</span>' +
+      '<span class="exam-timer" id="examTimer">--:--</span>' +
+      '<button class="mini-btn" data-act="exam-exit">✕ 交卷退出</button>' +
+      '</div>' +
+      '<div class="exam-prog"><span>第 ' + qNo + '/' + exam.totalQ + ' 题</span>' +
+      '<span>' + (exam.secIdx + 1) + '/' + exam.secs.length + ' 板块</span></div>' +
+      '<div class="card exam-card">' +
+      '<div class="exam-qtype">' + esc(q.type) + '</div>' +
+      '<div class="exam-stem">' + esc(q.stem) +
+      (q.spoken ? ' <button class="mini-btn" data-act="exam-replay">🔁 重播</button>' : '') +
+      '</div>' +
+      '<div class="exam-opts">' + opts + '</div>' +
+      '<div class="exam-nav">' +
+      '<button class="btn ghost" data-act="exam-prev"' +
+      (exam.qi === 0 && exam.secIdx === 0 ? ' disabled' : '') + '>上一题</button>' +
+      '<button class="btn" data-act="exam-next">' + (lastSec && lastQ ? '交卷' : '下一题') + '</button>' +
+      '</div></div>' +
+      '<div class="exam-sheet">' + sheet + '</div>'
+    );
+  }
+
   function route() {
     if (!DATA) return;
     var h = location.hash.replace(/^#\/?/, '');
@@ -1561,6 +1883,9 @@
       else if (parts[1]) view.innerHTML = viewGrammarWing(parts[1]);
       else view.innerHTML = viewGrammarHub();
       nav = 'categories';
+    } else if (name === 'exam') {
+      view.innerHTML = examScreen();
+      nav = 'study';
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
     } else if (name === 'copybook') {
@@ -1577,7 +1902,7 @@
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
-    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7 }[name] || 1;
+    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7, exam: 4 }[name] || 1;
     var pn = $('pageNum');
     if (pn) pn.textContent = '— ' + pnum + ' —';
     window.scrollTo(0, 0);
@@ -1669,6 +1994,44 @@
     } else if (act === 'scene-filter') {
       sceneLang = el.getAttribute('data-lang') || 'all';
       route();
+    } else if (act === 'exam-toggle') {
+      var ek = el.getAttribute('data-key');
+      examSel[ek] = !examSel[ek];
+      route();
+    } else if (act === 'exam-begin') {
+      exam = buildPaper(examSel);
+      if (exam) { examPersist(); route(); }
+    } else if (act === 'exam-pick') {
+      if (!exam || exam.phase !== 'run') return;
+      exam.answers[exam.secIdx][exam.qi] = parseInt(el.getAttribute('data-i'), 10);
+      examPersist();
+      route();
+    } else if (act === 'exam-next') {
+      if (!exam || exam.phase !== 'run') return;
+      var cs = examCur();
+      if (exam.qi < cs.qs.length - 1) exam.qi++;
+      else if (exam.secIdx < exam.secs.length - 1) { exam.secIdx++; exam.qi = 0; }
+      else { examFinish(); return; }
+      examPersist();
+      route();
+    } else if (act === 'exam-prev') {
+      if (!exam || exam.phase !== 'run') return;
+      if (exam.qi > 0) exam.qi--;
+      else if (exam.secIdx > 0) { exam.secIdx--; exam.qi = exam.secs[exam.secIdx].qs.length - 1; }
+      examPersist();
+      route();
+    } else if (act === 'exam-goto') {
+      if (!exam || exam.phase !== 'run') return;
+      exam.secIdx = parseInt(el.getAttribute('data-si'), 10);
+      exam.qi = parseInt(el.getAttribute('data-qi'), 10);
+      route();
+    } else if (act === 'exam-replay') {
+      if (exam && exam.phase === 'run') examSpeak(examCurQ().spoken || '');
+    } else if (act === 'exam-exit') {
+      if (exam && exam.phase === 'run' && confirm('现在交卷？未答的题按错计并进入复习。')) examFinish();
+    } else if (act === 'exam-again') {
+      exam = buildPaper(examSel);
+      if (exam) { examPersist(); route(); }
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
       route();
