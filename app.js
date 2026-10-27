@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.4'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.5'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1036,7 +1036,7 @@
         '<b>串门混考</b>' +
         '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
         '<a class="entry-card exam-entry" href="#/exam"><b>📝 考场</b>' +
-        '<small>JLPT / TOPIK 仿真卷 + 本机真题卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
+        '<small>JLPT / TOPIK / IELTS 仿真卷 + 本机真题卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
@@ -1569,6 +1569,18 @@
         { key: 'v-ctx', title:'어휘 · 문맥 채우기', qn: 25, minutes: 30, note: '句中挖空，选最贴切的词' },
         { key: 'g-form', title:'문법 · 연결어미', qn: 20, minutes: 25, note: '选出句子所用的语法形式' }
       ] // 100 题 · 110 分钟（≈真题 2 教时）· 近似满分 300、3급参考线 120
+    },
+    'ielts': {
+      name: 'IELTS 仿真卷', grammarLang: 'en', speech: 'en-GB', scale: 9, pass: 6.5,
+      sections: [
+        { key: 'l1', title: 'Listening · Part 1 日常对话', qn: 10, minutes: 7, note: '听句子，选正确的中文意思' },
+        { key: 'l2', title: 'Listening · Part 2 场景独白', qn: 10, minutes: 8, note: '听句子，选正确的中文意思' },
+        { key: 'l3', title: 'Listening · Part 3 选词填空', qn: 10, minutes: 8, note: '听完整句，选空格处的词（可重播）' },
+        { key: 'l4', title: 'Listening · Part 4 学术讨论', qn: 10, minutes: 7, note: '听句子，选正确的中文意思' },
+        { key: 'r1', title: 'Reading · Passage 1 词汇填空', qn: 14, minutes: 20, note: '句中挖空，选最贴切的词' },
+        { key: 'r2', title: 'Reading · Passage 2 同义替换', qn: 13, minutes: 20, note: '看中文释义，选对应英文词' },
+        { key: 'r3', title: 'Reading · Passage 3 混合', qn: 13, minutes: 20, note: '填空 + 同义替换各半' }
+      ] // 80 题 · 90 分钟（真题结构：听力 40 + 阅读 40）· band 0~9、6.5 常见留学线
     }
   };
   var examSels = {};
@@ -1618,9 +1630,10 @@
   function buildPaper(typeKey, sel) {
     var spec = EXAM_TYPES[typeKey];
     if (!spec) return null;
-    var core = LIST['jlpt-core'] || LIST['topik-core'] || LIST['jlpt-core'];
-    // 词表按语种：jlpt 用 jlpt-core，topik 用 topik-core
-    var wordList = typeKey === 'topik-ii' ? (LIST['topik-core'] || LIST['jlpt-core']) : (LIST['jlpt-core'] || LIST['topik-core']);
+    // 词表按考试：ielts 用 ielts-core，topik 用 topik-core，jlpt 用 jlpt-core
+    var wordList = typeKey === 'ielts' ? (LIST['ielts-core'] || LIST['jlpt-core'])
+      : typeKey === 'topik-ii' ? (LIST['topik-core'] || LIST['jlpt-core'])
+      : (LIST['jlpt-core'] || LIST['topik-core']);
     if (!wordList) return null;
     var all = wordList.words;
     var kanjiW = all.filter(function (x) { return /[一-鿿]/.test(x.w); });
@@ -1716,7 +1729,8 @@
             options: optSet(l1.zh, disL), ref: wordList.id + '/' + l1.w
           });
         }
-      } else if (s.key === 'l-cont') {
+      } else if (s.key === 'l-cont' || s.key === 'l1' || s.key === 'l2' || s.key === 'l4') {
+        // 听句子选中文义：TOPIK 내용 파악 / 雅思 Listening Part 1·2·4
         var usedLC = {};
         for (i = 0; i < s.qn; i++) {
           var usedOptLC = {};
@@ -1730,8 +1744,40 @@
           }).map(function (x) { return x.zh; });
           if (disLC.length < 3) break;
           qs.push({
-            type: '내용 파악', stem: '🔊 ' + pick.en, spoken: pick.en,
+            type: s.key === 'l-cont' ? '내용 파악' : '听句选义', stem: '🔊 ' + pick.en, spoken: pick.en,
             options: optSet(pick.zh, disLC), ref: wordList.id + '/' + l2.w
+          });
+        }
+      } else if (s.key === 'l3' || s.key === 'r1' || s.key === 'r2' || s.key === 'r3') {
+        // 雅思填空/同义：听整句选空格词（l3，朗读完整句）/ 阅读挖空（r1）/ 同义替换（r2 全部、r3 后半）
+        var poolR = ctxW.length ? ctxW : all;
+        var usedFill = {}, usedSyn = {};
+        for (i = 0; i < s.qn; i++) {
+          var wantSyn = s.key === 'r2' || (s.key === 'r3' && i >= Math.floor(s.qn / 2));
+          if (wantSyn) { // 同义替换半：看中文释义选英文词
+            var synW = exPick(all, 1, usedSyn, function (x) { return x.w; })[0];
+            if (!synW) break;
+            var disSyn = exPick(all, 3, {}, function (x) {
+              return x.w === synW.w || x.zh === synW.zh ? null : x.w;
+            }).map(function (x) { return x.w; });
+            if (disSyn.length < 3) break;
+            qs.push({ type: '同义替换', stem: synW.zh, options: optSet(synW.w, disSyn), ref: wordList.id + '/' + synW.w });
+            continue;
+          }
+          var fw = exPick(poolR, 1, usedFill, function (x) { return x.w; })[0];
+          if (!fw) break;
+          var fsent = null;
+          (fw.ex || []).forEach(function (e) { if (!fsent && e.en && fw.w && e.en.indexOf(fw.w) >= 0) fsent = e.en; });
+          if (!fsent) continue;
+          var disF = exPick(all, 3, {}, function (x) {
+            return x.w === fw.w ? null : x.w;
+          }).map(function (x) { return x.w; });
+          if (disF.length < 3) break;
+          qs.push({
+            type: s.key === 'l3' ? '选词填空' : '词汇填空',
+            stem: (s.key === 'l3' ? '🔊 ' : '') + fsent.split(fw.w).join('（　）'),
+            spoken: s.key === 'l3' ? fsent : null,
+            options: optSet(fw.w, disF), ref: wordList.id + '/' + fw.w
           });
         }
       }
@@ -1921,7 +1967,7 @@
       var passHtml = exam.scale
         ? (exam.band
             ? '<p class="exam-passline">' + esc(exam.name || '') + ' · 总分按正确率折算 band · ' +
-              (exam.approx >= 6.5 ? '常见留学线 6.5 以上 ✓' : '常见留学线 6.5，还差 ' + Math.round((6.5 - exam.approx) * 2) / 2 + ' band') + '</p>'
+              (pass ? '常见留学线 ' + exam.pass + ' 以上 ✓' : '常见留学线 ' + exam.pass + '，还差 ' + Math.round((exam.pass - exam.approx) * 2) / 2 + ' band') + '</p>'
             : '<p class="exam-passline">' + esc(exam.name || '') + ' · 参考合格线 ' + exam.pass + ' · ' +
               (pass ? '达标线以上 ✓' : '距合格线还差 ' + Math.round((exam.pass - exam.approx) * 10) / 10 + ' 分') + '</p>')
         : '<p class="exam-passline">' + esc(exam.name || '') + ' · 真题卷按对错计分，无换算标尺</p>';
