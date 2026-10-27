@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.10'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.11'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1608,7 +1608,21 @@
       'The table below gives information about the number of tourists visiting a European city from four regions in 2010 and 2020. Europe: 2.1m, 2.4m. Asia: 0.8m, 1.9m. Americas: 1.2m, 1.1m. Africa & Middle East: 0.3m, 0.7m. Summarise the information and make comparisons where relevant. Write at least 150 words.',
       'The chart below shows the average daily minutes spent on three types of media by age groups in a country. 16-24: TV 45, social media 190, print 15. 25-44: TV 80, social media 120, print 30. 45-64: TV 130, social media 60, print 55. 65+: TV 190, social media 25, print 80. Summarise the main features. Write at least 150 words.',
       'The table below shows water consumption (litres per person per day) in five countries and how it is used. Country X: total 400 (home 150, farm 200, factory 50). Country Y: total 300 (home 100, farm 150, factory 50). Country Z: total 500 (home 200, farm 220, factory 80). Country W: total 250 (home 90, farm 120, factory 40). Country V: total 350 (home 130, farm 160, factory 60). Summarise the information. Write at least 150 words.',
-      'The chart below shows the number of public libraries in a city and visitor numbers (millions per year) from 2005 to 2025. Libraries: 42, 40, 36, 33, 30. Visitors: 5.2, 4.8, 4.1, 3.9, 4.5. Summarise the main features and comment on possible reasons for the changes. Write at least 150 words.'
+      'The chart below shows the number of public libraries in a city and visitor numbers (millions per year) from 2005 to 2025. Libraries: 42, 40, 36, 33, 30. Visitors: 5.2, 4.8, 4.1, 3.9, 4.5. Summarise the main features and comment on possible reasons for the changes. Write at least 150 words.',
+      'The bar chart compares the proportion of men and women in full-time employment in five occupational categories. Doctors: 55% men, 45% women. Nursing: 12% men, 88% women. Teaching: 38% men, 62% women. Engineering: 87% men, 13% women. Law: 49% men, 51% women. Summarise the information by selecting and reporting the main features. Write at least 150 words.',
+      'The line graph shows the number of cars sold in three European countries between 2010 and 2024. Country P: 800k, 850k, 760k, 900k, 1.05m. Country Q: 600k, 540k, 500k, 620k, 700k. Country R: 450k, 470k, 480k, 460k, 440k. Summarise the main features and make comparisons where relevant. Write at least 150 words.',
+      'The pie charts show how households in a country spent their income in 2005 and 2025. 2005: housing 32%, food 24%, transport 15%, entertainment 8%, savings 21%. 2025: housing 38%, food 14%, transport 11%, entertainment 15%, savings 22%. Summarise the information. Write at least 150 words.',
+      'The table below shows the percentage of the population living in urban areas in five Asian countries in 1990 and 2025. Country J: 62%, 84%. Country K: 45%, 71%. Country L: 30%, 55%. Country M: 70%, 88%. Country N: 22%, 48%. Summarise the main features and make comparisons. Write at least 150 words.',
+      'The chart below shows the main sources of electricity in a country in 2010 and 2025. 2010: coal 55%, gas 20%, nuclear 15%, wind and solar 5%, hydro 5%. 2025: coal 28%, gas 22%, nuclear 18%, wind and solar 25%, hydro 7%. Summarise the information and comment on the most significant changes. Write at least 150 words.',
+      'The table below compares the amount of rubbish produced per person per week (kilograms) in four towns in 2010 and 2024, along with the percentage recycled. Town A: 14kg 8% → 11kg 34%. Town B: 16kg 6% → 13kg 41%. Town C: 10kg 12% → 9kg 48%. Town D: 18kg 5% → 15kg 27%. Summarise the main features. Write at least 150 words.',
+      'The line graph compares the average number of hours spent online per day by people in three age groups between 2000 and 2025. Ages 16-24: 1.5h, 3.0h, 5.5h, 7.0h. Ages 35-49: 1.0h, 2.2h, 3.8h, 5.0h. Ages 60+: 0.3h, 0.8h, 1.9h, 3.5h. Summarise the main features and make comparisons. Write at least 150 words.',
+      'The chart below shows the number of international students at a university in 2010, 2018 and 2025 by region of origin. Europe: 4,200, 5,100, 5,600. Asia: 2,800, 6,300, 9,400. Africa: 900, 1,600, 2,700. Americas: 1,300, 1,500, 1,700. Summarise the main features. Write at least 150 words.',
+      'The diagram below shows the process by which recycled paper is produced, in seven stages beginning with collection and ending with the sale of new paper products. Summarise the information by selecting and reporting the main features, and describe the steps in detail. Write at least 150 words.',
+      'The table below shows the number of visitors to three museums in a city and their entrance fees in 2015 and 2025. Museum X: 1.2m visitors, free → 0.8m visitors, free. Museum Y: 0.6m visitors, £8 → 1.1m visitors, £12. Museum Z: 0.9m visitors, £5 → 0.5m visitors, £10. Summarise the main features and make comparisons. Write at least 150 words.',
+      'The bar chart compares the percentage of people in four age groups who did voluntary work in 2000 and 2022. Ages 18-24: 12%, 24%. Ages 25-44: 18%, 22%. Ages 45-64: 25%, 30%. Ages 65+: 30%, 35%. Summarise the information. Write at least 150 words.',
+      'The chart below shows the average price of a first-night ticket for three types of entertainment in a city between 2005 and 2025, adjusted for inflation. Cinema: £5, £6, £7, £9. Theatre: £12, £15, £19, £26. Concert: £18, £22, £28, £38. Summarise the main features and make comparisons. Write at least 150 words.',
+      'The table below shows the number of bicycles and cars registered in four European cities in 2010 and 2024, together with the kilometres of dedicated cycle lanes. City 1: bikes 120k→310k, cars 480k→420k, lanes 45km→190km. City 2: bikes 80k→150k, cars 350k→370k, lanes 20km→75km. City 3: bikes 200k→260k, cars 500k→460k, lanes 60km→140km. City 4: bikes 40k→130k, cars 290k→250k, lanes 10km→85km. Summarise the main features. Write at least 150 words.',
+      'The diagram below illustrates two ways of producing electricity: a traditional coal-fired power station and a wind farm, showing the main components of each system. Compare the two methods by selecting and reporting the main features of both. Write at least 150 words.'
     ],
     w2: [ // Task 2：250 词+
       'Some people believe that universities should focus on preparing students for employment, while others think their main role is to advance knowledge. Discuss both views and give your own opinion.',
@@ -1620,7 +1634,27 @@
       'In many countries, the gap between the rich and the poor is widening. What problems does this cause, and what measures can governments take to reduce it?',
       'Some people believe that international travel makes people more tolerant, while others say it has little effect on attitudes. Discuss both views and give your own opinion.',
       'Many young people today choose to delay marriage and children until their thirties or later. What are the reasons for this trend, and is it positive or negative for society?',
-      'With the development of artificial intelligence, some people worry that machines will replace most human jobs. To what extent do you agree or disagree that governments should prepare for mass job losses?'
+      'With the development of artificial intelligence, some people worry that machines will replace most human jobs. To what extent do you agree or disagree that governments should prepare for mass job losses?',
+      'Some people think that remote learning will completely replace classroom teaching in the future, while others believe the two should be combined. Discuss both views and give your own opinion.',
+      'Many historic buildings are pulled down to make way for modern offices and flats. What problems does this cause, and what can be done to protect old buildings?',
+      'Some people argue that parents should be legally responsible for the behaviour of their children. To what extent do you agree or disagree?',
+      'In most countries, the recycling rate remains low. Why is this so, and what measures could increase the amount of waste people recycle?',
+      'Some people prefer to eat in restaurants, while others prefer home-cooked meals. What are the reasons for each choice, and which do you think is better for family life?',
+      'Governments should make public transport free rather than invest in new roads. To what extent do you agree or disagree with this view?',
+      'Some people believe that violent films and video games cause violent behaviour in society. Others think the connection is exaggerated. Discuss both views and give your opinion.',
+      'In the past, students studied hard to gain knowledge; nowadays they mainly study to pass exams. What are the reasons for this change, and is it a positive or negative development?',
+      'Some people think that space exploration is a waste of money, while others believe it benefits humanity in many ways. Discuss both views and give your own opinion.',
+      'Traffic congestion is a growing problem in big cities. What are the causes of this problem, and what measures could be taken to reduce it?',
+      'Some people think that job satisfaction is more important than job security, while others believe that a stable job is essential. Discuss both views and give your own opinion.',
+      'Nowadays museums and art galleries are offering more digital access to their collections. Is this a positive or negative development for the preservation of culture?',
+      'Many people today suffer from stress caused by work. What are the causes of this problem, and what can employers and employees do to reduce stress at work?',
+      'Some people believe that foreign tourists should pay more for their visits than local residents do. To what extent do you agree or disagree?',
+      'Children nowadays spend less time playing outdoors than in the past. What are the reasons for this change, and what effects does it have on their health and development?',
+      'Some people think that zoos should be closed because animals suffer in captivity, while others believe zoos play an important role in conservation. Discuss both views and give your opinion.',
+      'In the digital age, newspapers and print media are disappearing. Is this a positive or negative development for society?',
+      'Some people prefer to live in the countryside, while others prefer city life. What are the advantages of each, and where would you prefer to live?',
+      'Many companies now allow their employees to work four days a week instead of five. Is this a positive or negative development for workers and employers?',
+      'Some people think that governments should ban dangerous sports, while others believe individuals should be free to choose what they do. Discuss both views and give your own opinion.'
     ]
   };
   var examSels = {};
