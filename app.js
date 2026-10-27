@@ -14,6 +14,7 @@
   var TABLES = []; // 基础表 [{id, lang, title, sections}]
   var TBY = {}; // id -> table
   var GRAMMARS = []; // 语法翼楼 [{id, lang, title, rooms}]
+  var PASSAGES = []; // 雅思阅读真题文章库 [{id, lang, title, paras, qs}]
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
@@ -23,7 +24,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.8'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.9'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -471,6 +472,7 @@
     GRAMMARS = data.grammars || [];
     GBY = {};
     GRAMMARS.forEach(function (g) { GBY[g.id] = g; });
+    PASSAGES = data.passages || []; // 雅思阅读真题文章库
     // 图像钩子 / 助记 旁路表挂到词条上
     var hooks = data.hooks || {};
     LISTS.forEach(function (l) {
@@ -1547,6 +1549,17 @@
   var examType = 'jlpt-n1';
   var examPapers = null;       // 本机导入的真题卷（IndexedDB，不进仓库）
   var examPapersLoading = false;
+  // 雅思 raw→band 官方换算近似（40 题制，听力/阅读共用；部分组卷按比例折算）
+  var IELTS_BAND = [[39, 9], [37, 8.5], [35, 8], [33, 7.5], [30, 7], [27, 6.5], [23, 6], [19, 5.5], [16, 5], [13, 4.5], [10, 4], [8, 3.5], [6, 3], [4, 2.5], [2, 2], [0, 0]];
+  function ieltsBandFromRaw(raw40) {
+    for (var i = 0; i < IELTS_BAND.length; i++) if (raw40 >= IELTS_BAND[i][0]) return IELTS_BAND[i][1];
+    return 0;
+  }
+  function fillOk(q, a) { // 填空题判分：文本精确匹配（忽略大小写/首尾空格）
+    if (!q.fill || typeof a !== 'string') return false;
+    var t = a.trim().toLowerCase();
+    return !!t && q.fill.accept.some(function (x) { return x.toLowerCase() === t; });
+  }
   // 仿真卷 = 原创题按真题结构组卷（可入库）；真题卷 = 本机导入（版权，不入库）。
   // 成绩按各考试自己的标尺显示（JLPT 180 / TOPIK 300 / IELTS band 9），导入卷只报对错数。
   var EXAM_TYPES = {
@@ -1577,9 +1590,9 @@
         { key: 'l2', title: 'Listening · Part 2 场景独白', qn: 10, minutes: 8, note: '听句子，选正确的中文意思' },
         { key: 'l3', title: 'Listening · Part 3 选词填空', qn: 10, minutes: 8, note: '听完整句，选空格处的词（可重播）' },
         { key: 'l4', title: 'Listening · Part 4 学术讨论', qn: 10, minutes: 7, note: '听句子，选正确的中文意思' },
-        { key: 'r1', title: 'Reading · Passage 1 词汇填空', qn: 14, minutes: 20, note: '句中挖空，选最贴切的词' },
-        { key: 'r2', title: 'Reading · Passage 2 同义替换', qn: 13, minutes: 20, note: '看中文释义，选对应英文词' },
-        { key: 'r3', title: 'Reading · Passage 3 混合', qn: 13, minutes: 20, note: '填空 + 同义替换各半' },
+        { key: 'r1', title: 'Reading · Passage 1', qn: 13, minutes: 20, note: '真题文章 + 判断/配对标题/填空/选择' },
+        { key: 'r2', title: 'Reading · Passage 2', qn: 13, minutes: 20, note: '真题文章 + 判断/配对标题/填空/选择' },
+        { key: 'r3', title: 'Reading · Passage 3', qn: 13, minutes: 20, note: '真题文章 + 判断/配对标题/填空/选择' },
         { key: 'w1', title: 'Writing · Task 1 图表描述', qn: 1, minutes: 20, note: '150 词+，机打，不判分自评' },
         { key: 'w2', title: 'Writing · Task 2 议论文', qn: 1, minutes: 40, note: '250 词+，机打，不判分自评' }
       ] // 客观题 80 · 90 分钟 + 写作 2 题 60 分钟 · band 0~9 按客观题折算
@@ -1672,10 +1685,17 @@
     });
     if (!all.length || !gpts.length) return null;
 
+    // 雅思阅读：文章库洗牌副本，r1/r2/r3 依次 splice 取（三篇互不重复）
+    var passPool = [];
+    if (typeKey === 'ielts') {
+      PASSAGES.forEach(function (p) { if (p.lang === 'en') passPool.push(p); });
+      passPool = shuffle(passPool);
+    }
     var secs = [];
     spec.sections.forEach(function (s) {
       if (!sel[s.key]) return;
       var qs = [];
+      var secPassage = null;
       var i;
       if (s.key === 'kanji') {
         var usedW = {};
@@ -1786,22 +1806,11 @@
             writing: true, options: [], ref: null
           });
         }
-      } else if (s.key === 'l3' || s.key === 'r1' || s.key === 'r2' || s.key === 'r3') {
-        // 雅思填空/同义：听整句选空格词（l3，朗读完整句）/ 阅读挖空（r1）/ 同义替换（r2 全部、r3 后半）
+      } else if (s.key === 'l3') {
+        // 雅思听力填空：听整句选空格词（朗读完整句）
         var poolR = ctxW.length ? ctxW : all;
-        var usedFill = {}, usedSyn = {};
+        var usedFill = {};
         for (i = 0; i < s.qn; i++) {
-          var wantSyn = s.key === 'r2' || (s.key === 'r3' && i >= Math.floor(s.qn / 2));
-          if (wantSyn) { // 同义替换半：看中文释义选英文词
-            var synW = exPick(all, 1, usedSyn, function (x) { return x.w; })[0];
-            if (!synW) break;
-            var disSyn = exPick(all, 3, {}, function (x) {
-              return x.w === synW.w || x.zh === synW.zh ? null : x.w;
-            }).map(function (x) { return x.w; });
-            if (disSyn.length < 3) break;
-            qs.push({ type: '同义替换', stem: synW.zh, options: optSet(synW.w, disSyn), ref: wordList.id + '/' + synW.w });
-            continue;
-          }
           var fw = exPick(poolR, 1, usedFill, function (x) { return x.w; })[0];
           if (!fw) break;
           var fsent = null;
@@ -1812,15 +1821,25 @@
           }).map(function (x) { return x.w; });
           if (disF.length < 3) break;
           qs.push({
-            type: s.key === 'l3' ? '选词填空' : '词汇填空',
-            stem: (s.key === 'l3' ? '🔊 ' : '') + fsent.split(fw.w).join('（　）'),
-            spoken: s.key === 'l3' ? fsent : null,
-            raw: s.key === 'l3' ? fsent : null, // 完整句（含答案词），交卷后解析区显示
+            type: '选词填空', stem: '🔊 ' + fsent.split(fw.w).join('（　）'),
+            spoken: fsent, raw: fsent, // 完整句（含答案词），交卷后解析区显示
             options: optSet(fw.w, disF), ref: wordList.id + '/' + fw.w
           });
         }
+      } else if (typeKey === 'ielts' && (s.key === 'r1' || s.key === 'r2' || s.key === 'r3')) {
+        // 雅思阅读真题型：从文章库随机抽一篇（三篇互不重复），判断/配对标题/填空/选择挂在文章上
+        if (passPool.length) {
+          var pg = passPool.splice(Math.floor(Math.random() * passPool.length), 1)[0];
+          secPassage = { title: pg.title, paras: pg.paras };
+          (pg.qs || []).forEach(function (pq) {
+            qs.push({
+              type: pq.type, stem: pq.stem, options: pq.options || [], plain: !!pq.plain,
+              fill: pq.fill || null, ref: null
+            });
+          });
+        }
       }
-      if (qs.length) secs.push({ key: s.key, title: s.title, minutes: s.minutes, qs: qs });
+      if (qs.length) secs.push({ key: s.key, title: s.title, minutes: s.minutes, qs: qs, passage: secPassage });
     });
     if (!secs.length) return null;
     var totalQ = secs.reduce(function (n, s) { return n + s.qs.length; }, 0);
@@ -1863,7 +1882,8 @@
       var correct = 0;
       s.qs.forEach(function (q, qi) {
         var a = exam.answers[si][qi];
-        var ok = a >= 0 && q.options[a] && q.options[a].ok;
+        // 判分：填空按文本匹配，选择按选项 ok
+        var ok = q.fill ? fillOk(q, a) : (a >= 0 && q.options[a] && q.options[a].ok);
         if (ok) correct++;
         if (!ok && q.ref) { // 错题（含未答）进复习队列
           exam.wrongRefN = (exam.wrongRefN || 0) + 1;
@@ -1893,9 +1913,10 @@
     exam.wrongN = exam.result.reduce(function (n, r) { return r.words != null ? n : n + (r.qn - r.correct); }, 0);
     exam.correctN = objTotal;
     exam.objQ = objCount;
-    if (exam.scale) { // 按卷标尺换算（导入卷无标尺只报对错；写作不计入）
+    if (exam.band) { // 雅思：官方 raw→band 换算表（40 题制，部分组卷按比例折算）
+      exam.approx = ieltsBandFromRaw((exam.correctN / (objCount || 1)) * 40);
+    } else if (exam.scale) { // JLPT/TOPIK 按卷标尺换算
       exam.approx = Math.round((exam.correctN / (objCount || 1)) * exam.scale * 10) / 10;
-      if (exam.band) exam.approx = Math.round(exam.approx * 2) / 2; // 雅思半分档
     }
     try { localStorage.removeItem('hedgehog:exam'); } catch (e) {}
     if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
@@ -2050,10 +2071,15 @@
               '</span><span class="rev-pick">' + mwc + ' 词 · 自评</span></div>';
           }
           var a = exam.answers[si][qi];
-          var ok = a >= 0 && q.options[a] && q.options[a].ok;
-          var okT = '';
-          q.options.forEach(function (o) { if (o.ok) okT = o.t; });
-          var yourT = a >= 0 && q.options[a] ? q.options[a].t : '未答';
+          var ok = q.fill ? fillOk(q, a) : (a >= 0 && q.options[a] && q.options[a].ok);
+          var okT = '', yourT;
+          if (q.fill) { // 填空：显示正确词 vs 你填的词
+            okT = q.fill.accept.join(' / ');
+            yourT = typeof a === 'string' && a.trim() ? a : '未答';
+          } else {
+            q.options.forEach(function (o) { if (o.ok) okT = o.t; });
+            yourT = a >= 0 && q.options[a] ? q.options[a].t : '未答';
+          }
           return '<div class="rev-row' + (ok ? '' : ' wrong') + '">' + no +
             '<span class="rev-stem">' + esc(q.raw || q.stem) +
             (q.spoken ? ' <button class="mini-btn" data-act="exam-rev-play" data-si="' + si + '" data-qi="' + qi + '">🔊</button>' : '') +
@@ -2096,12 +2122,12 @@
     var qNo = 0, i;
     for (i = 0; i < exam.secIdx; i++) qNo += exam.secs[i].qs.length;
     qNo += exam.qi + 1;
-    var opts = q.writing ? '' : q.options.map(function (o, idx) {
+    var opts = (q.writing || q.fill) ? '' : q.options.map(function (o, idx) {
       var cls = 'exam-opt';
       if (ans === idx) cls += o.ok ? ' right' : ' wrong';
       else if (ans >= 0 && o.ok) cls += ' reveal';
       return '<button class="' + cls + '" data-act="exam-pick" data-i="' + idx + '">' +
-        '<em>' + 'ABCD'[idx] + '</em>' + esc(o.t) + '</button>';
+        (q.plain ? '' : '<em>' + 'ABCD'[idx] + '</em>') + esc(o.t) + '</button>';
     }).join('');
     var off = 0;
     var sheet = exam.secs.map(function (s, si) {
@@ -2109,7 +2135,8 @@
       return '<div class="exam-sheet-sec"><b>' + esc(s.title.split(' · ').pop()) + '</b>' +
         s.qs.map(function (q2, qi) {
           var a = exam.answers[si][qi];
-          var hasText = q2.writing && exam.texts && exam.texts[si] && (exam.texts[si][qi] || '').trim();
+          var hasText = (q2.writing || q2.fill) && typeof a === 'string' && a.trim() ||
+            q2.writing && exam.texts && exam.texts[si] && (exam.texts[si][qi] || '').trim();
           var cls = 'sheet-no' + (si === exam.secIdx && qi === exam.qi ? ' cur' : '') + (a >= 0 || hasText ? ' done' : '');
           return '<button class="' + cls + '" data-act="exam-goto" data-si="' + si + '" data-qi="' + qi + '">' +
             (base + qi + 1) + '</button>';
@@ -2125,8 +2152,20 @@
         '<textarea id="examEssay" class="exam-essay" spellcheck="false" ' +
         'placeholder="在此机打作文。不自动判分，交卷后可回看自评。">' + esc(etxt) + '</textarea>' +
         '<div class="exam-wc" id="examWc">已写 ' + ewc + ' 词</div>';
+    } else if (q.fill) { // 填空（句子填空/真题卷填空）：直接输入单词，交卷判分
+      var fval = typeof ans === 'string' ? ans : '';
+      mid = '<input id="examFill" class="exam-fill" type="text" autocomplete="off" ' +
+        'autocapitalize="none" spellcheck="false" placeholder="输入单词" value="' + esc(fval) + '" />';
     } else {
       mid = '<div class="exam-opts">' + opts + '</div>';
+    }
+    var passHtml = '';
+    if (sec.passage) { // 雅思阅读真题型：文章置顶（分段标号，可滚动）
+      passHtml = '<div class="exam-passage">' +
+        '<b>' + esc(sec.passage.title) + '</b>' +
+        sec.passage.paras.map(function (t, pi) {
+          return '<p><em>' + 'ABCDEFGH'[pi] + '.</em> ' + esc(t) + '</p>';
+        }).join('') + '</div>';
     }
     return (
       '<div class="exam-head">' +
@@ -2136,6 +2175,7 @@
       '</div>' +
       '<div class="exam-prog"><span>第 ' + qNo + '/' + exam.totalQ + ' 题</span>' +
       '<span>' + (exam.secIdx + 1) + '/' + exam.secs.length + ' 板块</span></div>' +
+      passHtml +
       '<div class="card exam-card">' +
       '<div class="exam-qtype">' + esc(q.type) + '</div>' +
       '<div class="exam-stem">' + esc(q.stem) +
@@ -2225,6 +2265,17 @@
           var b = $('spellCheckBtn');
           if (b) b.click();
         }
+      });
+    }
+
+    var fillEl = $('examFill'); // 填空题：输入存 answers（字符串），不整页重渲染防丢焦点
+    if (fillEl) {
+      fillEl.addEventListener('input', function () {
+        if (!exam || exam.phase !== 'run') return;
+        exam.answers[exam.secIdx][exam.qi] = fillEl.value;
+        examPersist();
+        var cur = document.querySelector('.sheet-no.cur');
+        if (cur) cur.classList.toggle('done', !!fillEl.value.trim());
       });
     }
 

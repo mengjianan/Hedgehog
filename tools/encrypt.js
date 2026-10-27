@@ -136,6 +136,12 @@ async function main() {
   const grammars = files
     .filter((f) => f.startsWith('grammar-'))
     .map((f) => JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')));
+  // 阅读文章库（考场真题型）：src/passages-*.json → data.passages（数组拼接）
+  const passages = [];
+  files.filter((f) => f.startsWith('passages-')).forEach((f) => {
+    const parsed = JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8'));
+    if (Array.isArray(parsed.passages)) passages.push(...parsed.passages);
+  });
   let hooks = {};
   files.filter((f) => f.startsWith('hooks')).forEach((f) => {
     Object.assign(hooks, JSON.parse(fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).hooks || {});
@@ -151,6 +157,7 @@ async function main() {
     lists,
     tables,
     grammars,
+    passages,
     hooks,
     tags,
   });

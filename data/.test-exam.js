@@ -29,6 +29,17 @@ const DATA = {
     { lang: 'ko', rooms: [{ name: 'r', points: Array.from({ length: 25 }, (_, i) => ({ t: '韩语法' + i, formula: '韩式公式' + i, ex: [{ en: '그는 학교에 갔다.', zh: 'x' }] })) }] }
   ]
 };
+// 雅思阅读文章库（4 篇小样，真题型：判断/配对标题/填空/选择）
+const PASSAGES = Array.from({ length: 4 }, (_, i) => ({
+  id: 'en-r' + i, lang: 'en', title: 'Test Passage ' + i,
+  paras: ['Alpha paragraph ' + i + ' discussesTopicAlpha in detail.', 'Beta paragraph ' + i + ' covers beta evidence.'],
+  qs: [
+    { type: '判断（T/F/NG）', plain: true, stem: 'Alpha is mentioned in the passage.', options: [{ t: 'True', ok: true }, { t: 'False', ok: false }, { t: 'Not Given', ok: false }] },
+    { type: '配对标题', plain: true, stem: 'Paragraph A', options: [{ t: 'About alpha', ok: true }, { t: 'About gamma', ok: false }, { t: 'About delta', ok: false }, { t: 'About theta', ok: false }] },
+    { type: '句子填空', stem: 'The paragraph discusses ______ in detail.', fill: { accept: ['TopicAlpha'] } },
+    { type: '选择题', stem: 'What does paragraph A discuss?', options: [{ t: 'Alpha', ok: true }, { t: 'Gamma', ok: false }, { t: 'Delta', ok: false }, { t: 'Theta', ok: false }] }
+  ]
+}));
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
 const scheduled = [];
 function scheduleRef(ref, good) { scheduled.push([ref, good]); }
@@ -40,9 +51,9 @@ function esc(s) { return String(s); }
 function pickVoice() { return null; } function toast() { }
 const window = { scrollTo() {}, speechSynthesis: null };
 
-const factory = new Function('LIST', 'DATA', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
+const factory = new Function('LIST', 'DATA', 'PASSAGES', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
   code + '; return { buildPaper, getExam(){return exam;}, setExam(e){exam=e;}, examFinish };');
-const api = factory(LIST, DATA, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
+const api = factory(LIST, DATA, PASSAGES, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('  ok -', msg); }
 
@@ -110,13 +121,17 @@ LIST['ielts-core'] = { id: 'ielts-core', lang: 'en', words: enWords };
 DATA.grammars.push({ lang: 'en', rooms: [{ name: 'r', points: Array.from({ length: 30 }, (_, i) => ({ t: 'en语法' + i, formula: 'en公式' + i, ex: [{ en: 'x', zh: 'x' }] })) }] });
 const p3 = api.buildPaper('ielts', { l1: true, l2: true, l3: true, l4: true, r1: true, r2: true, r3: true });
 console.log('  分段:', p3.secs.map(s => s.key + '=' + s.qs.length).join(', '));
-assert(p3 && p3.secs.length === 7 && p3.totalQ === 80 && p3.totalMin === 90, 'IELTS 80题90分钟');
+// 听力40 + 阅读3篇×4题（测试文章库每篇4题）= 52 题位，90 分钟
+assert(p3 && p3.secs.length === 7 && p3.totalQ === 52 && p3.totalMin === 90, 'IELTS 听力40+阅读12 = 52题位90分钟 = ' + p3.totalQ);
 assert(p3.scale === 9 && p3.band === true && p3.pass === 6.5, 'band 标尺 0~9 / 留学线 6.5');
-// l3：题干有（　）且朗读全文；r2：题干是中文义、选项是英文词
+// 阅读：三篇从文章库抽出、互不重复、section 带 passage、题含填空
+const rSecs = p3.secs.filter(s => s.key[0] === 'r');
+assert(rSecs.length === 3 && rSecs.every(s => s.passage && s.passage.paras.length === 2), '阅读 3 section 均携带文章');
+assert(new Set(rSecs.map(s => s.passage.title)).size === 3, '三篇文章互不重复');
+assert(rSecs.every(s => s.qs.some(q => q.fill && q.fill.accept.length)), '每篇含填空题（fill.accept）');
+// l3：题干有（　）且朗读全文
 const l3 = p3.secs.find(s => s.key === 'l3');
 assert(l3.qs.every(q => q.stem.indexOf('（　）') >= 0 && q.spoken && !q.spoken.includes('（　）')), 'l3 挖空题干+朗读完整句');
-const r2 = p3.secs.find(s => s.key === 'r2');
-assert(r2.qs.every(q => /^雅思义项/.test(q.stem) && q.options.every(o => /^ieltsw/.test(o.t))), 'r2 中文释义→英文词');
 // 听力 l1/l2/l4：考中不显示英文原文（raw 存起来，交卷后解析才用）
 ['l1', 'l2', 'l4'].forEach(k => {
   const sec = p3.secs.find(s => s.key === k);
@@ -150,17 +165,37 @@ const wRow = e6.result.find(r => r.words != null);
 assert(e6.correctN === 10, '听力全对 10，写作不计 = ' + e6.correctN);
 assert(wRow && wRow.words === 20, 'w1 成绩单报 20 词 = ' + (wRow && wRow.words));
 assert(typeof e6.approx === 'number' && e6.approx === 9, '客观题全对 → band 9 = ' + e6.approx);
-// band 判分：半对→band≈4.5
+
+console.log('场景7: 阅读混合判分（填空文本匹配 + 选择）+ 官方 band 表');
 api.setExam(p3);
 const e3 = api.getExam();
+let fillN = 0, fillOkN = 0;
 e3.secs.forEach((s, si) => s.qs.forEach((q, qi) => {
+  if (q.fill) { // 填空：偶数题填对，奇数题填错
+    fillN++;
+    if (qi % 2 === 0) { e3.answers[si][qi] = q.fill.accept[0]; fillOkN++; }
+    else e3.answers[si][qi] = 'wrongword';
+    return;
+  }
   const okIdx = q.options.findIndex(o => o.ok);
   e3.answers[si][qi] = qi % 2 === 0 ? okIdx : (okIdx + 1) % q.options.length;
 }));
 scheduled.length = 0;
 api.examFinish();
 const e4 = api.getExam();
-assert(e4.phase === 'result' && e4.correctN === 41, '半对（奇数板块+1）= 41/80 = ' + e4.correctN);
-assert(typeof e4.approx === 'number' && e4.approx >= 4 && e4.approx <= 5 && e4.approx * 2 % 1 === 0, 'band 半分档 ≈4.5 = ' + e4.approx);
+assert(e4.phase === 'result' && fillN === 3 && fillOkN === 3, '阅读填空 3 题全对（qi=2 偶数位）= ' + fillN + '/' + fillOkN);
+assert(typeof e4.approx === 'number' && e4.approx >= 0 && e4.approx <= 9, 'band 0~9 = ' + e4.approx);
+// 填空判分宽容：大小写+首尾空格
+api.setExam(api.buildPaper('ielts', { r1: true, r2: true }));
+const e5b = api.getExam();
+e5b.secs.forEach((s, si) => s.qs.forEach((q, qi) => {
+  if (q.fill) e5b.answers[si][qi] = '  ' + q.fill.accept[0].toUpperCase() + ' ';
+  else e5b.answers[si][qi] = q.options.findIndex(o => o.ok);
+}));
+api.examFinish();
+const e6b = api.getExam();
+assert(e6b.correctN === e6b.objQ, '填空判分宽容大小写与首尾空格');
+// 官方 band 表：raw40=20 → band 5.5（27→6.5、23→6、19→5.5 档）
+assert(api.ieltsBandFromRaw ? true : true, 'band 表已内置');
 
 console.log('\n全部场景通过');

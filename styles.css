@@ -1383,6 +1383,22 @@ a.entry-card { text-decoration: none; color: var(--ink); }
 
 /* ---------- 考场（仿真卷 + 本机真题卷） ---------- */
 .exam-type.on, .exam-sec.on { outline: 2px solid var(--accent, #4a7); outline-offset: -2px; }
+.exam-passage {
+  background: #fdfcf8; border: 1px solid var(--line, #ddd); border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 10px; max-height: 38vh; overflow-y: auto;
+  font-size: 13.5px; line-height: 1.7; text-align: left;
+}
+.exam-passage > b { display: block; margin-bottom: 6px; font-size: 13px; color: var(--mut); }
+.exam-passage p { margin: 0 0 8px; }
+.exam-passage p:last-child { margin-bottom: 0; }
+.exam-passage p em { font-style: normal; font-weight: 700; color: var(--sage-d, #5a7); }
+.exam-fill {
+  width: 100%; margin: 10px 0 4px; padding: 10px 12px;
+  border: 1px solid var(--line, #ddd); border-radius: 8px;
+  background: #fdfcf8; color: inherit; font: inherit; font-size: 15px;
+  box-sizing: border-box;
+}
+.exam-fill:focus { outline: 2px solid var(--accent, #4a7); outline-offset: -2px; }
 .exam-essay {
   width: 100%; min-height: 240px; margin: 10px 0 4px; padding: 10px 12px;
   border: 1px solid var(--line, #ddd); border-radius: 8px;
