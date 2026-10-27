@@ -17,6 +17,7 @@
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
+  var sessionSize = lsGet('hedgehog:session-size', 10); // 每轮站数（#4 背词页可设）
   var sceneLang = 'all'; // 词库页场景厅语言筛选：all/en/ko/ja
   var listShown = 100; // 词库列表懒渲染：首屏 100，滚动加载更多
   var listShownFor = '';
@@ -919,7 +920,14 @@
   }
 
   function pickBtn(l) {
-    var pend = pendingCount(l);
+    // 场景厅按钮与词库一致：按全库该场景词算待学数（#2）
+    var pend;
+    if (isScene(l)) {
+      var k = known();
+      pend = sceneEntries(l).filter(function (e) { return !k[e.ref]; }).length;
+    } else {
+      pend = pendingCount(l);
+    }
     var dc = listDueCount(l);
     var sub = isScene(l)
       ? isLit(l)
@@ -1020,13 +1028,13 @@
       if (dueN) {
         cards +=
           '<button class="entry-card review" data-act="start-study" data-kind="review">' +
-          '<b>今日复习 · ' + Math.min(dueN, 10) + ' 站</b>' +
+          '<b>今日复习 · ' + Math.min(dueN, sessionSize) + ' 站</b>' +
           '<small>到期的词自动回到这里 · 记忆间隔 1 / 3 / 7 / 15 天</small></button>';
       }
       cards +=
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
         '<b>串门混考</b>' +
-        '<small>随机跨厅抽 10 站 · 交错练习记得更牢</small></button>' +
+        '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
@@ -1042,9 +1050,13 @@
           '<p class="picker-h">词库</p>' +
           '<div class="wordlist">' + cores.map(pickBtn).join('') + '</div>';
       }
+      var sizeRow =
+        '<div class="size-row">每轮 <input id="sizeInput" type="number" min="5" max="100" step="1" value="' +
+        sessionSize + '" /> 站 <small>5~100，改完自动生效</small></div>';
       return (
         '<h2>巡游</h2>' +
-        '<p class="sub">先选模式，再选出发点 · 每轮 10 站 · 进度存在本机</p>' +
+        '<p class="sub">先选模式，再选出发点 · 每轮 ' + sessionSize + ' 站 · 进度存在本机</p>' +
+        sizeRow +
         modeSeg + cards + groups + weeklyHTML()
       );
     }
@@ -1087,7 +1099,8 @@
       '<h2>巡游</h2>' +
       '<div class="study-meta"><span>' + kindLabel + ' · ' + esc(l.title.replace(/（.*?）/, '')) +
       ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
-      '<span>认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
+      '<span><button class="mini-btn" data-act="study-home">✕ 退出重选</button>' +
+      ' 认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
@@ -1130,26 +1143,30 @@
   function startSession(opts) {
     var refs = [];
     var k = known();
+    var N = sessionSize; // 每轮站数（#4 可设置）
     if (opts.kind === 'review') {
-      refs = shuffle(dueRefsNow()).slice(0, 10);
+      refs = shuffle(dueRefsNow()).slice(0, N);
     } else if (opts.kind === 'mix') {
       var m = dueMap();
       var t = now();
       var pool = ALL.filter(function (e) {
         return !k[e.ref] || (m[e.ref] && m[e.ref].d <= t);
       }).map(function (e) { return e.ref; });
-      refs = shuffle(pool).slice(0, 10);
+      refs = shuffle(pool).slice(0, N);
     } else {
       var l = LIST[opts.listId];
       if (!l) return false;
       var fresh = [];
       var rev = [];
-      l.words.forEach(function (x) {
-        var r = l.id + '/' + x.w;
-        (k[r] ? rev : fresh).push(r);
+      // 场景厅学全库该场景词（#2 与词库一致）；普通词表学本表
+      var entries = isScene(l)
+        ? sceneEntries(l)
+        : l.words.map(function (x) { return { ref: l.id + '/' + x.w }; });
+      entries.forEach(function (e) {
+        (k[e.ref] ? rev : fresh).push(e.ref);
       });
-      refs = fresh.slice(0, 10);
-      if (refs.length < 10) refs = fresh.concat(rev).slice(0, 10);
+      refs = fresh.slice(0, N);
+      if (refs.length < N) refs = fresh.concat(rev).slice(0, N);
     }
     if (!refs.length) return false;
     session = {
@@ -1773,6 +1790,18 @@
     if (!location.hash) location.hash = '#/home';
     route();
   }
+
+  // 每轮站数设置（#4）：背词页输入框改完即生效并记住
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'sizeInput') {
+      var n = parseInt(e.target.value, 10);
+      if (!isNaN(n)) {
+        sessionSize = Math.max(5, Math.min(100, n));
+        lsSet('hedgehog:session-size', sessionSize);
+        route();
+      }
+    }
+  });
 
   $('gateForm').addEventListener('submit', async function (e) {
     e.preventDefault();
