@@ -38,10 +38,11 @@ function lsSet() { } function lsGet(k, d) { return d; } function route() { }
 function $(id) { return { textContent: '' }; }
 function esc(s) { return String(s); }
 function pickVoice() { return null; } function toast() { }
+const window = { scrollTo() {}, speechSynthesis: null };
 
-const factory = new Function('LIST', 'DATA', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast',
+const factory = new Function('LIST', 'DATA', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
   code + '; return { buildPaper, getExam(){return exam;}, setExam(e){exam=e;}, examFinish };');
-const api = factory(LIST, DATA, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast);
+const api = factory(LIST, DATA, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('  ok -', msg); }
 

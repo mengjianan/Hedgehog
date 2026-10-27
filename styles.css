@@ -1381,9 +1381,8 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .morph-form { font-size: 14px; }
 }
 
-/* ---------- 考场（模拟考试） ---------- */
-.exam-entry b::before { content: '📝 '; }
-.exam-sec.on { outline: 2px solid var(--accent, #4a7); }
+/* ---------- 考场（仿真卷 + 本机真题卷） ---------- */
+.exam-type.on, .exam-sec.on { outline: 2px solid var(--accent, #4a7); outline-offset: -2px; }
 .exam-start { margin: 14px 0 8px; }
 .exam-head { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
 .exam-secname { font-weight: 700; font-size: 14.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

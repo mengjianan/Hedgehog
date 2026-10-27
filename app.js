@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.6'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1035,7 +1035,7 @@
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
         '<b>串门混考</b>' +
         '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
-        '<a class="entry-card exam-entry" href="#/exam"><b>📝 考场</b>' +
+        '<a class="entry-card exam-entry" href="#/exam"><b>考场</b>' +
         '<small>JLPT / TOPIK / IELTS 仿真卷 + 本机真题卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
@@ -1840,6 +1840,7 @@
     try { localStorage.removeItem('hedgehog:exam'); } catch (e) {}
     if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
     route();
+    window.scrollTo(0, 0); // 交卷进成绩单，回顶
   }
 
   function examTick() {
@@ -1925,7 +1926,7 @@
         var on = examType === k;
         return (
           '<button class="entry-card exam-type' + (on ? ' on' : '') + '" data-act="exam-pick-type" data-key="' + k + '">' +
-          '<b>' + (on ? '◆ ' : '◇ ') + t.name + '</b>' +
+          '<b>' + t.name + '</b>' +
           '<small>' + t.sections.reduce(function (n, s) { return n + s.qn; }, 0) + ' 题 · ' +
           t.sections.reduce(function (n, s) { return n + s.minutes; }, 0) + ' 分钟</small></button>'
         );
@@ -1935,7 +1936,7 @@
         var on = examSels[examType][s.key];
         return (
           '<button class="entry-card exam-sec' + (on ? ' on' : '') + '" data-act="exam-toggle" data-key="' + s.key + '">' +
-          '<b>' + (on ? '☑ ' : '☐ ') + s.title + '</b>' +
+          '<b>' + s.title + '</b>' +
           '<small>' + s.qn + ' 题 · ' + s.minutes + ' 分钟 · ' + s.note + '</small></button>'
         );
       }).join('');
@@ -1983,6 +1984,7 @@
           : exam.wrongRefN ? '（' + exam.wrongRefN + ' 题错词已进复习）' : '（已进复习队列）') + '</div>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="exam-again">再战一场</button>' +
+        '<button class="btn ghost" data-act="exam-reset">换一份卷</button>' +
         '<a class="btn ghost" href="#/study">回巡游</a>' +
         '</div></div>'
       );
@@ -2042,9 +2044,12 @@
     );
   }
 
+  var lastRouteHash = null; // 区分「换页」与「页内重渲染」：后者不滚顶，防选卷/勾板块时页面颤动
   function route() {
     if (!DATA) return;
     var h = location.hash.replace(/^#\/?/, '');
+    var pageChanged = h !== lastRouteHash;
+    lastRouteHash = h;
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var nav = name;
@@ -2088,7 +2093,7 @@
     var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7, exam: 4 }[name] || 1;
     var pn = $('pageNum');
     if (pn) pn.textContent = '— ' + pnum + ' —';
-    window.scrollTo(0, 0);
+    if (pageChanged) window.scrollTo(0, 0); // 只在真正换页时回顶；页内操作保持滚动位置
 
     // 进词详情自动朗读（同词不重复；需设备装有对应语言语音包）
     if (name === 'word' && parts[1] && parts[2]) {
@@ -2186,7 +2191,7 @@
       route();
     } else if (act === 'exam-begin') {
       exam = buildPaper(examType, examSels[examType]);
-      if (exam) { examPersist(); route(); }
+      if (exam) { examPersist(); route(); window.scrollTo(0, 0); } // 阶段切换（选卷→考试）回顶
     } else if (act === 'exam-pick') {
       if (!exam || exam.phase !== 'run') return;
       exam.answers[exam.secIdx][exam.qi] = parseInt(el.getAttribute('data-i'), 10);
@@ -2222,10 +2227,15 @@
         exam.deadline = Date.now() + exam.totalMin * 60000;
         exam.phase = 'run'; exam.spoken = null;
         delete exam.result; delete exam.approx; delete exam.correctN; delete exam.wrongN; delete exam.wrongRefN;
-        examPersist(); route(); return;
+        examPersist(); route(); window.scrollTo(0, 0); return;
       }
       exam = buildPaper(exam.typeKey || examType, examSels[exam.typeKey || examType]);
-      if (exam) { examPersist(); route(); }
+      if (exam) { examPersist(); route(); window.scrollTo(0, 0); }
+    } else if (act === 'exam-reset') { // 成绩单 → 回选卷页重选试卷/板块
+      exam = null;
+      try { localStorage.removeItem('hedgehog:exam'); } catch (er) {}
+      if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
+      route(); window.scrollTo(0, 0);
     } else if (act === 'exam-pick-file') {
       var fi = $('examImportFile');
       if (fi) fi.click();
@@ -2250,7 +2260,7 @@
       };
       exam.totalQ = exam.secs.reduce(function (n, x) { return n + x.qs.length; }, 0);
       exam.totalMin = mins;
-      examPersist(); route();
+      examPersist(); route(); window.scrollTo(0, 0);
     } else if (act === 'exam-del-import') {
       var did = el.getAttribute('data-id');
       if (confirm('删除这份本机真题卷？')) {
