@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.3'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.4'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1035,8 +1035,8 @@
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
         '<b>串门混考</b>' +
         '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
-        '<a class="entry-card exam-entry" href="#/exam"><b>📝 考场 · JLPT N1 模拟</b>' +
-        '<small>按真题题型原创组卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
+        '<a class="entry-card exam-entry" href="#/exam"><b>📝 考场</b>' +
+        '<small>JLPT / TOPIK 仿真卷 + 本机真题卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
@@ -1539,7 +1539,7 @@
   }
 
   // ---------- 路由 ----------
-  // ---------- 考场（模拟考试） ----------
+  // ---------- 考场（仿真卷 + 本机真题卷） ----------
   // 双仿真卷：JLPT N1 / TOPIK II（题型按真题结构、题目原创）；倒计时/答题卡/成绩换算/错题入复习。
   // 真题不入库（版权）：经「导入真题卷」存本机 IndexedDB（#②）。
   var exam = null;
@@ -1547,9 +1547,11 @@
   var examType = 'jlpt-n1';
   var examPapers = null;       // 本机导入的真题卷（IndexedDB，不进仓库）
   var examPapersLoading = false;
+  // 仿真卷 = 原创题按真题结构组卷（可入库）；真题卷 = 本机导入（版权，不入库）。
+  // 成绩按各考试自己的标尺显示（JLPT 180 / TOPIK 300 / IELTS band 9），导入卷只报对错数。
   var EXAM_TYPES = {
     'jlpt-n1': {
-      name: 'JLPT N1 模拟卷（仿真）', grammarLang: 'ja', speech: 'ja-JP',
+      name: 'JLPT N1 仿真卷', grammarLang: 'ja', speech: 'ja-JP', scale: 180, pass: 100,
       sections: [
         { key: 'kanji', title: '文字・語彙 · 漢字読み', qn: 20, minutes: 15, note: '看汉字词选正确读音' },
         { key: 'context', title: '文字・語彙 · 文脈規定', qn: 20, minutes: 20, note: '句中挖空，选最贴切的词' },
@@ -1559,14 +1561,14 @@
       ] // 95 题 · 80 分钟
     },
     'topik-ii': {
-      name: 'TOPIK II 模拟卷（仿真）', grammarLang: 'ko', speech: 'ko-KR',
+      name: 'TOPIK II 仿真卷', grammarLang: 'ko', speech: 'ko-KR', scale: 300, pass: 120,
       sections: [
         { key: 'l-cont', title:'듣기 · 내용 파악', qn: 15, minutes: 20, note: '听句子，选正确的中文翻译' },
         { key: 'l-word', title:'듣기 · 어휘', qn: 15, minutes: 15, note: '听词，选中文义（可重播）' },
         { key: 'v-mean', title:'어휘 · 뜻 고르기', qn: 25, minutes: 20, note: '看词选正确的中文义' },
         { key: 'v-ctx', title:'어휘 · 문맥 채우기', qn: 25, minutes: 30, note: '句中挖空，选最贴切的词' },
         { key: 'g-form', title:'문법 · 연결어미', qn: 20, minutes: 25, note: '选出句子所用的语法形式' }
-      ] // 100 题 · 110 分钟（≈真题 2 教时）
+      ] // 100 题 · 110 分钟（≈真题 2 教时）· 近似满分 300、3급参考线 120
     }
   };
   var examSels = {};
@@ -1740,6 +1742,7 @@
     var totalMin = secs.reduce(function (n, s) { return n + s.minutes; }, 0);
     return {
       typeKey: typeKey, name: spec.name,
+      scale: spec.scale || 0, pass: spec.pass || 0, band: spec.scale === 9, // IELTS 用 band 0~9
       secs: secs, totalQ: totalQ, totalMin: totalMin,
       secIdx: 0, qi: 0,
       answers: secs.map(function (s) { return s.qs.map(function () { return -1; }); }),
@@ -1778,11 +1781,16 @@
           } catch (e) {}
         }
       });
-      return { title: s.title, qn: s.qs.length, correct: correct, scaled: Math.round((correct / s.qs.length) * 60) };
+      // 板块折分 = 按题量占比分摊总分（导入卷无标尺，报 0）
+      return { title: s.title, qn: s.qs.length, correct: correct,
+        scaled: exam.scale ? Math.round((correct / exam.totalQ) * exam.scale * 10) / 10 : 0 };
     });
     exam.wrongN = exam.result.reduce(function (n, r) { return n + (r.qn - r.correct); }, 0);
     exam.correctN = exam.result.reduce(function (n, r) { return n + r.correct; }, 0);
-    exam.approx = Math.round((exam.correctN / exam.totalQ) * 180); // 近似 180 制参考分
+    if (exam.scale) { // 按卷标尺换算（导入卷无标尺只报对错）
+      exam.approx = Math.round((exam.correctN / exam.totalQ) * exam.scale * 10) / 10;
+      if (exam.band) exam.approx = Math.round(exam.approx * 2) / 2; // 雅思半分档
+    }
     try { localStorage.removeItem('hedgehog:exam'); } catch (e) {}
     if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
     route();
@@ -1809,10 +1817,10 @@
   }
 
   function importHtml() {
-    if (examPapers === null) return '<p class="picker-h">本机导入的真题卷</p><p class="sub">读取中…</p>';
+    if (examPapers === null) return '<p class="picker-h">真题卷（本机导入）</p><p class="sub">读取中…</p>';
     var papers = examPapers || [];
     return (
-      '<p class="picker-h">本机导入的真题卷（仅存你的浏览器，不上传不入库）</p>' +
+      '<p class="picker-h">真题卷（本机导入 · 仅存你的浏览器，不上传不入库）</p>' +
       (papers.length
         ? papers.map(function (p) {
             return '<div class="entry-card import-row">' +
@@ -1890,9 +1898,9 @@
       var tm = onKeys.reduce(function (n, s) { return n + s.minutes; }, 0);
       return (
         '<a class="back-link" href="#/study">← 巡游</a>' +
-        '<h2>考场 · 模拟考试</h2>' +
-        '<p class="sub">题型按真题结构原创出题 · 选试卷与板块组卷 · 成绩近似换算</p>' +
-        '<p class="picker-h">选择试卷</p>' + typeCards +
+        '<h2>考场</h2>' +
+        '<p class="sub">仿真卷为原创题（按真题题型结构） · 真题卷从本机导入 · 成绩按各考试标尺换算</p>' +
+        '<p class="picker-h">仿真卷（原创题 · 按真题题型）</p>' + typeCards +
         '<p class="picker-h">选择板块 · ' + esc(cur.name) + '</p>' + cards +
         '<div class="exam-start"><button class="btn" data-act="exam-begin"' + (tq ? '' : ' disabled') + '>' +
         '开始考试（' + tq + ' 题 · ' + tm + ' 分钟）</button></div>' +
@@ -1904,15 +1912,24 @@
       var rows = (exam.result || []).map(function (r) {
         return '<div class="exam-row"><span>' + esc(r.title) + '</span>' +
           '<span>' + r.correct + '/' + r.qn + '</span>' +
-          '<span>折 ' + r.scaled + ' 分</span></div>';
+          (exam.scale ? '<span>折 ' + r.scaled + ' 分</span>' : '') + '</div>';
       }).join('');
-      var pass = exam.approx >= 100;
+      var pass = exam.scale ? exam.approx >= exam.pass : 0;
+      var scoreHtml = exam.scale
+        ? exam.approx + '<small>/' + exam.scale + (exam.band ? ' band' : ' 近似分') + '</small>'
+        : exam.correctN + '<small>/' + exam.totalQ + ' 题正确</small>';
+      var passHtml = exam.scale
+        ? (exam.band
+            ? '<p class="exam-passline">' + esc(exam.name || '') + ' · 总分按正确率折算 band · ' +
+              (exam.approx >= 6.5 ? '常见留学线 6.5 以上 ✓' : '常见留学线 6.5，还差 ' + Math.round((6.5 - exam.approx) * 2) / 2 + ' band') + '</p>'
+            : '<p class="exam-passline">' + esc(exam.name || '') + ' · 参考合格线 ' + exam.pass + ' · ' +
+              (pass ? '达标线以上 ✓' : '距合格线还差 ' + Math.round((exam.pass - exam.approx) * 10) / 10 + ' 分') + '</p>')
+        : '<p class="exam-passline">' + esc(exam.name || '') + ' · 真题卷按对错计分，无换算标尺</p>';
       return (
         '<h2>考场 · 成绩单</h2>' +
         '<div class="card exam-result">' +
-        '<div class="exam-score' + (pass ? ' pass' : '') + '">' + exam.approx + '<small>/180 近似分</small></div>' +
-        '<p class="exam-passline">' + esc(exam.name || '') + ' · 参考合格线 100 · ' +
-        (pass ? '达标线以上 ✓' : '距合格线还差 ' + (100 - exam.approx) + ' 分') + '</p>' +
+        '<div class="exam-score' + (pass ? ' pass' : '') + '">' + scoreHtml + '</div>' +
+        passHtml +
         rows +
         '<div class="exam-total">总正确 ' + exam.correctN + '/' + exam.totalQ +
         ' · 错 ' + exam.wrongN +
@@ -2153,6 +2170,14 @@
     } else if (act === 'exam-exit') {
       if (exam && exam.phase === 'run' && confirm('现在交卷？未答的题按错计并进入复习。')) examFinish();
     } else if (act === 'exam-again') {
+      if (exam.imported) { // 导入卷：同题重开一场，重置作答与计时
+        exam.secIdx = 0; exam.qi = 0;
+        exam.answers = exam.secs.map(function (s) { return s.qs.map(function () { return -1; }); });
+        exam.deadline = Date.now() + exam.totalMin * 60000;
+        exam.phase = 'run'; exam.spoken = null;
+        delete exam.result; delete exam.approx; delete exam.correctN; delete exam.wrongN; delete exam.wrongRefN;
+        examPersist(); route(); return;
+      }
       exam = buildPaper(exam.typeKey || examType, examSels[exam.typeKey || examType]);
       if (exam) { examPersist(); route(); }
     } else if (act === 'exam-pick-file') {
