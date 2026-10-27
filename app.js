@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.11'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.12'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1572,8 +1572,11 @@
         { key: 'context', title: '文字・語彙 · 文脈規定', qn: 20, minutes: 20, note: '句中挖空，选最贴切的词' },
         { key: 'meaning', title: '文字・語彙 · 意味規定', qn: 15, minutes: 10, note: '选词语的正确中文义' },
         { key: 'grammar', title: '文法', qn: 20, minutes: 20, note: '选出句子所用的语法形式' },
+        { key: 'read-s', title: '読解 · 短文', qn: 4, minutes: 8, note: '1篇 · 内容理解・指示語理解' },
+        { key: 'read-m', title: '読解 · 中文', qn: 5, minutes: 10, note: '1篇 · 内容理解・理由' },
+        { key: 'read-l', title: '読解 · 長文', qn: 6, minutes: 15, note: '1篇 · 統合理解・主旨把握' },
         { key: 'listen', title: '聴解 · 即時応答', qn: 20, minutes: 15, note: '听发音选词义（可重播）' }
-      ] // 95 题 · 80 分钟
+      ] // 110 题 · 113 分钟（真题顺序：文字語彙→文法→読解→聴解）
     },
     'topik-ii': {
       name: 'TOPIK II 仿真卷', grammarLang: 'ko', speech: 'ko-KR', scale: 300, pass: 120,
@@ -1725,12 +1728,20 @@
     var passPool = [];
     // 雅思听力：各 Part 脚本洗牌副本，l1~l4 各抽一篇（情景脚本真题型）
     var scriptPool = {};
+    // JLPT 読解：按 kind（短文/中文/長文）分池，各板块抽一篇
+    var readPool = { s: [], m: [], l: [] };
     if (typeKey === 'ielts') {
       PASSAGES.forEach(function (p) { if (p.lang === 'en') passPool.push(p); });
       passPool = shuffle(passPool);
       ['l1', 'l2', 'l3', 'l4'].forEach(function (k) {
         scriptPool[k] = shuffle(SCRIPTS.filter(function (s) { return s.lang === 'en' && s.part === k; }));
       });
+    }
+    if (typeKey === 'jlpt-n1') {
+      PASSAGES.forEach(function (p) {
+        if (p.lang === 'ja' && readPool[p.kind]) readPool[p.kind].push(p);
+      });
+      ['s', 'm', 'l'].forEach(function (k) { readPool[k] = shuffle(readPool[k]); });
     }
     var secs = [];
     spec.sections.forEach(function (s) {
@@ -1746,6 +1757,17 @@
         (scp.qs || []).forEach(function (pq) {
           qs.push({ type: pq.type, stem: pq.stem, options: pq.options || [], fill: pq.fill || null, ref: null });
         });
+      } else if (s.key === 'read-s' || s.key === 'read-m' || s.key === 'read-l') {
+        // JLPT 読解真题型：按 kind 抽一篇（内容理解/指示語/統合理解/主旨），题挂文章上
+        var rk = s.key.slice(5); // s / m / l
+        var rPool = readPool[rk] || [];
+        if (rPool.length) {
+          var rpg = rPool.splice(0, 1)[0];
+          secPassage = { title: rpg.title, paras: rpg.paras };
+          (rpg.qs || []).forEach(function (pq) {
+            qs.push({ type: pq.type, stem: pq.stem, options: pq.options || [], num: true, ref: null });
+          });
+        }
       } else if (s.key === 'kanji') {
         var usedW = {};
         for (i = 0; i < s.qn; i++) {
@@ -2187,7 +2209,7 @@
       if (ans === idx) cls += o.ok ? ' right' : ' wrong';
       else if (ans >= 0 && o.ok) cls += ' reveal';
       return '<button class="' + cls + '" data-act="exam-pick" data-i="' + idx + '">' +
-        (q.plain ? '' : '<em>' + 'ABCD'[idx] + '</em>') + esc(o.t) + '</button>';
+        (q.plain ? '' : '<em>' + (q.num ? '①②③④'[idx] : 'ABCD'[idx]) + '</em>') + esc(o.t) + '</button>';
     }).join('');
     var off = 0;
     var sheet = exam.secs.map(function (s, si) {

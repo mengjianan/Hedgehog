@@ -41,6 +41,21 @@ const PASSAGES = Array.from({ length: 4 }, (_, i) => ({
   ]
 }));
 // 雅思听力情景脚本库（每 Part 2 篇小样，10 题/篇：填空+选择）
+// JLPT 読解文章库（每 kind 2 篇小样：s=4题 m=5题 l=6题，真题型题干+①②③④）
+const mkJaQs = (n, type) => Array.from({ length: n }, (_, i) => ({
+  type, stem: type + 'の問' + (i + 1) + '：最も適切なものを選べ。',
+  options: [{ t: '正解' + i, ok: true }, { t: '誤答a' + i, ok: false }, { t: '誤答b' + i, ok: false }, { t: '誤答c' + i, ok: false }]
+}));
+['s', 'm', 'l'].forEach(kind => {
+  const n = { s: 4, m: 5, l: 6 }[kind];
+  for (let i = 0; i < 2; i++) {
+    PASSAGES.push({
+      id: 'ja-' + kind + i, lang: 'ja', kind, title: '日本語' + kind + i + 'の文章',
+      paras: ['一段落目です。' + kind + i, '二段落目です。' + kind + i, '三段落目です。'],
+      qs: mkJaQs(n, kind === 'l' ? '統合理解' : '内容理解')
+    });
+  }
+});
 const mkScriptQs = () => [
   { type: '表格填空', stem: "1. Name: ______", fill: { accept: ['Janeway'] } },
   { type: '表格填空', stem: "2. Date: the ______", fill: { accept: ['17', 'seventeenth'] } },
@@ -128,6 +143,24 @@ console.log('场景4: 持久化往返');
 api.setExam(api.buildPaper('jlpt-n1', { grammar: true }));
 const round = JSON.parse(JSON.stringify(api.getExam()));
 assert(round.typeKey === 'jlpt-n1' && round.deadline > Date.now(), '往返结构完整');
+
+console.log('场景4.5: JLPT 読解真题型（短文/中文/長文各抽1篇）');
+const pJ = api.buildPaper('jlpt-n1', { kanji: true, context: true, meaning: true, grammar: true, 'read-s': true, 'read-m': true, 'read-l': true, listen: true });
+console.log('  分段:', pJ.secs.map(s => s.key + '=' + s.qs.length).join(', '));
+// 漢字20+文脈20+意味15+文法20+短文4+中文5+長文6+聴解20 = 110 题
+assert(pJ.secs.length === 8 && pJ.totalQ === 110, 'JLPT 全卷 110 题 8 板块 = ' + pJ.totalQ);
+const readSecs = pJ.secs.filter(s => s.key[0] === 'r' && s.key.indexOf('read') === 0);
+assert(readSecs.length === 3 && readSecs.every(s => s.passage && s.passage.paras.length === 3), '読解 3 板块均携带文章');
+assert(new Set(readSecs.map(s => s.passage.title)).size === 3, '三篇日语文章互不重复（每 kind 抽1）');
+assert(pJ.secs.find(s => s.key === 'read-s').qs.length === 4, '短文 4 题');
+assert(pJ.secs.find(s => s.key === 'read-m').qs.length === 5, '中文 5 题');
+assert(pJ.secs.find(s => s.key === 'read-l').qs.length === 6, '長文 6 题（統合理解）');
+// 读解题带 num（①②③④）标记，每题4选项唯一正确
+assert(readSecs.every(s => s.qs.every(q => q.num && q.options.length === 4 && q.options.filter(o => o.ok).length === 1)), '読解题①②③④+唯一正确');
+assert(readSecs.every(s => s.qs.every(q => q.ref === null)), '読解题不挂词库 ref');
+// 只勾讀解也能组卷（词汇/语法池不参与也返回正常卷）
+const pJr = api.buildPaper('jlpt-n1', { 'read-s': true, 'read-l': true });
+assert(pJr && pJr.secs.length === 2 && pJr.totalQ === 10, '仅読解可独立组卷 = ' + (pJr && pJr.totalQ));
 
 console.log('场景5: IELTS 仿真卷（听力40+阅读40，band 折算）');
 // 英语词库：同一批词但 ex/en 字段模拟雅思数据
