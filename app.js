@@ -23,7 +23,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1545,6 +1545,8 @@
   var exam = null;
   var examTimerId = null;
   var examType = 'jlpt-n1';
+  var examPapers = null;       // 本机导入的真题卷（IndexedDB，不进仓库）
+  var examPapersLoading = false;
   var EXAM_TYPES = {
     'jlpt-n1': {
       name: 'JLPT N1 模拟卷（仿真）', grammarLang: 'ja', speech: 'ja-JP',
@@ -1768,6 +1770,7 @@
         var ok = a >= 0 && q.options[a] && q.options[a].ok;
         if (ok) correct++;
         if (!ok && q.ref) { // 错题（含未答）进复习队列
+          exam.wrongRefN = (exam.wrongRefN || 0) + 1;
           try {
             scheduleRef(q.ref, false);
             var k = known();
@@ -1805,9 +1808,63 @@
     examTick();
   }
 
+  function importHtml() {
+    if (examPapers === null) return '<p class="picker-h">本机导入的真题卷</p><p class="sub">读取中…</p>';
+    var papers = examPapers || [];
+    return (
+      '<p class="picker-h">本机导入的真题卷（仅存你的浏览器，不上传不入库）</p>' +
+      (papers.length
+        ? papers.map(function (p) {
+            return '<div class="entry-card import-row">' +
+              '<span><b>' + esc(p.name) + '</b><small>' + p.totalQ + ' 题 · ' + p.totalMin + ' 分钟</small></span>' +
+              '<span class="import-acts">' +
+              '<button class="mini-btn" data-act="exam-begin-import" data-id="' + esc(String(p.id)) + '">开始</button>' +
+              '<button class="mini-btn" data-act="exam-del-import" data-id="' + esc(String(p.id)) + '">删除</button>' +
+              '</span></div>';
+          }).join('')
+        : '<p class="sub">还没有导入的真题卷</p>') +
+      '<div class="exam-import"><button class="btn ghost" data-act="exam-pick-file">📥 导入真题卷（.json）</button>' +
+      '<small class="import-tip">用 tools/exam-pdf2json.py 从真题 PDF 在本机转换</small>' +
+      '<input type="file" id="examImportFile" accept=".json,application/json" hidden /></div>'
+    );
+  }
+
+  // 校验导入卷：每题恰一个正确选项
+  function validateExamPaper(p) {
+    if (!p || !Array.isArray(p.secs) || !p.secs.length) return '缺少 secs';
+    var total = 0, i, j, k;
+    for (i = 0; i < p.secs.length; i++) {
+      var sec = p.secs[i];
+      if (!Array.isArray(sec.qs) || !sec.qs.length) return '板块缺题目';
+      for (j = 0; j < sec.qs.length; j++) {
+        var q = sec.qs[j];
+        if (typeof q.stem !== 'string' || !q.stem) return '题干缺失';
+        if (!Array.isArray(q.options) || q.options.length < 2) return '选项不足';
+        var okN = 0;
+        for (k = 0; k < q.options.length; k++) {
+          if (typeof q.options[k].t !== 'string' || !q.options[k].t) return '选项文本缺失';
+          if (q.options[k].ok) okN++;
+        }
+        if (okN !== 1) return '每题须恰好 1 个正确选项';
+        total++;
+      }
+    }
+    if (!total) return '没有题目';
+    p.totalQ = total;
+    if (!p.minutes || p.minutes < 1) p.minutes = 60;
+    p.totalMin = p.minutes;
+    return '';
+  }
+
   function examScreen() {
     if (!exam) exam = lsGet('hedgehog:exam', null);
     if (!exam || !exam.secs || exam.phase === 'setup') {
+      if (examPapers === null && !examPapersLoading) {
+        examPapersLoading = true;
+        idbGet('exam-papers').then(function (ps) {
+          examPapers = ps || []; examPapersLoading = false; route();
+        }, function () { examPapers = []; examPapersLoading = false; route(); });
+      }
       // 试卷选择 + 板块勾选
       var typeCards = Object.keys(EXAM_TYPES).map(function (k) {
         var t = EXAM_TYPES[k];
@@ -1839,7 +1896,8 @@
         '<p class="picker-h">选择板块 · ' + esc(cur.name) + '</p>' + cards +
         '<div class="exam-start"><button class="btn" data-act="exam-begin"' + (tq ? '' : ' disabled') + '>' +
         '开始考试（' + tq + ' 题 · ' + tm + ' 分钟）</button></div>' +
-        '<p class="footnote">倒计时中途刷新不丢 · 错题自动进复习队列</p>'
+        importHtml() +
+        '<p class="footnote">倒计时中途刷新不丢 · 仿真卷错题自动进复习队列</p>'
       );
     }
     if (exam.phase === 'result') {
@@ -1857,7 +1915,9 @@
         (pass ? '达标线以上 ✓' : '距合格线还差 ' + (100 - exam.approx) + ' 分') + '</p>' +
         rows +
         '<div class="exam-total">总正确 ' + exam.correctN + '/' + exam.totalQ +
-        ' · 错 ' + exam.wrongN + (exam.wrongRefN ? '（' + exam.wrongRefN + ' 题错词已进复习）' : '（已进复习队列）') + '</div>' +
+        ' · 错 ' + exam.wrongN +
+        (exam.imported ? '（真题卷 · 错题不自动入复习）'
+          : exam.wrongRefN ? '（' + exam.wrongRefN + ' 题错词已进复习）' : '（已进复习队列）') + '</div>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="exam-again">再战一场</button>' +
         '<a class="btn ghost" href="#/study">回巡游</a>' +
@@ -2095,6 +2155,37 @@
     } else if (act === 'exam-again') {
       exam = buildPaper(exam.typeKey || examType, examSels[exam.typeKey || examType]);
       if (exam) { examPersist(); route(); }
+    } else if (act === 'exam-pick-file') {
+      var fi = $('examImportFile');
+      if (fi) fi.click();
+    } else if (act === 'exam-begin-import') {
+      var pid = el.getAttribute('data-id');
+      var pp = (examPapers || []).filter(function (x) { return String(x.id) === pid; })[0];
+      if (!pp) return;
+      var mins = pp.minutes || 60;
+      exam = {
+        typeKey: 'import', imported: true, name: pp.name,
+        secs: pp.secs.map(function (x, xi) {
+          return {
+            key: x.key || 'q' + xi, title: x.title || '기출문제',
+            minutes: x.minutes || Math.max(1, Math.round(mins / pp.secs.length)),
+            qs: x.qs
+          };
+        }),
+        secIdx: 0, qi: 0,
+        answers: pp.secs.map(function (x) { return x.qs.map(function () { return -1; }); }),
+        deadline: Date.now() + mins * 60000,
+        phase: 'run', spoken: null
+      };
+      exam.totalQ = exam.secs.reduce(function (n, x) { return n + x.qs.length; }, 0);
+      exam.totalMin = mins;
+      examPersist(); route();
+    } else if (act === 'exam-del-import') {
+      var did = el.getAttribute('data-id');
+      if (confirm('删除这份本机真题卷？')) {
+        examPapers = (examPapers || []).filter(function (x) { return String(x.id) !== did; });
+        idbSet('exam-papers', examPapers).then(function () { route(); });
+      }
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
       route();
@@ -2219,6 +2310,30 @@
 
   // 每轮站数设置（#4）：背词页输入框改完即生效并记住
   document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'examImportFile') {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var paper = JSON.parse(String(reader.result));
+          var verr = validateExamPaper(paper);
+          if (verr) { toast('导入失败：' + verr); return; }
+          paper.id = 'p' + Date.now();
+          paper.name = paper.name || String(file.name).replace(/\.json$/i, '');
+          idbGet('exam-papers').then(function (list) {
+            list = list || [];
+            list.push(paper);
+            return idbSet('exam-papers', list);
+          }).then(function () {
+            examPapers = null; route(); toast('已导入：' + paper.name);
+          }).catch(function () { toast('保存失败'); });
+        } catch (err2) { toast('JSON 解析失败'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+      return;
+    }
     if (e.target && e.target.id === 'sizeInput') {
       var n = parseInt(e.target.value, 10);
       if (!isNaN(n)) {
