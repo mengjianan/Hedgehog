@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.12'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.13'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1815,19 +1815,79 @@
           });
         }
       } else if (s.key === 'grammar' || s.key === 'g-form') {
-        var usedG = {};
-        for (i = 0; i < s.qn; i++) {
-          var usedOptG = {};
-          var g1 = exPick(gpts, 1, usedG, function (p) { return p.t; })[0];
-          if (!g1 || !(g1.ex && g1.ex[0] && g1.ex[0].en) || !g1.formula) continue;
-          var disG = exPick(gpts, 3, usedOptG, function (p) {
-            return p.t === g1.t || p.formula === g1.formula ? null : p.formula;
-          }).map(function (p) { return p.formula; });
-          if (disG.length < 3) break;
-          qs.push({
-            type: spec.grammarLang === 'ko' ? '연결어미' : '文法',
-            stem: g1.ex[0].en, options: optSet(g1.formula, disG), ref: null
-          });
+        if (spec.grammarLang === 'ja') {
+          // JLPT 文法真题型：整序（点带 ord 4 片段）+ 誤用訂正（点带 err 错例），各半；无该字段的点退回公式选择
+          var usedOrd = {}, usedErr = {};
+          var nJum = Math.ceil(s.qn / 2);
+          for (i = 0; i < s.qn; i++) {
+            var gpt;
+            if (i < nJum) { // 整序：片段 ①-④ 打乱显示，选项 = 4 种排序（num ①②③④样式）
+              var candJ = exPick(gpts.filter(function (p) { return p.ord; }), 1, usedOrd, function (p) { return p.t; })[0];
+              if (!candJ) { gpt = exPick(gpts, 1, usedOrd, function (p) { return p.t; })[0]; if (!gpt) break; }
+              if (candJ) {
+                var frags = candJ.ord;
+                var disp = shuffle(frags.slice()); // 显示序（乱序）
+                var stemJ = '次の文を正しい語順に並べよ。';
+                var fragHtml = disp.map(function (f, fi) { return '①②③④'[fi] + '「' + f + '」'; }).join(' ');
+                // 正确排序：按 frags 原序在 disp 中的位置（+1 转题号）
+                var correctSeq = frags.map(function (f) { return disp.indexOf(f) + 1; });
+                var correctStr = correctSeq.map(function (n) { return '①②③④'[n - 1]; }).join('→');
+                var seqs = [correctStr], tries = 0;
+                while (seqs.length < 4 && tries++ < 40) { // 3 个干扰排序（相邻交换生成，贴近真题）
+                  var a = correctSeq.slice(), swapAt = Math.floor(Math.random() * 3);
+                  var tmp = a[swapAt]; a[swapAt] = a[swapAt + 1]; a[swapAt + 1] = tmp;
+                  var sStr = a.map(function (n) { return '①②③④'[n - 1]; }).join('→');
+                  if (seqs.indexOf(sStr) < 0) seqs.push(sStr);
+                }
+                qs.push({ type: '文法・語順整序', stem: stemJ + ' ' + fragHtml, num: true,
+                  options: shuffle(seqs.map(function (s, si) { return { t: s, ok: si === 0 }; })), ref: null });
+                continue;
+              }
+            } else { // 誤用訂正：给错句，4 个修正选 1
+              var candE = exPick(gpts.filter(function (p) { return p.err; }), 1, usedErr, function (p) { return p.t; })[0];
+              if (!candE) { // 无 err 点时退回原「公式选择」
+                var g1 = exPick(gpts, 1, usedErr, function (p) { return p.t; })[0];
+                if (!g1 || !(g1.ex && g1.ex[0] && g1.ex[0].en) || !g1.formula) break;
+                var disG2 = exPick(gpts, 3, {}, function (p) {
+                  return p.t === g1.t || p.formula === g1.formula ? null : p.formula;
+                }).map(function (p) { return p.formula; });
+                if (disG2.length < 3) break;
+                qs.push({ type: '文法', stem: g1.ex[0].en, num: true, options: optSet(g1.formula, disG2), ref: null });
+                continue;
+              }
+              var disG3 = exPick(gpts.filter(function (p) { return p.err && p.err !== candE.err; }), 3, {}, function (p) {
+                return p.err.wrong === candE.err.wrong ? null : p.err.wrong;
+              }).map(function (p) { return p.err.wrong; });
+              qs.push({ type: '文法・誤用訂正', num: true,
+                stem: '文中の誤りを改正せよ。「' + candE.err.wrong + '」',
+                options: optSet(candE.err.fixes, disG3.length === 3 ? disG3 : ['正しい形', 'そのままでよい', '文全体の書き換え']), ref: null });
+              continue;
+            }
+            gpt = gpt || null; // 兜底（正常走不到）
+            void gpt;
+            var g2 = exPick(gpts, 1, {}, function (p) { return p.t; })[0];
+            if (!g2 || !(g2.ex && g2.ex[0] && g2.ex[0].en) || !g2.formula) break;
+            var disG4 = exPick(gpts, 3, {}, function (p) {
+              return p.t === g2.t || p.formula === g2.formula ? null : p.formula;
+            }).map(function (p) { return p.formula; });
+            if (disG4.length < 3) break;
+            qs.push({ type: '文法', stem: g2.ex[0].en, num: true, options: optSet(g2.formula, disG4), ref: null });
+          }
+        } else { // 韩语：沿用连接词尾公式选择
+          var usedG = {};
+          for (i = 0; i < s.qn; i++) {
+            var usedOptG = {};
+            var g1 = exPick(gpts, 1, usedG, function (p) { return p.t; })[0];
+            if (!g1 || !(g1.ex && g1.ex[0] && g1.ex[0].en) || !g1.formula) continue;
+            var disG = exPick(gpts, 3, usedOptG, function (p) {
+              return p.t === g1.t || p.formula === g1.formula ? null : p.formula;
+            }).map(function (p) { return p.formula; });
+            if (disG.length < 3) break;
+            qs.push({
+              type: spec.grammarLang === 'ko' ? '연결어미' : '文法',
+              stem: g1.ex[0].en, options: optSet(g1.formula, disG), ref: null
+            });
+          }
         }
       } else if (s.key === 'listen' || s.key === 'l-word') {
         var usedL = {};

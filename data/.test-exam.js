@@ -25,7 +25,7 @@ const LIST = {
 };
 const DATA = {
   grammars: [
-    { lang: 'ja', rooms: [{ name: 'r', points: Array.from({ length: 25 }, (_, i) => ({ t: '日语法' + i, formula: '日式公式' + i, ex: [{ en: '彼は学校に行った。', zh: 'x' }] })) }] },
+    { lang: 'ja', rooms: [{ name: 'r', points: Array.from({ length: 25 }, (_, i) => ({ t: '日语法' + i, formula: '日式公式' + i, ex: [{ en: '彼は学校に行った。', zh: 'x' }], ord: ['日片段' + i + 'a', '日片段' + i + 'b', '日片段' + i + 'c', '日片段' + i + 'd'], err: { wrong: '日错例' + i, fixes: '日订正' + i } })) }] },
     { lang: 'ko', rooms: [{ name: 'r', points: Array.from({ length: 25 }, (_, i) => ({ t: '韩语法' + i, formula: '韩式公式' + i, ex: [{ en: '그는 학교에 갔다.', zh: 'x' }] })) }] }
   ]
 };
@@ -98,6 +98,19 @@ assert(p1.secs.length === 5 && p1.totalQ === 95 && p1.totalMin === 80, 'JLPT 95�
 assert(p1.typeKey === 'jlpt-n1', 'typeKey 正确');
 assert(p1.scale === 180 && p1.pass === 100 && !p1.band, 'JLPT 标尺 180/合格线100');
 assert(p1.name === 'JLPT N1 仿真卷', '命名统一：仿真卷（无「模拟」）');
+// B2：文法板块 = 整序 + 誤用訂正（日语点带 ord/err）
+const gSec1 = p1.secs.find(s => s.key === 'grammar');
+const jnN = gSec1.qs.filter(q => q.type === '文法・語順整序').length;
+const errN = gSec1.qs.filter(q => q.type === '文法・誤用訂正').length;
+assert(jnN + errN === 20, '文法 20 题 = 整序' + jnN + ' + 誤用訂正' + errN);
+assert(jnN === 10 && errN === 10, '整序/訂正 各半 = ' + jnN + '/' + errN);
+// 整序：题干带「① ② ③ ④」四个标记片段，4 选项为排序串，唯一正确
+const jnq = gSec1.qs.find(q => q.type === '文法・語順整序');
+assert(jnq.num && jnq.options.length === 4 && /①/.test(jnq.stem) && /④/.test(jnq.stem) && /次の文/.test(jnq.stem), '整序题干含乱序片段+num');
+assert(jnq.options.filter(o => o.ok).length === 1 && jnq.options.every(o => /→/.test(o.t)), '整序选项为4种排序且唯一正确');
+// 誤用訂正：题干为「改正せよ」，4 选项含正确订正（options 中 ok 的项 = 该点 err.fixes）
+const errq = gSec1.qs.find(q => q.type === '文法・誤用訂正');
+assert(/改正せよ/.test(errq.stem) && errq.options.length === 4 && errq.options.filter(o => o.ok).length === 1, '訂正题干+4选项唯一正确');
 
 console.log('场景2: TOPIK II 仿真卷（全板块）');
 const p2 = api.buildPaper('topik-ii', { 'l-cont': true, 'l-word': true, 'v-mean': true, 'v-ctx': true, 'g-form': true });
