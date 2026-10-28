@@ -56,6 +56,21 @@ const mkJaQs = (n, type) => Array.from({ length: n }, (_, i) => ({
     });
   }
 });
+// TOPIK 읽기 文章库（每 kind 2 篇小样：s=3题 m=4题 l=3题，순서/삽입/빈칸题型）
+['s', 'm', 'l'].forEach(kind => {
+  const n = { s: 3, m: 4, l: 3 }[kind];
+  for (let i = 0; i < 2; i++) {
+    PASSAGES.push({
+      id: 'ko-' + kind + i, lang: 'ko', kind, title: '한국어' + kind + i + '의 글',
+      paras: ['첫 번째 문단입니다。' + kind + i, '두 번째 문단입니다。' + kind + i],
+      qs: Array.from({ length: n }, (_, qi) => ({
+        type: kind === 'l' ? (qi % 2 ? '문장 삽입' : '순서 배열') : (qi % 2 ? '빈칸 추론' : '내용 이해'),
+        stem: '가장 적절한 것을 고르십시오。' + qi,
+        options: [{ t: '정답' + qi, ok: true }, { t: '오답a' + qi, ok: false }, { t: '오답b' + qi, ok: false }, { t: '오답c' + qi, ok: false }]
+      }))
+    });
+  }
+});
 const mkScriptQs = () => [
   { type: '表格填空', stem: "1. Name: ______", fill: { accept: ['Janeway'] } },
   { type: '表格填空', stem: "2. Date: the ______", fill: { accept: ['17', 'seventeenth'] } },
@@ -113,10 +128,15 @@ const errq = gSec1.qs.find(q => q.type === '文法・誤用訂正');
 assert(/改正せよ/.test(errq.stem) && errq.options.length === 4 && errq.options.filter(o => o.ok).length === 1, '訂正题干+4选项唯一正确');
 
 console.log('场景2: TOPIK II 仿真卷（全板块）');
-const p2 = api.buildPaper('topik-ii', { 'l-cont': true, 'l-word': true, 'v-mean': true, 'v-ctx': true, 'g-form': true });
+const p2 = api.buildPaper('topik-ii', { 'l-cont': true, 'l-word': true, 'v-mean': true, 'v-ctx': true, 'g-form': true, 'r-s': true, 'r-m': true, 'r-order': true });
 console.log('  分段:', p2.secs.map(s => s.key + '=' + s.qs.length).join(', '));
-assert(p2.secs.length === 5, 'TOPIK 5 板块');
-assert(p2.totalQ === 100 && p2.totalMin === 110, 'TOPIK 100题110分 = ' + p2.totalQ + '题' + p2.totalMin + '分');
+assert(p2.secs.length === 8, 'TOPIK 8 板块（含 읽기 3 板块）');
+assert(p2.totalQ === 110 && p2.totalMin === 131, 'TOPIK 110题131分 = ' + p2.totalQ + '题' + p2.totalMin + '分');
+// 읽기 板块从韩语文章库抽篇（s/m/l 各1，互不重复），题带 num
+const koRead = p2.secs.filter(s => s.key === 'r-s' || s.key === 'r-m' || s.key === 'r-order');
+assert(koRead.length === 3 && koRead.every(s => s.passage && s.passage.title[0] === '한'), '읽기 3 板块均携带韩语文章');
+assert(new Set(koRead.map(s => s.passage.title)).size === 3, '읽기 三篇文章互不重复');
+assert(koRead.every(s => s.qs.every(q => q.num && q.options.length === 4)), '읽기每题①②③④+4选项');
 // 听力题必须是韩语（语法题必须出自韩语语法宫）
 let gKo = 0, listenN = 0;
 p2.secs.forEach(s => s.qs.forEach(q => {
@@ -143,8 +163,8 @@ ex.phase = 'run';
 scheduled.length = 0;
 api.examFinish();
 const ex2 = api.getExam();
-assert(ex2.phase === 'result' && ex2.result.length === 5, '成绩单 5 行');
-assert(ex2.correctN === 52, '对 52 题（各段偶数位） = ' + ex2.correctN);
+assert(ex2.phase === 'result' && ex2.result.length === 8, '成绩单 8 行');
+assert(ex2.correctN === 58, '对 58 题（各段偶数位） = ' + ex2.correctN);
 assert(scheduled.filter(r => r[1] === false).length > 0, '错题已排复习');
 assert(typeof ex2.approx === 'number' && ex2.approx <= 300, 'TOPIK 按 300 标尺折算 = ' + ex2.approx);
 assert(ex2.scale === 300 && ex2.pass === 120, 'TOPIK 标尺 300/参考线120');

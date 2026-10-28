@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.13'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-27.14'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1585,8 +1585,11 @@
         { key: 'l-word', title:'듣기 · 어휘', qn: 15, minutes: 15, note: '听词，选中文义（可重播）' },
         { key: 'v-mean', title:'어휘 · 뜻 고르기', qn: 25, minutes: 20, note: '看词选正确的中文义' },
         { key: 'v-ctx', title:'어휘 · 문맥 채우기', qn: 25, minutes: 30, note: '句中挖空，选最贴切的词' },
-        { key: 'g-form', title:'문법 · 연결어미', qn: 20, minutes: 25, note: '选出句子所用的语法形式' }
-      ] // 100 题 · 110 分钟（≈真题 2 教时）· 近似满分 300、3급参考线 120
+        { key: 'g-form', title:'문법 · 연결어미', qn: 20, minutes: 25, note: '选出句子所用的语法形式' },
+        { key: 'r-s', title:'읽기 · 단문', qn: 3, minutes: 6, note: '1篇 짧은 글 · 내용 이해・주제 파악' },
+        { key: 'r-m', title:'읽기 · 중문', qn: 4, minutes: 8, note: '1편 중간 글 · 내용 이해・빈칸 추론' },
+        { key: 'r-order', title:'읽기 · 순서 배열・문장 삽입', qn: 3, minutes: 7, note: '문맥 순서 ・ 빈칸에 들어갈 문장' }
+      ] // 110 题 · 131 分钟（≈真题结构：듣기+어휘+문법+읽기）· 近似满分 300、3급参考线 120
     },
     'ielts': {
       name: 'IELTS 仿真卷', grammarLang: 'en', speech: 'en-GB', scale: 9, pass: 6.5,
@@ -1728,7 +1731,7 @@
     var passPool = [];
     // 雅思听力：各 Part 脚本洗牌副本，l1~l4 各抽一篇（情景脚本真题型）
     var scriptPool = {};
-    // JLPT 読解：按 kind（短文/中文/長文）分池，各板块抽一篇
+    // JLPT 読解 / TOPIK 읽기：按 kind 分池，各板块抽一篇（kind 对应板块后缀）
     var readPool = { s: [], m: [], l: [] };
     if (typeKey === 'ielts') {
       PASSAGES.forEach(function (p) { if (p.lang === 'en') passPool.push(p); });
@@ -1740,6 +1743,12 @@
     if (typeKey === 'jlpt-n1') {
       PASSAGES.forEach(function (p) {
         if (p.lang === 'ja' && readPool[p.kind]) readPool[p.kind].push(p);
+      });
+      ['s', 'm', 'l'].forEach(function (k) { readPool[k] = shuffle(readPool[k]); });
+    }
+    if (typeKey === 'topik-ii') {
+      PASSAGES.forEach(function (p) {
+        if (p.lang === 'ko' && readPool[p.kind]) readPool[p.kind].push(p);
       });
       ['s', 'm', 'l'].forEach(function (k) { readPool[k] = shuffle(readPool[k]); });
     }
@@ -1757,9 +1766,11 @@
         (scp.qs || []).forEach(function (pq) {
           qs.push({ type: pq.type, stem: pq.stem, options: pq.options || [], fill: pq.fill || null, ref: null });
         });
-      } else if (s.key === 'read-s' || s.key === 'read-m' || s.key === 'read-l') {
-        // JLPT 読解真题型：按 kind 抽一篇（内容理解/指示語/統合理解/主旨），题挂文章上
-        var rk = s.key.slice(5); // s / m / l
+      } else if (s.key === 'read-s' || s.key === 'read-m' || s.key === 'read-l' ||
+                 s.key === 'r-s' || s.key === 'r-m' || s.key === 'r-order') {
+        // JLPT 読解 / TOPIK 읽기 真题型：按 kind 抽一篇（内容理解/빈칸/순서/삽입/주제），题挂文章上
+        var rk = s.key === 'r-order' ? 'l' : // TOPIK r-order 复用 l（순서/삽입）池
+          (s.key === 'r-s' ? 's' : s.key === 'r-m' ? 'm' : s.key.slice(5)); // JLPT read-s/m/l 与 TOPIK r-s/r-m
         var rPool = readPool[rk] || [];
         if (rPool.length) {
           var rpg = rPool.splice(0, 1)[0];
