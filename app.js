@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1733,6 +1733,33 @@
     return shuffle(opts);
   }
 
+  // 干扰项三级抽样：同词性 → 同场景 → 随机（词库题专用；返回 3 个干扰值字符串，不含正确项）
+  function pickDis3(correctW, all, used, lid, fieldFn) {
+    var out = [];
+    var correctVal = fieldFn(correctW);
+    function take(pool) {
+      var tries = 0;
+      while (out.length < 3 && tries++ < pool.length * 3 + 9) {
+        var it = pool[Math.floor(Math.random() * pool.length)];
+        if (!it) break;
+        var k = fieldFn(it);
+        if (!k || k === correctVal || used[k] || out.indexOf(k) >= 0) continue;
+        used[k] = 1;
+        out.push(k);
+      }
+    }
+    // ① 同词性
+    take(all.filter(function (x) { return x.pos === correctW.pos; }));
+    // ② 同场景（TAGS 按 listid/word 映射）
+    if (out.length < 3 && lid && correctW.w) {
+      var sc = TAGS[lid + '/' + correctW.w];
+      if (sc) take(all.filter(function (x) { return TAGS[lid + '/' + x.w] === sc; }));
+    }
+    // ③ 随机兜底
+    if (out.length < 3) take(all);
+    return out.slice(0, 3);
+  }
+
   // 组卷：typeKey 选试卷，sel 选板块
   function buildPaper(typeKey, sel) {
     var spec = EXAM_TYPES[typeKey];
@@ -1819,10 +1846,7 @@
           var cand = exPick(kanjiW.length ? kanjiW : all, 1, usedW, function (x) { return x.w; })[0];
           if (!cand) break;
           var correct = cand.pron.split(' / ')[0];
-          var dis = exPick(all, 3, usedOpt, function (x) {
-            var r = x.pron.split(' / ')[0];
-            return r === correct ? null : r;
-          }).map(function (x) { return x.pron.split(' / ')[0]; });
+          var dis = pickDis3(cand, all, usedOpt, wordList.id, function (x) { return x.pron.split(' / ')[0]; });
           if (dis.length < 3) break;
           qs.push({ type: '漢字読み', stem: cand.w, options: optSet(correct, dis), ref: wordList.id + '/' + cand.w });
         }
@@ -1837,8 +1861,7 @@
           (c.ex || []).forEach(function (e) { if (!sent && e.en && c.w && e.en.indexOf(c.w) >= 0) sent = e.en; });
           if (!sent) continue;
           var stem = sent.split(c.w).join('（　）');
-          var disC = exPick(all, 3, usedOptC, function (x) { return x.w === c.w ? null : x.w; })
-            .map(function (x) { return x.w; });
+          var disC = pickDis3(c, all, usedOptC, wordList.id, function (x) { return x.w; });
           if (disC.length < 3) break;
           qs.push({ type: s.key === 'v-ctx' ? '문맥 채우기' : '文脈規定', stem: stem, options: optSet(c.w, disC), ref: wordList.id + '/' + c.w });
         }
@@ -1848,9 +1871,7 @@
           var usedOptM = {};
           var m = exPick(all, 1, usedM, function (x) { return x.w; })[0];
           if (!m) break;
-          var disM = exPick(all, 3, usedOptM, function (x) {
-            return x.w === m.w || x.zh === m.zh ? null : x.zh;
-          }).map(function (x) { return x.zh; });
+          var disM = pickDis3(m, all, usedOptM, wordList.id, function (x) { return x.zh; });
           if (disM.length < 3) break;
           qs.push({
             type: s.key === 'v-mean' ? '뜻 고르기' : '意味規定',
@@ -1940,9 +1961,7 @@
           var l1 = exPick(all, 1, usedL, function (x) { return x.w; })[0];
           if (!l1) break;
           var spoken = s.key === 'l-word' || !(l1.collo && l1.collo[0]) ? l1.w : l1.collo[0];
-          var disL = exPick(all, 3, usedOptL, function (x) {
-            return x.w === l1.w || x.zh === l1.zh ? null : x.zh;
-          }).map(function (x) { return x.zh; });
+          var disL = pickDis3(l1, all, usedOptL, wordList.id, function (x) { return x.zh; });
           if (disL.length < 3) break;
           qs.push({
             type: '聴解・即時応答', stem: '🔊 ' + spoken, spoken: spoken,
@@ -1959,9 +1978,7 @@
           var sents = (l2.ex || []).filter(function (e) { return e.en && e.zh; });
           if (!sents.length) continue;
           var pick = sents[0];
-          var disLC = exPick(all, 3, usedOptLC, function (x) {
-            return x.w === l2.w || x.zh === pick.zh ? null : x.zh;
-          }).map(function (x) { return x.zh; });
+          var disLC = pickDis3({ pos: l2.pos, w: l2.w, zh: pick.zh }, all, usedOptLC, wordList.id, function (x) { return x.zh; });
           if (disLC.length < 3) break;
           // 雅思听力（l1/l2/l4）不把原文打上屏幕（否则看着句子选中文不用听）；原文存 raw，交卷后解析区才显示
           qs.push({

@@ -109,10 +109,11 @@ function $(id) { return { textContent: '' }; }
 function esc(s) { return String(s); }
 function pickVoice() { return null; } function toast() { }
 const window = { scrollTo() {}, speechSynthesis: null };
+const TAGS = { 'test-list/runv': 'travel', 'test-list/swimv': 'travel', 'test-list/flyv': 'travel' };
 
-const factory = new Function('LIST', 'DATA', 'PASSAGES', 'SCRIPTS', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
-  code + '; return { buildPaper, getExam(){return exam;}, setExam(e){exam=e;}, examFinish };');
-const api = factory(LIST, DATA, PASSAGES, SCRIPTS, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
+const factory = new Function('LIST', 'DATA', 'PASSAGES', 'SCRIPTS', 'TAGS', 'shuffle', 'scheduleRef', 'known', 'lsSet', 'lsGet', 'route', '$', 'esc', 'pickVoice', 'toast', 'window',
+  code + '; return { buildPaper, getExam(){return exam;}, setExam(e){exam=e;}, examFinish, pickDis3 };');
+const api = factory(LIST, DATA, PASSAGES, SCRIPTS, TAGS, shuffle, scheduleRef, known, lsSet, lsGet, route, $, esc, pickVoice, toast, window);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('  ok -', msg); }
 
@@ -302,5 +303,45 @@ const e6b = api.getExam();
 assert(e6b.correctN === e6b.objQ, '填空判分宽容大小写与首尾空格');
 // 官方 band 表：raw40=20 → band 5.5（27→6.5、23→6、19→5.5 档）
 assert(api.ieltsBandFromRaw ? true : true, 'band 表已内置');
+
+console.log('场景8: 干扰项三级抽样（同词性 → 同场景 → 随机）');
+// 构造混合词性词库：5 个动词 + 5 个名词，其中动词里 3 个同场景
+const mkV = (w, zh, pos, scene) => ({ w, pos, zh, scene });
+const disPool = [
+  mkV('runv', '跑', 'v.', 'work'), mkV('jumpv', '跳', 'v.', 'work'),
+  mkV('swimv', '游泳', 'v.', 'travel'), mkV('flyv', '飞', 'v.', 'travel'),
+  mkV('eatz', '吃', 'v.', 'health'),
+  mkV('appn', '苹果', 'n.', 'health'), mkV('bookn', '书', 'n.', 'edu'),
+  mkV('pen', '笔', 'n.', 'edu'), mkV('carn', '车', 'n.', 'travel'),
+  mkV('desk', '桌子', 'n.', 'work')
+];
+// 用一个动词跑（场景 travel），验证干扰项优先同词性(v.)、其次同场景(travel)
+const tgt = disPool[4]; // eatz, pos v., scene health
+const usedT = {};
+const disRes = api.pickDis3(tgt, disPool, usedT, 'test-list', function (x) { return x.zh; });
+assert(disRes.length === 3, 'pickDis3 返回 3 个干扰 = ' + disRes.length);
+assert(disRes.every(d => d !== tgt.zh), '干扰项不含正确值');
+assert(new Set(disRes).size === 3, '3 个干扰互不重复');
+// 三级抽样：同词性优先——tgt 是 v.，pool 里 v. 有5个(去掉自己还剩4)，足够3个，所以干扰应全是动词
+const vWords = disPool.filter(x => x.pos === 'v.').map(x => x.zh);
+const allDisAreV = disRes.every(d => vWords.indexOf(d) >= 0);
+assert(allDisAreV, '同词性优先：动词题的3个干扰全是动词');
+// 第2级同场景：构造同词性池只有1个，强制触发 level2（同场景）
+const disPool2 = [
+  mkV('runv', '跑', 'v.'), mkV('jumpv', '跳', 'v.'),       // 只有2个v.（含自己），level1只能凑1个
+  mkV('swimn', '游泳', 'n.'), mkV('flyn', '飞', 'n.'),       // 同场景travel的n.，level2从这补
+  mkV('appn', '苹果', 'n.')                                  // 异场景health
+];
+const TAGS2 = { 'test-list2/runv': 'travel', 'test-list2/swimn': 'travel', 'test-list2/flyn': 'travel' };
+// 用全局TAGS（factory已传入），补 test-list2 映射
+TAGS['test-list2/runv'] = 'travel'; TAGS['test-list2/swimn'] = 'travel'; TAGS['test-list2/flyn'] = 'travel';
+const tgt2 = disPool2[0]; // runv, pos v., scene travel
+const disRes2 = api.pickDis3(tgt2, disPool2, {}, 'test-list2', function (x) { return x.zh; });
+assert(disRes2.length === 3, 'level2触发后仍返回3个');
+assert(disRes2.indexOf('游泳') >= 0 && disRes2.indexOf('飞') >= 0, '同场景优先：travel场景的词在level2补入');
+// 第3级随机兜底：pool 只有2个词时也能返回2个
+const tinyPool = [mkV('a', '甲', 'v.', 'x'), mkV('b', '乙', 'v.', 'x')];
+const disTiny = api.pickDis3(tinyPool[0], tinyPool, {}, 'test-list', function (x) { return x.zh; });
+assert(disTiny.length === 1 && disTiny[0] === '乙', '小词库随机兜底：只剩1个可用词');
 
 console.log('\n全部场景通过');
