@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.9'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.10'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1020,6 +1020,58 @@
       '</div>';
   }
 
+  // 搭配跟读卡片：播整个搭配短语 → 录自己跟读整块 → 回放对比 → 自评
+  function shadowColCardHTML(e, ref) {
+    var collos = (e.x.collo || []).filter(function (c) { return c && c.length > 2; });
+    if (!collos.length) {
+      return '<div class="card study-card shadow"><div class="spell-hint">这个词暂无搭配，跳过</div>' +
+        '<button class="btn" data-act="good" style="width:100%;margin-top:12px">下一站</button></div>';
+    }
+    // 本轮固定用第一个搭配
+    var phrase = collos[0];
+    var st = session.shState || 'idle';
+    var base =
+      '<div class="card study-card shadow">' +
+      '<div class="spell-hint">听整个搭配 → 跟读整块 → 回放对比</div>' +
+      '<div class="sw" style="font-size:26px;line-height:1.4">' + esc(phrase) + '</div>' +
+      '<div class="sipa">' + esc(e.x.w) + ' · ' + esc(e.x.zh) + '</div>' +
+      '<div class="spell-tools">' +
+      '<button class="icon-btn" data-act="shcol-play-native" data-ref="' + esc(ref) + '" data-phrase="' + esc(phrase) + '">' + ICON.sound + '</button>' +
+      '<span class="tour-slot">先听整块发音</span></div>';
+    if (st === 'idle') {
+      return base +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="sh-record">🎙 开始录音跟读</button>' +
+        '</div>' +
+        '<button class="btn ghost" data-act="blur" style="width:100%;margin-top:8px">先跳过（模糊）</button>' +
+        '</div>';
+    }
+    if (st === 'rec') {
+      return base +
+        '<div class="study-actions"><span class="tour-slot">● 录音中… 整块读出来</span></div>' +
+        '<button class="btn" data-act="sh-stop" style="width:100%;margin-top:10px">⏹ 停止并回放</button>' +
+        '</div>';
+    }
+    return base +
+      '<div class="spell-tools"><span class="tour-slot">🔊 回放你的跟读，和原声对比</span></div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="sh-play">▶ 再听我的</button>' +
+      '<button class="btn ghost" data-act="sh-again">重录</button>' +
+      '</div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+      '<button class="btn" data-act="good">✓ 对了</button>' +
+      '</div>' +
+      '</div>';
+  }
+
+  // 播搭配整块发音（Youdao 读整个短语）
+  function speakCol(ref, phrase) {
+    var e = IDX[ref];
+    if (!e) return;
+    playAudio(phrase, YOUDAO_LE[e.l.lang] || 'en', phrase, e);
+  }
+
   var shRec = null;   // MediaRecorder 实例
   var shChunks = [];  // 录音片段
   var shURL = null;   // 回放 blob URL（回放后即弃）
@@ -1141,6 +1193,8 @@
         '" data-act="set-mode" data-mode="listen">听力</button>' +
         '<button type="button" class="seg' + (pickMode === 'shadow' ? ' on' : '') +
         '" data-act="set-mode" data-mode="shadow">跟读</button>' +
+        '<button type="button" class="seg' + (pickMode === 'shadowcol' ? ' on' : '') +
+        '" data-act="set-mode" data-mode="shadowcol">搭配</button>' +
         '<button type="button" class="seg' + (pickMode === 'spell' ? ' on' : '') +
         '" data-act="set-mode" data-mode="spell">拼写</button>' +
         '<button type="button" class="seg' + (pickMode === 'write' ? ' on' : '') +
@@ -1229,6 +1283,7 @@
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
     if (session.mode === 'shadow') return head + shadowCardHTML(e, ref);
+    if (session.mode === 'shadowcol') return head + shadowColCardHTML(e, ref);
     if (session.mode === 'listen') return head + listeningCardHTML(e, ref);
     if (session.mode === 'spell') return head + spellCardHTML(e, ref);
     if (session.mode === 'write') return head + writeCardHTML(e, ref);
@@ -2995,6 +3050,8 @@
     } else if (act === 'sh-again') {
       shDispose();
       if (session) { session.shState = 'idle'; route(); }
+    } else if (act === 'shcol-play-native') { // 搭配跟读：播整块原声
+      speakCol(el.getAttribute('data-ref'), el.getAttribute('data-phrase'));
     } else if (act === 'spell-check') {
       var si = $('spellInput');
       var sent = IDX[session.queue[session.idx]];
