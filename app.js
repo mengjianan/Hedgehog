@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.10'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.11'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1007,7 +1007,16 @@
         '</div>';
     }
     // done：回放对比 + 自评
-    return base +
+    var pronHtml = '';
+    if (pronOn() && pronAvailable() && session.pronText != null) {
+      var said = session.pronText;
+      var hit = pronMatch(e.x.w, said);
+      pronHtml =
+        '<div class="pron-line' + (hit ? ' ok' : '') + '">' +
+        '🗣 识别：<b>' + (said ? esc(said) : '（没听清）') + '</b>' +
+        (hit ? ' ✓ 接近原词' : ' · 再试一次？') + '</div>';
+    }
+    return base + pronHtml +
       '<div class="spell-tools"><span class="tour-slot">🔊 回放你的跟读，和原声对比</span></div>' +
       '<div class="study-actions">' +
       '<button class="btn ghost" data-act="sh-play">▶ 再听我的</button>' +
@@ -1017,7 +1026,19 @@
       '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
       '<button class="btn" data-act="good">✓ 对了</button>' +
       '</div>' +
+      pronToggleHTML() +
       '</div>';
+  }
+
+  // 发音评分开关（默认关；开启提示联网）
+  function pronToggleHTML() {
+    if (!pronAvailable()) return '<p class="pron-off">本机浏览器不支持发音识别</p>';
+    var on = pronOn();
+    return (
+      '<button class="pron-toggle' + (on ? ' on' : '') + '" data-act="pron-toggle">' +
+      '发音评分：' + (on ? '开 · 会联网（音频发 Google）' : '关') +
+      '</button>'
+    );
   }
 
   // 搭配跟读卡片：播整个搭配短语 → 录自己跟读整块 → 回放对比 → 自评
@@ -1052,7 +1073,16 @@
         '<button class="btn" data-act="sh-stop" style="width:100%;margin-top:10px">⏹ 停止并回放</button>' +
         '</div>';
     }
-    return base +
+    var pronHtml2 = '';
+    if (pronOn() && pronAvailable() && session.pronText != null) {
+      var said2 = session.pronText;
+      var hit2 = pronMatch(phrase, said2);
+      pronHtml2 =
+        '<div class="pron-line' + (hit2 ? ' ok' : '') + '">' +
+        '🗣 识别：<b>' + (said2 ? esc(said2) : '（没听清）') + '</b>' +
+        (hit2 ? ' ✓ 接近搭配' : ' · 再试一次？') + '</div>';
+    }
+    return base + pronHtml2 +
       '<div class="spell-tools"><span class="tour-slot">🔊 回放你的跟读，和原声对比</span></div>' +
       '<div class="study-actions">' +
       '<button class="btn ghost" data-act="sh-play">▶ 再听我的</button>' +
@@ -1062,6 +1092,7 @@
       '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
       '<button class="btn" data-act="good">✓ 对了</button>' +
       '</div>' +
+      pronToggleHTML() +
       '</div>';
   }
 
@@ -1089,10 +1120,17 @@
         if (session) { session.shState = 'done'; route(); }
       };
       shRec.start();
+      // 发音评分（默认关）：并行跑 SpeechRecognition 识别你说的内容
+      if (pronOn() && pronAvailable()) {
+        var cur = IDX[session.queue[session.idx]];
+        session.pronText = null;
+        pronStart((cur && cur.l.speech) || 'en-US');
+      }
       if (session) { session.shState = 'rec'; route(); }
     }, function () { toast('麦克风被拒绝，无法录音'); });
   }
   function shStop() {
+    pronStop(); // 关发音识别（若开了）
     if (shRec && shRec.state !== 'inactive') { shRec.stop(); shRec = null; }
   }
   function shPlay() {
@@ -1103,6 +1141,47 @@
   function shDispose() {
     if (shURL) { URL.revokeObjectURL(shURL); shURL = null; }
     shChunks = [];
+  }
+
+  // ---------- 发音评分（Web Speech API，默认关；开启会联网，音频发给 Google）----------
+  var pronRec = null, pronText = '', pronEnded = false;
+  function pronOn() { return lsGet('hedgehog:pron', false) === true; }
+  function setPron(v) { lsSet('hedgehog:pron', !!v); }
+  function pronAvailable() {
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }
+  // 开始识别（与录音并行，录完用 transcript 比对）
+  function pronStart(lang) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    try {
+      pronRec = new SR();
+      pronRec.lang = lang || 'en-US';
+      pronRec.interimResults = false;
+      pronRec.maxAlternatives = 3;
+      pronText = ''; pronEnded = false;
+      pronRec.onresult = function (ev) {
+        var r = ev.results && ev.results[0];
+        if (r && r[0]) pronText = r[0].transcript || '';
+      };
+      pronRec.onerror = function () { pronEnded = true; pronText = ''; };
+      pronRec.onend = function () { pronEnded = true; if (session) { session.pronText = pronText; route(); } };
+      pronRec.start();
+    } catch (err) { pronEnded = true; }
+  }
+  function pronStop() {
+    if (pronRec) { try { pronRec.stop(); } catch (err) {} pronRec = null; }
+  }
+  // 比对发音：转写里是否含目标词（忽略大小写/空格）
+  function pronMatch(target, said) {
+    if (!target || !said) return false;
+    var t = target.toLowerCase().replace(/[^a-z0-9À-ɏ぀-ヿ가-힯]/g, '');
+    var s = said.toLowerCase().replace(/[^a-z0-9À-ɏ぀-ヿ가-힯]/g, '');
+    if (!t || !s) return false;
+    if (s.indexOf(t) >= 0) return true;
+    // 词根近似：目标前 60% 前缀出现在转写里也算接近
+    var head = t.slice(0, Math.max(3, Math.floor(t.length * 0.6)));
+    return s.indexOf(head) >= 0;
   }
 
   // 听力理解卡片：先播发音（不显示文字）→ 猜词义 → 显示答案自评
@@ -3052,6 +3131,10 @@
       if (session) { session.shState = 'idle'; route(); }
     } else if (act === 'shcol-play-native') { // 搭配跟读：播整块原声
       speakCol(el.getAttribute('data-ref'), el.getAttribute('data-phrase'));
+    } else if (act === 'pron-toggle') { // 发音评分开关（默认关）
+      if (!pronOn() && !confirm('开启后识别发音需要联网：你说的音频会发送给 Google 服务器。\n只用于跟读打分，不保存。确定开启？')) return;
+      setPron(!pronOn());
+      route();
     } else if (act === 'spell-check') {
       var si = $('spellInput');
       var sent = IDX[session.queue[session.idx]];

@@ -1114,6 +1114,22 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 .spell-answer { margin-top: 10px; font-size: 14px; color: var(--ink2); }
 .spell-answer b { font-size: 18px; color: var(--ink); }
 
+/* 发音评分（Web Speech API，默认关） */
+.pron-line {
+  margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line, #ddd);
+  border-radius: 8px; background: #f8f6ef; font-size: 13px; color: var(--ink2);
+  text-align: left; line-height: 1.5;
+}
+.pron-line.ok { border-color: var(--sage); background: #eef1ea; color: var(--sage-d); }
+.pron-toggle {
+  display: block; width: 100%; margin-top: 12px; padding: 7px 12px;
+  border: 1px dashed var(--line-d, #cfc9bb); border-radius: 8px;
+  background: transparent; color: var(--mut); font-size: 12.5px;
+  cursor: pointer; text-align: center; font-family: inherit;
+}
+.pron-toggle.on { border-style: solid; border-color: var(--sage); background: #eef1ea; color: var(--sage-d); }
+.pron-off { font-size: 12px; color: var(--mut); margin-top: 8px; }
+
 /* 记忆钩子 */
 .hook-img,
 .hook-mn { font-size: 14px; color: var(--ink2); margin: 3px 0; }
