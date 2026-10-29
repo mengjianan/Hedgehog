@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.4'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.5'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1040,7 +1040,7 @@
         '<b>串门混考</b>' +
         '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
         '<a class="entry-card exam-entry" href="#/exam"><b>考场</b>' +
-        '<small>JLPT / TOPIK / IELTS 仿真卷 + 本机真题卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
+        '<small>JLPT / TOPIK / IELTS 仿真卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
@@ -2244,12 +2244,11 @@
       return (
         '<a class="back-link" href="#/study">← 巡游</a>' +
         '<h2>考场</h2>' +
-        '<p class="sub">仿真卷为原创题（按真题题型结构） · 真题卷从本机导入 · 成绩按各考试标尺换算</p>' +
+        '<p class="sub">仿真卷为原创题（按真题题型结构） · 成绩按各考试标尺换算</p>' +
         '<p class="picker-h">仿真卷（原创题 · 按真题题型）</p>' + typeCards +
         '<p class="picker-h">选择板块 · ' + esc(cur.name) + '</p>' + cards +
         '<div class="exam-start"><button class="btn" data-act="exam-begin"' + (tq ? '' : ' disabled') + '>' +
         '开始考试（' + tq + ' 题 · ' + tm + ' 分钟）</button></div>' +
-        importHtml() +
         '<p class="footnote">倒计时中途刷新不丢 · 仿真卷错题自动进复习队列</p>'
       );
     }
