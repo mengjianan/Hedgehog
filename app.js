@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.6'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2452,6 +2452,8 @@
     } else if (name === 'exam') {
       view.innerHTML = examScreen();
       nav = 'study';
+      // 考场专注模式：考试进行中隐藏本子装饰（螺旋/页眉/页码/活页孔），沉浸答题
+      document.body.classList.toggle('exam-focus', !!(exam && exam.phase === 'run'));
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
     } else if (name === 'copybook') {
@@ -2464,6 +2466,8 @@
       nav = 'home';
       view.innerHTML = viewHome();
     }
+    // 离开考场即退出专注模式（隐藏本子装饰）
+    if (name !== 'exam') document.body.classList.remove('exam-focus');
 
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
