@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.3'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.4'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2403,6 +2403,8 @@
       '</div>' +
       '<div class="exam-prog"><span>第 ' + qNo + '/' + exam.totalQ + ' 题</span>' +
       '<span>' + (exam.secIdx + 1) + '/' + exam.secs.length + ' 板块</span></div>' +
+      '<div class="exam-two">' +
+      '<div class="exam-main">' +
       passHtml +
       '<div class="card exam-card">' +
       '<div class="exam-qtype">' + esc(q.type) + '</div>' +
@@ -2415,7 +2417,9 @@
       (exam.qi === 0 && exam.secIdx === 0 ? ' disabled' : '') + '>上一题</button>' +
       '<button class="btn" data-act="exam-next">' + (lastSec && lastQ ? '交卷' : '下一题') + '</button>' +
       '</div></div>' +
-      '<div class="exam-sheet">' + sheet + '</div>'
+      '</div>' +
+      '<div class="exam-sheet">' + sheet + '</div>' +
+      '</div>'
     );
   }
 

@@ -114,6 +114,7 @@ img { max-width: 100%; }
   display: flex;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh; /* 安卓 Chrome 地址栏收放时用动态视口，避免底部被遮 */
   margin: 0;
   background: var(--card);
 }
@@ -1460,3 +1461,19 @@ a.entry-card { text-decoration: none; color: var(--ink); }
 .import-acts { display: flex; gap: 6px; flex: none; }
 .exam-import { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .import-tip { font-size: 12px; color: var(--mut); }
+
+/* ---------- 三档响应式：平板/桌面（手机见上方 max-width:780） ---------- */
+/* 平板（安卓平板竖/横、iPad 竖）：内容区放宽，保持单列 */
+@media (min-width: 900px) {
+  .view { max-width: 1240px; padding: 24px 18px 40px; }
+}
+/* 桌面（宽屏）：内容区占满更多 + 考场改「题干+答题卡」双栏 */
+@media (min-width: 1200px) {
+  .view { max-width: 1500px; padding: 28px 28px 48px; }
+  .exam-two { display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 26px; align-items: start; }
+  .exam-two .exam-sheet { margin-top: 0; position: sticky; top: 20px; }
+}
+/* 触控设备（安卓平板/手机）答题卡格子放大，方便手指点 */
+@media (pointer: coarse) and (min-width: 781px) {
+  .sheet-no { width: 38px; height: 38px; font-size: 14px; }
+}

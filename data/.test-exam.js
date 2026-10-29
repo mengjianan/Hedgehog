@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const src = fs.readFileSync('app.js', 'utf8').replace(/\r\n/g, '\n');
 const start = src.indexOf('  // ---------- 考场（仿真卷 + 本机真题卷） ----------');
-const endMark = "      '<div class=\"exam-sheet\">' + sheet + '</div>'\n    );\n  }";
+const endMark = "      '<div class=\"exam-sheet\">' + sheet + '</div>' +\n      '</div>'\n    );\n  }";
 const end = src.indexOf(endMark, start);
 if (start < 0 || end < 0) { console.error('FAIL: block not found'); process.exit(1); }
 const code = src.slice(start, end + endMark.length);
