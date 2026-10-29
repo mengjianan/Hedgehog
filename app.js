@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.7'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.8'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -981,6 +981,78 @@
     );
   }
 
+  // 跟读卡片：播发音 → 录自己 → 回放对比 → 自评（录音回放后即弃，不落盘）
+  function shadowCardHTML(e, ref) {
+    var st = session.shState || 'idle'; // idle 待跟读 / rec 录音中 / done 回放对比
+    var base =
+      '<div class="card study-card shadow">' +
+      '<div class="spell-hint">听发音 → 按住跟读 → 回放对比</div>' +
+      '<div class="sw">' + esc(e.x.w) + '</div>' +
+      '<div class="sipa">' + esc(e.x.pron) + ' · ' + esc(e.x.zh) + '</div>' +
+      '<div class="spell-tools">' +
+      '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
+      '<span class="tour-slot">先听原声</span></div>';
+    if (st === 'idle') {
+      return base +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="sh-record">🎙 开始录音跟读</button>' +
+        '</div>' +
+        '<button class="btn ghost" data-act="blur" style="width:100%;margin-top:8px">先跳过（模糊）</button>' +
+        '</div>';
+    }
+    if (st === 'rec') {
+      return base +
+        '<div class="study-actions"><span class="tour-slot">● 录音中… 说这个词</span></div>' +
+        '<button class="btn" data-act="sh-stop" style="width:100%;margin-top:10px">⏹ 停止并回放</button>' +
+        '</div>';
+    }
+    // done：回放对比 + 自评
+    return base +
+      '<div class="spell-tools"><span class="tour-slot">🔊 回放你的跟读，和原声对比</span></div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="sh-play">▶ 再听我的</button>' +
+      '<button class="btn ghost" data-act="sh-again">重录</button>' +
+      '</div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+      '<button class="btn" data-act="good">✓ 对了</button>' +
+      '</div>' +
+      '</div>';
+  }
+
+  var shRec = null;   // MediaRecorder 实例
+  var shChunks = [];  // 录音片段
+  var shURL = null;   // 回放 blob URL（回放后即弃）
+  function shRecord() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('本机不支持录音'); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      shChunks = [];
+      shRec = new MediaRecorder(stream);
+      shRec.stream = stream;
+      shRec.ondataavailable = function (ev) { if (ev.data && ev.data.size) shChunks.push(ev.data); };
+      shRec.onstop = function () {
+        if (shURL) URL.revokeObjectURL(shURL);
+        shURL = URL.createObjectURL(new Blob(shChunks, { type: 'audio/webm' }));
+        try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (er) {}
+        if (session) { session.shState = 'done'; route(); }
+      };
+      shRec.start();
+      if (session) { session.shState = 'rec'; route(); }
+    }, function () { toast('麦克风被拒绝，无法录音'); });
+  }
+  function shStop() {
+    if (shRec && shRec.state !== 'inactive') { shRec.stop(); shRec = null; }
+  }
+  function shPlay() {
+    if (!shURL) { toast('还没有录音'); return; }
+    var a = new Audio(shURL);
+    a.play().catch(function () { toast('回放失败，再点一次'); });
+  }
+  function shDispose() {
+    if (shURL) { URL.revokeObjectURL(shURL); shURL = null; }
+    shChunks = [];
+  }
+
   // 书写模式卡片：凭记忆手写 → 与答案并排比对 → 自评
   function writeCardHTML(e, ref) {
     if (!session.wmCompare) {
@@ -1023,6 +1095,8 @@
         '<div class="seg-ctl">' +
         '<button type="button" class="seg' + (pickMode === 'card' ? ' on' : '') +
         '" data-act="set-mode" data-mode="card">认卡</button>' +
+        '<button type="button" class="seg' + (pickMode === 'shadow' ? ' on' : '') +
+        '" data-act="set-mode" data-mode="shadow">跟读</button>' +
         '<button type="button" class="seg' + (pickMode === 'spell' ? ' on' : '') +
         '" data-act="set-mode" data-mode="spell">拼写</button>' +
         '<button type="button" class="seg' + (pickMode === 'write' ? ' on' : '') +
@@ -1110,6 +1184,7 @@
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
+    if (session.mode === 'shadow') return head + shadowCardHTML(e, ref);
     if (session.mode === 'spell') return head + spellCardHTML(e, ref);
     if (session.mode === 'write') return head + writeCardHTML(e, ref);
 
@@ -1215,6 +1290,8 @@
     session.spellOk = false;
     session.wmCompare = false;
     session.wmShot = null;
+    session.shState = 'idle';
+    shDispose(); // 跟读录音即弃：换站时释放 blob
     if (session.idx >= session.queue.length && !session.logged) {
       session.logged = true;
       logStamp();
@@ -2852,6 +2929,15 @@
       recordStudy(act === 'good');
       advanceSession();
       route();
+    } else if (act === 'sh-record') {
+      shRecord();
+    } else if (act === 'sh-stop') {
+      shStop();
+    } else if (act === 'sh-play') {
+      shPlay();
+    } else if (act === 'sh-again') {
+      shDispose();
+      if (session) { session.shState = 'idle'; route(); }
     } else if (act === 'spell-check') {
       var si = $('spellInput');
       var sent = IDX[session.queue[session.idx]];
