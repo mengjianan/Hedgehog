@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.8'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.9'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1053,6 +1053,48 @@
     shChunks = [];
   }
 
+  // 听力理解卡片：先播发音（不显示文字）→ 猜词义 → 显示答案自评
+  function listeningCardHTML(e, ref) {
+    if (!session.liOpts) {
+      // 生成 4 个中文义选项：正确义 + 3 个同词性/同场景干扰
+      var used = {};
+      var dis = pickDis3(e.x, e.l.words, used, e.l.id, function (x) { return x.zh; });
+      var opts = dis.map(function (d) { return { t: d, ok: false }; });
+      opts.push({ t: e.x.zh, ok: true });
+      session.liOpts = shuffle(opts);
+      session.liChecked = false;
+    }
+    var optsHtml = session.liOpts.map(function (o, idx) {
+      var cls = 'exam-opt';
+      if (session.liChecked) {
+        if (o.ok) cls += ' reveal';
+        else if (session.liPicked === idx) cls += ' wrong';
+      }
+      return '<button class="' + cls + '" data-act="li-pick" data-i="' + idx + '"' +
+        (session.liChecked ? ' disabled' : '') + '>' + esc(o.t) + '</button>';
+    }).join('');
+    return (
+      '<div class="card study-card listen">' +
+      '<div class="spell-hint">听发音 · 选出正确的中文意思</div>' +
+      '<div class="spell-tools">' +
+      '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
+      '<span class="tour-slot">先听发音，不看文字</span></div>' +
+      (session.liChecked
+        ? '<div class="sw" style="margin-top:8px">' + esc(e.x.w) + '</div>' +
+          '<div class="sipa">' + esc(e.x.pron) + '</div>' +
+          (session.liOk ? '' : '<div class="spell-answer">正确：' + esc(e.x.zh) + '</div>')
+        : '') +
+      '<div class="exam-opts">' + optsHtml + '</div>' +
+      (session.liChecked
+        ? '<div class="study-actions">' +
+          '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+          '<button class="btn" data-act="good">✓ 认识</button>' +
+          '</div>'
+        : '') +
+      '</div>'
+    );
+  }
+
   // 书写模式卡片：凭记忆手写 → 与答案并排比对 → 自评
   function writeCardHTML(e, ref) {
     if (!session.wmCompare) {
@@ -1095,6 +1137,8 @@
         '<div class="seg-ctl">' +
         '<button type="button" class="seg' + (pickMode === 'card' ? ' on' : '') +
         '" data-act="set-mode" data-mode="card">认卡</button>' +
+        '<button type="button" class="seg' + (pickMode === 'listen' ? ' on' : '') +
+        '" data-act="set-mode" data-mode="listen">听力</button>' +
         '<button type="button" class="seg' + (pickMode === 'shadow' ? ' on' : '') +
         '" data-act="set-mode" data-mode="shadow">跟读</button>' +
         '<button type="button" class="seg' + (pickMode === 'spell' ? ' on' : '') +
@@ -1185,6 +1229,7 @@
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
     if (session.mode === 'shadow') return head + shadowCardHTML(e, ref);
+    if (session.mode === 'listen') return head + listeningCardHTML(e, ref);
     if (session.mode === 'spell') return head + spellCardHTML(e, ref);
     if (session.mode === 'write') return head + writeCardHTML(e, ref);
 
@@ -1292,6 +1337,10 @@
     session.wmShot = null;
     session.shState = 'idle';
     shDispose(); // 跟读录音即弃：换站时释放 blob
+    session.liOpts = null; // 听力理解：换站重新生成选项
+    session.liChecked = false;
+    session.liPicked = -1;
+    session.liOk = false;
     if (session.idx >= session.queue.length && !session.logged) {
       session.logged = true;
       logStamp();
@@ -2928,6 +2977,14 @@
     } else if (act === 'good' || act === 'blur') {
       recordStudy(act === 'good');
       advanceSession();
+      route();
+    } else if (act === 'li-pick') { // 听力理解：选词义
+      if (!session || session.liChecked) return;
+      var liI = parseInt(el.getAttribute('data-i'), 10);
+      session.liPicked = liI;
+      session.liOk = !!(session.liOpts[liI] && session.liOpts[liI].ok);
+      session.liChecked = true;
+      recordStudy(session.liOk);
       route();
     } else if (act === 'sh-record') {
       shRecord();
