@@ -1581,8 +1581,8 @@
     'topik-ii': {
       name: 'TOPIK II 仿真卷', grammarLang: 'ko', speech: 'ko-KR', scale: 300, pass: 120,
       sections: [
-        { key: 'l-cont', title:'듣기 · 내용 파악', qn: 15, minutes: 20, note: '听句子，选正确的中文翻译' },
-        { key: 'l-word', title:'듣기 · 어휘', qn: 15, minutes: 15, note: '听词，选中文义（可重播）' },
+        { key: 'l-s', title:'듣기 · 대화', qn: 3, minutes: 8, note: '对话整段朗读 · 内容 이해' },
+        { key: 'l-l', title:'듣기 · 안내・독백', qn: 3, minutes: 7, note: '独白/公告整段朗读 · 内容 이해' },
         { key: 'v-mean', title:'어휘 · 뜻 고르기', qn: 25, minutes: 20, note: '看词选正确的中文义' },
         { key: 'v-ctx', title:'어휘 · 문맥 채우기', qn: 25, minutes: 30, note: '句中挖空，选最贴切的词' },
         { key: 'g-form', title:'문법 · 연결어미', qn: 20, minutes: 25, note: '选出句子所用的语法形式' },
@@ -1767,6 +1767,12 @@
         scriptPool[k] = shuffle(SCRIPTS.filter(function (s) { return s.lang === 'en' && s.part === k; }));
       });
     }
+    if (typeKey === 'topik-ii') {
+      // TOPIK 듣기 장문：l-s（대화）/ l-l（안내・독백）两个脚本池，各抽一篇
+      ['l-s', 'l-l'].forEach(function (k) {
+        scriptPool[k] = shuffle(SCRIPTS.filter(function (s) { return s.lang === 'ko' && s.part === k; }));
+      });
+    }
     if (typeKey === 'jlpt-n1') {
       PASSAGES.forEach(function (p) {
         if (p.lang === 'ja' && readPool[p.kind]) readPool[p.kind].push(p);
@@ -1786,12 +1792,12 @@
       var secPassage = null;
       var secScript = null;
       var i;
-      if (typeKey === 'ielts' && scriptPool[s.key] && scriptPool[s.key].length) {
-        // 听力真题型：抽一篇情景脚本（整段朗读一次），10 题挂脚本上（填空+选择）
+      if ((typeKey === 'ielts' || typeKey === 'topik-ii') && scriptPool[s.key] && scriptPool[s.key].length) {
+        // 听力真题型：抽一篇情景脚本（整段朗读一次），题挂脚本上（选择/填空）
         var scp = scriptPool[s.key].shift();
         secScript = { title: scp.title, text: scp.script };
         (scp.qs || []).forEach(function (pq) {
-          qs.push({ type: pq.type, stem: pq.stem, options: pq.options || [], fill: pq.fill || null, ref: null });
+          qs.push({ type: pq.type, stem: pq.stem, options: pq.options || [], fill: pq.fill || null, num: !!pq.num, ref: null });
         });
       } else if (s.key === 'read-s' || s.key === 'read-m' || s.key === 'read-l' ||
                  s.key === 'r-s' || s.key === 'r-m' || s.key === 'r-order') {

@@ -89,6 +89,16 @@ const SCRIPTS = [];
     SCRIPTS.push({ id: 'en-' + part + '-' + n, lang: 'en', part, title: 'Script ' + part + '-' + n, script: 'Welcome to script ' + part + '-' + n + '. The answer is Janeway and twelve pounds.', qs: mkScriptQs() });
   }
 });
+// TOPIK 듣기 脚本（l-s 대화 / l-l 독백 各 2 篇，3 题/篇，num ①②③④）
+const mkKoScriptQs = () => Array.from({ length: 3 }, (_, i) => ({
+  type: '내용 이해', num: true, stem: '가장 적절한 것을 고르십시오。' + i,
+  options: [{ t: '정답스크' + i, ok: true }, { t: '오답스크a' + i, ok: false }, { t: '오답스크b' + i, ok: false }, { t: '오답스크c' + i, ok: false }]
+}));
+['l-s', 'l-l'].forEach(part => {
+  for (let n = 0; n < 2; n++) {
+    SCRIPTS.push({ id: 'ko-' + part + '-' + n, lang: 'ko', part, title: '한국어듣기' + part + '-' + n, script: '한국어 듣기 스크립트입니다。' + n, qs: mkKoScriptQs() });
+  }
+});
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
 const scheduled = [];
 function scheduleRef(ref, good) { scheduled.push([ref, good]); }
@@ -128,29 +138,32 @@ const errq = gSec1.qs.find(q => q.type === '文法・誤用訂正');
 assert(/改正せよ/.test(errq.stem) && errq.options.length === 4 && errq.options.filter(o => o.ok).length === 1, '訂正题干+4选项唯一正确');
 
 console.log('场景2: TOPIK II 仿真卷（全板块）');
-const p2 = api.buildPaper('topik-ii', { 'l-cont': true, 'l-word': true, 'v-mean': true, 'v-ctx': true, 'g-form': true, 'r-s': true, 'r-m': true, 'r-order': true, w1: true, w2: true, w3: true });
+const p2 = api.buildPaper('topik-ii', { 'l-s': true, 'l-l': true, 'v-mean': true, 'v-ctx': true, 'g-form': true, 'r-s': true, 'r-m': true, 'r-order': true, w1: true, w2: true, w3: true });
 console.log('  分段:', p2.secs.map(s => s.key + '=' + s.qs.length).join(', '));
-assert(p2.secs.length === 11, 'TOPIK 11 板块（읽기 3 + 쓰기 3）');
-assert(p2.totalQ === 113 && p2.totalMin === 176, 'TOPIK 113题176分 = ' + p2.totalQ + '题' + p2.totalMin + '分');
+assert(p2.secs.length === 11, 'TOPIK 11 板块（듣기2+어휘2+문법1+읽기3+쓰기3）');
+assert(p2.totalQ === 89 && p2.totalMin === 156, 'TOPIK 89题156分 = ' + p2.totalQ + '题' + p2.totalMin + '分');
 // 쓰기：51/52번 完成型 = 4 选项自动判分；53번 论述 = 自评（objQ 不计入）
 const wSecs = p2.secs.filter(s => s.key[0] === 'w');
 assert(wSecs.length === 3, '쓰기 3 板块');
 assert(wSecs[0].qs.every(q => q.options.length === 4 && q.options.filter(o => o.ok).length === 1 && /完成型/.test(q.type)), '51/52번 完成型 4选项唯一正确');
 assert(wSecs[2].qs[0].writing === true && wSecs[2].qs[0].options.length === 0, '53번 论述自评（无选项）');
-assert(p2.objQ === 112, '客观题 112（쓰기 51/52 완성 计入 + 53 논술自评不计）= ' + p2.objQ);
+assert(p2.objQ === 88, '客观题 88（쓰기 51/52 완성 计入 + 53 논술自评不计）= ' + p2.objQ);
+// 듣기：脚本板块（대화/독백 各抽 1 篇，带 script，题带 num）
+const koListen = p2.secs.filter(s => s.key === 'l-s' || s.key === 'l-l');
+assert(koListen.length === 2 && koListen.every(s => s.script && s.script.title[0] === '한'), '듣기 2 板块均携带韩语脚本');
+assert(new Set(koListen.map(s => s.script.title)).size === 2, '듣기 两脚本互不重复');
+assert(koListen.every(s => s.qs.every(q => q.num && q.options.length === 4)), '듣기每题①②③④+4选项');
 // 읽기 板块从韩语文章库抽篇（s/m/l 各1，互不重复），题带 num
 const koRead = p2.secs.filter(s => s.key === 'r-s' || s.key === 'r-m' || s.key === 'r-order');
 assert(koRead.length === 3 && koRead.every(s => s.passage && s.passage.title[0] === '한'), '읽기 3 板块均携带韩语文章');
 assert(new Set(koRead.map(s => s.passage.title)).size === 3, '읽기 三篇文章互不重复');
 assert(koRead.every(s => s.qs.every(q => q.num && q.options.length === 4)), '읽기每题①②③④+4选项');
-// 听力题必须是韩语（语法题必须出自韩语语法宫）
-let gKo = 0, listenN = 0;
+// 语法题必须出自韩语语法宫
+let gKo = 0;
 p2.secs.forEach(s => s.qs.forEach(q => {
   if (q.type === '연결어미') { gKo++; if (!q.options.every(o => o.t.indexOf('韩式公式') === 0)) { console.error('FAIL: 语法选项非韩语'); process.exit(1); } }
-  if (q.spoken) listenN++;
 }));
 assert(gKo === 20, '韩语语法 20 题');
-assert(listenN === 30, '听力 30 题 = ' + listenN);
 // 结构：4选项唯一正确（跳过自评写作题，其 options 为空）
 let optOk = true;
 [...p1.secs, ...p2.secs].forEach(s => s.qs.forEach(q => {
@@ -171,7 +184,7 @@ scheduled.length = 0;
 api.examFinish();
 const ex2 = api.getExam();
 assert(ex2.phase === 'result' && ex2.result.length === 11, '成绩单 11 行');
-assert(ex2.correctN === 60, '对 60 题（各段偶数位 + 51/52번 各1） = ' + ex2.correctN);
+assert(ex2.correctN === 48, '对 48 题（各段偶数位，89 题中有 41 题半数 = 中平） = ' + ex2.correctN);
 assert(scheduled.filter(r => r[1] === false).length > 0, '错题已排复习');
 assert(typeof ex2.approx === 'number' && ex2.approx <= 300, 'TOPIK 按 300 标尺折算 = ' + ex2.approx);
 assert(ex2.scale === 300 && ex2.pass === 120, 'TOPIK 标尺 300/参考线120');
