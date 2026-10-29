@@ -128,10 +128,16 @@ const errq = gSec1.qs.find(q => q.type === '文法・誤用訂正');
 assert(/改正せよ/.test(errq.stem) && errq.options.length === 4 && errq.options.filter(o => o.ok).length === 1, '訂正题干+4选项唯一正确');
 
 console.log('场景2: TOPIK II 仿真卷（全板块）');
-const p2 = api.buildPaper('topik-ii', { 'l-cont': true, 'l-word': true, 'v-mean': true, 'v-ctx': true, 'g-form': true, 'r-s': true, 'r-m': true, 'r-order': true });
+const p2 = api.buildPaper('topik-ii', { 'l-cont': true, 'l-word': true, 'v-mean': true, 'v-ctx': true, 'g-form': true, 'r-s': true, 'r-m': true, 'r-order': true, w1: true, w2: true, w3: true });
 console.log('  分段:', p2.secs.map(s => s.key + '=' + s.qs.length).join(', '));
-assert(p2.secs.length === 8, 'TOPIK 8 板块（含 읽기 3 板块）');
-assert(p2.totalQ === 110 && p2.totalMin === 131, 'TOPIK 110题131分 = ' + p2.totalQ + '题' + p2.totalMin + '分');
+assert(p2.secs.length === 11, 'TOPIK 11 板块（읽기 3 + 쓰기 3）');
+assert(p2.totalQ === 113 && p2.totalMin === 176, 'TOPIK 113题176分 = ' + p2.totalQ + '题' + p2.totalMin + '分');
+// 쓰기：51/52번 完成型 = 4 选项自动判分；53번 论述 = 自评（objQ 不计入）
+const wSecs = p2.secs.filter(s => s.key[0] === 'w');
+assert(wSecs.length === 3, '쓰기 3 板块');
+assert(wSecs[0].qs.every(q => q.options.length === 4 && q.options.filter(o => o.ok).length === 1 && /完成型/.test(q.type)), '51/52번 完成型 4选项唯一正确');
+assert(wSecs[2].qs[0].writing === true && wSecs[2].qs[0].options.length === 0, '53번 论述自评（无选项）');
+assert(p2.objQ === 112, '客观题 112（쓰기 51/52 완성 计入 + 53 논술自评不计）= ' + p2.objQ);
 // 읽기 板块从韩语文章库抽篇（s/m/l 各1，互不重复），题带 num
 const koRead = p2.secs.filter(s => s.key === 'r-s' || s.key === 'r-m' || s.key === 'r-order');
 assert(koRead.length === 3 && koRead.every(s => s.passage && s.passage.title[0] === '한'), '읽기 3 板块均携带韩语文章');
@@ -145,9 +151,10 @@ p2.secs.forEach(s => s.qs.forEach(q => {
 }));
 assert(gKo === 20, '韩语语法 20 题');
 assert(listenN === 30, '听力 30 题 = ' + listenN);
-// 结构：4选项唯一正确
+// 结构：4选项唯一正确（跳过自评写作题，其 options 为空）
 let optOk = true;
 [...p1.secs, ...p2.secs].forEach(s => s.qs.forEach(q => {
+  if (q.writing) return; // 自评写作（53번/雅思 T1T2）无选项，跳过
   if (q.options.length !== 4 || q.options.filter(o => o.ok).length !== 1) optOk = false;
 }));
 assert(optOk, '两卷均 4 选项唯一正确');
@@ -163,8 +170,8 @@ ex.phase = 'run';
 scheduled.length = 0;
 api.examFinish();
 const ex2 = api.getExam();
-assert(ex2.phase === 'result' && ex2.result.length === 8, '成绩单 8 行');
-assert(ex2.correctN === 58, '对 58 题（各段偶数位） = ' + ex2.correctN);
+assert(ex2.phase === 'result' && ex2.result.length === 11, '成绩单 11 行');
+assert(ex2.correctN === 60, '对 60 题（各段偶数位 + 51/52번 各1） = ' + ex2.correctN);
 assert(scheduled.filter(r => r[1] === false).length > 0, '错题已排复习');
 assert(typeof ex2.approx === 'number' && ex2.approx <= 300, 'TOPIK 按 300 标尺折算 = ' + ex2.approx);
 assert(ex2.scale === 300 && ex2.pass === 120, 'TOPIK 标尺 300/参考线120');

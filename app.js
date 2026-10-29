@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-27.14'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1588,8 +1588,11 @@
         { key: 'g-form', title:'문법 · 연결어미', qn: 20, minutes: 25, note: '选出句子所用的语法形式' },
         { key: 'r-s', title:'읽기 · 단문', qn: 3, minutes: 6, note: '1篇 짧은 글 · 내용 이해・주제 파악' },
         { key: 'r-m', title:'읽기 · 중문', qn: 4, minutes: 8, note: '1편 중간 글 · 내용 이해・빈칸 추론' },
-        { key: 'r-order', title:'읽기 · 순서 배열・문장 삽입', qn: 3, minutes: 7, note: '문맥 순서 ・ 빈칸에 들어갈 문장' }
-      ] // 110 题 · 131 分钟（≈真题结构：듣기+어휘+문법+읽기）· 近似满分 300、3급参考线 120
+        { key: 'r-order', title:'읽기 · 순서 배열・문장 삽입', qn: 3, minutes: 7, note: '문맥 순서 ・ 빈칸에 들어갈 문장' },
+        { key: 'w1', title:'쓰기 · 51번 完成型①', qn: 1, minutes: 10, note: '문장 완성（자동判分）' },
+        { key: 'w2', title:'쓰기 · 52번 完成型②', qn: 1, minutes: 10, note: '문장 완성（자동判分）' },
+        { key: 'w3', title:'쓰기 · 53번 论述', qn: 1, minutes: 25, note: '200~300자，自评' }
+      ] // 113 题位 · 176 分钟（≈真题结构：듣기+어휘+문법+읽기+쓰기）· 近似满分 300、3급参考线 120
     },
     'ielts': {
       name: 'IELTS 仿真卷', grammarLang: 'en', speech: 'en-GB', scale: 9, pass: 6.5,
@@ -1661,6 +1664,30 @@
       'Some people prefer to live in the countryside, while others prefer city life. What are the advantages of each, and where would you prefer to live?',
       'Many companies now allow their employees to work four days a week instead of five. Is this a positive or negative development for workers and employers?',
       'Some people think that governments should ban dangerous sports, while others believe individuals should be free to choose what they do. Discuss both views and give your own opinion.'
+    ]
+  };
+  // TOPIK 쓰기 题库：51/52번 = 문장 완성（选正确词尾/连接，自动判分）；53번 = 论述（自评）
+  var TOPIK_WRITING = {
+    w1: [ // 51번：完成型①（连接词尾）
+      { stem: '비가 오는데도 공원에서 운동하(           ).', answer: '는 사람이 많아요' },
+      { stem: '주말에 시간이 있으면 박물관에 가(        ).', answer: '서 구경하고 싶어요' },
+      { stem: '한국어를 공부할수록 재미(        ).', answer: '있어졌어요' },
+      { stem: '어제 친구를 만나(        ) 영화를 봤습니다.', answer: '서 같이' },
+      { stem: '약속 시간을 잊(        ) 동생에게 물어봤어요.', answer: '어서' }
+    ],
+    w2: [ // 52번：完成型②（语法填空）
+      { stem: '시간이 없어서 아침을 안 먹(        ).', answer: '었어요' },
+      { stem: '지갑을 놓고 (       ) 다시 집에 돌아왔습니다.', answer: '와서' },
+      { stem: '이 일은 혼자 하(        ) 힘들 거예요.', answer: '기엔' },
+      { stem: '부모님께 전화(        ) 드리려고 해요.', answer: '드리' },
+      { stem: '책을 빌리려고 도서관에 (        ).', answer: '갔어요' }
+    ],
+    w3: [ // 53번：论述（200~300자，自评）
+      '요즘 젊은 사람들이 결혼을 늦게 하거나 하지 않는 경우가 늘고 있습니다. 그 이유가 무엇이라고 생각합니까? 200자 이상 300자 이하로 쓰십시오.',
+      '도시에서 살면서 가장 불편한 점은 무엇이며, 그것을 해결할 방법은 무엇이라고 생각합니까? 200자 이상 300자 이하로 쓰십시오.',
+      '스마트폰 사용 시간이 늘어난 것이 우리 삶에 어떤 좋은 점과 나쁜 점을 가져왔습니까? 200자 이상 300자 이하로 쓰십시오.',
+      '환경을 지키기 위해 우리가 일상생활에서 할 수 있는 일은 무엇이라고 생각합니까? 200자 이상 300자 이하로 쓰십시오.',
+      '일주일에 하루 쉬다가 이틀을 쉬게 된다면 그 시간을 어떻게 보내겠습니까? 200자 이상 300자 이하로 쓰십시오.'
     ]
   };
   var examSels = {};
@@ -1938,13 +1965,38 @@
             options: optSet(pick.zh, disLC), ref: wordList.id + '/' + l2.w
           });
         }
+      } else if (typeKey === 'topik-ii' && (s.key === 'w1' || s.key === 'w2' || s.key === 'w3')) {
+        // TOPIK 쓰기：51/52번 = 完成型（选项选正确词尾，自动判分）；53번 = 论述（自评）
+        if (s.key === 'w3') { // 53번 论述
+          var w3pool = TOPIK_WRITING.w3;
+          if (w3pool && w3pool.length) {
+            qs.push({ type: '쓰기 · 53번 论述（200~300자）',
+              stem: w3pool[Math.floor(Math.random() * w3pool.length)],
+              writing: true, options: [], ref: null });
+          }
+        } else { // 51/52번 完成型：正确项 + 3 干扰（从 anderen 题的 answer 借）
+          var wPool = TOPIK_WRITING[s.key];
+          var usedW = {};
+          for (i = 0; i < Math.max(s.qn, 1); i++) {
+            var wq = exPick(wPool, 1, usedW, function (x) { return x.stem; })[0];
+            if (!wq) break;
+            var disW = exPick(wPool, 3, {}, function (x) {
+              return x.answer === wq.answer ? null : x.answer;
+            }).map(function (x) { return x.answer; });
+            if (disW.length < 3) break;
+            qs.push({
+              type: s.key === 'w1' ? '쓰기 · 51번 完成型①' : '쓰기 · 52번 完成型②',
+              stem: wq.stem, num: true, options: optSet(wq.answer, disW), ref: null
+            });
+          }
+        }
       } else if (s.key === 'w1' || s.key === 'w2') {
-        // 写作：抽一道原创题；无选项，机打作文，不判分自评
-        var wPool = IELTS_WRITING[s.key];
-        if (wPool && wPool.length) {
+        // IELTS 写作：抽一道原创题；无选项，机打作文，不判分自评
+        var wPool2 = IELTS_WRITING[s.key];
+        if (wPool2 && wPool2.length) {
           qs.push({
             type: s.key === 'w1' ? 'Task 1 图表描述（150 词+）' : 'Task 2 议论文（250 词+）',
-            stem: wPool[Math.floor(Math.random() * wPool.length)],
+            stem: wPool2[Math.floor(Math.random() * wPool2.length)],
             writing: true, options: [], ref: null
           });
         }
