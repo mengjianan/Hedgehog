@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.6'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.7'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1441,9 +1441,129 @@
       '<h2>' + esc(t.title) + '</h2>' +
       '<em class="lang-tag lang-' + t.lang + '">' + (LANG_NAME[t.lang] || t.lang) + '</em>' +
       '<p class="sub">' + esc(t.subtitle || '') + '</p>' +
+      '<a class="btn" href="#/tables/' + esc(id) + '/practice" style="display:inline-block;margin-top:8px">开始练习</a>' +
       '</div>' + body +
       '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
     );
+  }
+
+  // ---------- 基础表练习（词根/韩语字母/五十音）----------
+  var tableQuiz = null; // {tid, qs, qi, good, bad, picked}
+
+  function buildTableQuiz(t) {
+    var items = [];
+    (t.sections || []).forEach(function (s) {
+      if (s.type === 'grid') {
+        (s.rows || []).forEach(function (r) {
+          if (!r[0] || !r[2]) return;
+          items.push({ speak: r[0], display: r[0], alt: String(r[2]).split('/')[0].trim(), tip: r[3] || '' });
+        });
+      } else if (s.type === 'matrix') {
+        (s.rows || []).forEach(function (r) {
+          (r.cells || []).forEach(function (c) {
+            if (!c || c === '・') return;
+            var p = String(c).split('·');
+            if (!p[0] || !p[2]) return;
+            items.push({ speak: p[0], display: p[0], alt: p[2], tip: '' });
+          });
+        });
+      } else if (s.type === 'morphemes') {
+        (s.rows || []).forEach(function (r) {
+          if (!r.form || !r.meaning) return;
+          items.push({ speak: null, display: r.form, alt: r.meaning, tip: (r.examples || [])[0] || '' });
+        });
+      }
+    });
+    if (items.length < 4) return [];
+    var qs = [];
+    var used = {};
+    function pickItem() {
+      var g = 0, it;
+      do { it = items[Math.floor(Math.random() * items.length)]; g++; } while (used[displayKey(it)] && g < items.length * 3);
+      used[displayKey(it)] = 1;
+      return it;
+    }
+    function displayKey(it) { return it.display + '|' + it.alt; }
+    function distract(correct, pool, valFn) {
+      var seen = {}, out = [], g = 0;
+      while (out.length < 3 && g < pool.length * 3) {
+        var c = pool[Math.floor(Math.random() * pool.length)];
+        var v = valFn(c);
+        if (!v || v === correct || seen[v]) { g++; continue; }
+        seen[v] = 1; out.push(v); g++;
+      }
+      return out;
+    }
+    var nQ = Math.min(10, items.length);
+    for (var i = 0; i < nQ; i++) {
+      var it = pickItem();
+      var kind = i % 2 === 0 ? 'listen' : 'read';
+      if (kind === 'listen' && it.speak) {
+        // 听发音 → 选字母/假名
+        var opts = distract(it.display, items, function (x) { return x.display; })
+          .map(function (v) { return { t: v, ok: false }; });
+        opts.push({ t: it.display, ok: true });
+        qs.push({ type: '听音选字', stem: '听发音，选出对应的字母 / 假名', say: it.speak, le: t.lang, options: shuffle(opts), tip: it.tip });
+      } else if (it.alt && it.display) {
+        // 看字母/词根 → 选读音/含义（或反向）
+        var rev = Math.random() < 0.3 && it.speak;
+        var correct = rev ? it.display : it.alt;
+        var pool2 = items.filter(function (x) { return x.alt !== it.alt; });
+        var opts2 = distract(correct, pool2, function (x) { return rev ? x.display : x.alt; })
+          .map(function (v) { return { t: v, ok: false }; });
+        opts2.push({ t: correct, ok: true });
+        qs.push({
+          type: rev ? '看读音选字' : (it.speak ? '看字选读音' : '看词缀选含义'),
+          stem: rev ? it.alt : it.display, say: rev ? null : it.speak, le: t.lang,
+          options: shuffle(opts2), tip: it.tip
+        });
+      }
+    }
+    return qs;
+  }
+
+  function viewTablePractice(id) {
+    var t = TBY[id];
+    if (!t) return viewTablesHub();
+    if (!tableQuiz || tableQuiz.tid !== id) {
+      tableQuiz = { tid: id, qs: buildTableQuiz(t), qi: 0, good: 0, bad: 0, picked: -1 };
+    }
+    var q = tableQuiz.qs[tableQuiz.qi];
+    if (!q) return viewTablesHub();
+    var head =
+      '<a class="back-link" href="#/tables/' + esc(id) + '">← ' + esc(t.title) + '</a>' +
+      '<h2>练习 · ' + esc(t.title) + '</h2>' +
+      '<div class="study-meta"><span>第 ' + (tableQuiz.qi + 1) + '/' + tableQuiz.qs.length + ' 题 · ' + esc(q.type) + '</span>' +
+      '<span>对 ' + tableQuiz.good + ' · 错 ' + tableQuiz.bad + '</span></div>' +
+      '<div class="progress"><i style="width:' + Math.round((tableQuiz.qi / tableQuiz.qs.length) * 100) + '%"></i></div>';
+    if (!tableQuiz.qs.length) {
+      return head + '<div class="card study-card"><p>表数据不足以出题。</p></div>';
+    }
+    var opts = q.options.map(function (o, idx) {
+      var cls = 'exam-opt';
+      if (tableQuiz.picked === idx) cls += o.ok ? ' right' : ' wrong';
+      else if (tableQuiz.picked >= 0 && o.ok) cls += ' reveal';
+      return '<button class="' + cls + '" data-act="tbl-pick" data-i="' + idx + '"' +
+        (tableQuiz.picked >= 0 ? ' disabled' : '') + '>' + esc(o.t) + '</button>';
+    }).join('');
+    var body =
+      '<div class="card study-card">' +
+      (q.say ? '<button class="icon-btn" data-say="' + esc(q.say) + '" data-le="' + esc(LE_FOR[q.le] || 'ko') + '">' + ICON.sound + '</button>' : '') +
+      '<div class="sw">' + esc(q.stem) + '</div>' +
+      '<div class="exam-opts">' + opts + '</div>' +
+      (tableQuiz.picked >= 0
+        ? '<p class="lit-banner" style="text-align:center">' + (q.options[tableQuiz.picked] && q.options[tableQuiz.picked].ok ? '✓ 答对' : '✗ 答错 · 正确答案：' + esc((q.options.filter(function (o) { return o.ok; })[0] || {}).t || '')) + '</p>' +
+          (q.tip ? '<p class="table-note">' + esc(q.tip) + '</p>' : '')
+        : '') +
+      '<div class="study-actions">' +
+      (tableQuiz.picked >= 0
+        ? (tableQuiz.qi + 1 >= tableQuiz.qs.length
+          ? '<button class="btn" data-act="tbl-done">完成本轮</button>'
+          : '<button class="btn" data-act="tbl-next">下一题</button>')
+        : '') +
+      '<a class="btn ghost" href="#/tables/' + esc(id) + '">回表格</a>' +
+      '</div></div>';
+    return head + body;
   }
 
   var LE_FOR = { ja: 'jap', ko: 'ko', en: 'en' };
@@ -2442,7 +2562,8 @@
       view.innerHTML = parts[1] ? viewList(parts[1]) : viewCategories();
       nav = 'categories';
     } else if (name === 'tables') {
-      view.innerHTML = parts[1] ? viewTable(parts[1]) : viewTablesHub();
+      if (parts[2] === 'practice') view.innerHTML = viewTablePractice(parts[1]);
+      else view.innerHTML = parts[1] ? viewTable(parts[1]) : viewTablesHub();
       nav = 'categories';
     } else if (name === 'grammar') {
       if (parts[2]) view.innerHTML = viewGrammarRoom(parts[1], parts[2]);
@@ -2663,6 +2784,23 @@
       try { localStorage.removeItem('hedgehog:exam'); } catch (er) {}
       if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
       route(); window.scrollTo(0, 0);
+    } else if (act === 'tbl-pick') { // 基础表练习：选答案
+      if (!tableQuiz) return;
+      var tq = tableQuiz.qs[tableQuiz.qi];
+      if (!tq || tableQuiz.picked >= 0) return;
+      var pi = parseInt(el.getAttribute('data-i'), 10);
+      tableQuiz.picked = pi;
+      if (tq.options[pi] && tq.options[pi].ok) tableQuiz.good++; else tableQuiz.bad++;
+      route();
+    } else if (act === 'tbl-next') { // 基础表练习：下一题
+      if (!tableQuiz) return;
+      tableQuiz.qi++; tableQuiz.picked = -1;
+      route();
+    } else if (act === 'tbl-done') { // 基础表练习：完成本轮，记打卡
+      if (!tableQuiz) return;
+      logStamp();
+      tableQuiz = null;
+      route();
     } else if (act === 'exam-pick-file') {
       var fi = $('examImportFile');
       if (fi) fi.click();
