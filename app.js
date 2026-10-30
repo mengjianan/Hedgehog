@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.15'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.16'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1107,15 +1107,32 @@
   var shChunks = [];  // 录音片段
   var shURL = null;   // 回放 blob URL（回放后即弃）
   function shRecord() {
+    if (!window.isSecureContext && location.hostname !== 'localhost') { toast('非 HTTPS 环境无法录音 · 请用 https:// 打开'); return; }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('本机不支持录音'); return; }
+    // 安卓 PWA（添加到主屏幕）与 Chrome 站点权限是分开的——系统给浏览器的权限不传导给 PWA
+    if (navigator.standalone === true && /Android/i.test(navigator.userAgent)) {
+      toast('提示：PWA 的麦克风权限与浏览器分开 · 若被拒，请在 Chrome 浏览器里打开本站并允许麦克风');
+    }
+    // 安卓部分设备 MediaRecorder 默认 mimeType(audio/webm) 不支持 → 逐个探测回退
+    var mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    var chosenMime = '';
+    for (var mi = 0; mi < mimeCandidates.length; mi++) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(mimeCandidates[mi])) { chosenMime = mimeCandidates[mi]; break; }
+    }
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
       shChunks = [];
-      shRec = new MediaRecorder(stream);
+      try {
+        shRec = chosenMime ? new MediaRecorder(stream, { mimeType: chosenMime }) : new MediaRecorder(stream);
+      } catch (er) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        toast('录音格式不受支持（NotSupportedError）· 请换 Chrome 浏览器');
+        return;
+      }
       shRec.stream = stream;
       shRec.ondataavailable = function (ev) { if (ev.data && ev.data.size) shChunks.push(ev.data); };
       shRec.onstop = function () {
         if (shURL) URL.revokeObjectURL(shURL);
-        shURL = URL.createObjectURL(new Blob(shChunks, { type: 'audio/webm' }));
+        shURL = URL.createObjectURL(new Blob(shChunks, { type: chosenMime || 'audio/webm' }));
         try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (er) {}
         if (session) { session.shState = 'done'; route(); }
       };
