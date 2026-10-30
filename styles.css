@@ -1020,8 +1020,9 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 /* 模式切换（认卡 / 拼写） */
 .seg-ctl {
   display: inline-flex;
+  flex-wrap: wrap;
   border: 1px solid var(--line-d);
-  border-radius: 999px;
+  border-radius: 16px;
   overflow: hidden;
   margin: 4px 0 14px;
   background: var(--card);
@@ -1029,13 +1030,20 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 .seg {
   border: 0;
   background: transparent;
-  padding: 7px 22px;
+  padding: 7px 16px;
   font-size: 13.5px;
   letter-spacing: 0.12em;
   color: var(--mut);
   cursor: pointer;
 }
 .seg.on { background: var(--sage); color: #fdfcf8; }
+.seg.tiny { padding: 4px 11px; font-size: 12px; letter-spacing: 0.04em; }
+
+/* 认卡手势（批2 #1）：上滑=模糊、下滑=认识，跟手+回弹 */
+.study-card.swipe-anim { transition: transform 0.2s ease; }
+.study-card.swiping { transition: none; }
+.study-card.swipe-up { box-shadow: 0 -3px 0 var(--mut); }
+.study-card.swipe-down { box-shadow: 0 3px 0 var(--sage-d); }
 
 /* 复习 / 混考入口卡 */
 .entry-card {
