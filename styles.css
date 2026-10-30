@@ -963,31 +963,37 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
   color: var(--stone);
 }
 
-/* 巡游小地图 */
+/* 巡游小地图（批4 #3 瘦身：去虚线连接、方块挨排、>10站横向滚动不换行） */
 .minimap {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin: 6px 0 14px;
+  justify-content: flex-start;
+  gap: 3px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 2px 0 8px;
+  padding-bottom: 2px;
 }
+.minimap::-webkit-scrollbar { display: none; }
 .minimap .stop {
-  width: 32px;
-  height: 32px;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
   border: 1.5px solid var(--line-d);
-  border-radius: 7px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--mut);
   background: var(--card);
 }
 .minimap .stop.done { background: #eef1ea; border-color: var(--sage); color: var(--sage-d); }
 .minimap .stop.cur { background: var(--sage); border-color: var(--sage-d); color: #fff; }
-.minimap .seg { width: 14px; border-top: 2px dashed var(--line-d); }
+.minimap .seg { display: none; } /* 站间虚线连接去掉，方块挨着排 */
 .tour-slot {
   display: block;
   font-family: Georgia, "Times New Roman", serif;
@@ -1353,7 +1359,6 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .room::after,
   .room .door { display: none; }
   .minimap .stop { width: 28px; height: 28px; font-size: 12px; }
-  .minimap .seg { width: 8px; }
   /* 基础表手机适配：整表直读，不横滚 */
   .scroll-hint { display: none; }
   .table-wrap { border: 0; box-shadow: none; background: transparent; }
