@@ -1,0 +1,341 @@
+# -*- coding: utf-8 -*-
+"""grammar-en.json 扩容：30→90 点（新增 12 房间各 5 点）。五字段 t/core/formula/ex/trap。"""
+import json
+
+p = 'src/grammar-en.json'
+d = json.load(open(p, encoding='utf-8'))
+
+def P(t, core, formula, ex, trap):
+    return {'t': t, 'core': core, 'formula': formula,
+            'ex': [{'en': a, 'zh': b} for a, b in ex], 'trap': trap}
+
+new_rooms = [
+  {
+    "id": "conditionals", "name": "条件句", "enName": "Conditionals",
+    "summary": "if/unless/provided——「如果」的英语有五种时态",
+    "points": [
+      P("零条件句（真理/规律）", "表客观真理或恒常规律，if 从句和主句都用一般现在时。不表假设，表「一…就…」的规律。",
+       "If/When + 现在时, 现在时",
+       [("If you heat ice, it melts.", "冰加热就化（真理）。"),
+        ("When the sun sets, it gets dark.", "太阳落山天就黑（规律）。")],
+       "零条件句主句不用 will——「如果加热冰会化」是规律不是预测，用 melts 不用 will melt。"),
+      P("第一条件句（真实可能）", "表将来很可能发生的真实条件。if 从句现在时，主句 will + 动词原形。中文「如果…就会…」。",
+       "If + 现在时, will + 动词原形",
+       [("If it rains tomorrow, we will cancel the picnic.", "明天下雨我们就取消野餐。"),
+        ("If you study hard, you will pass the exam.", "你努力学习就会通过考试。")],
+       "if 从句里绝不用 will——「如果明天下雨」= if it rains，不是 if it will rain。"),
+      P("第二条件句（虚拟/不太可能）", "表与现在事实相反的假设或不太可能的将来。if 从句过去时，主句 would + 动词原形。中文「如果…（其实不会）」。",
+       "If + 过去时, would + 动词原形",
+       [("If I were you, I would apologize.", "我要是你我就道歉（其实我不是你）。"),
+        ("If he had more time, he would travel.", "他要是有更多时间就会去旅行（其实没有）。")],
+       "be 动词在 if 从句里一律用 were（If I were you），不用 was——即使主语是 I/he。"),
+      P("第三条件句（与过去相反）", "表对过去的后悔或遗憾，事实已经发生无法改变。if 从句过去完成时，主句 would have + 过去分词。",
+       "If + 过去完成时, would have + 过去分词",
+       [("If I had left earlier, I would have caught the train.", "我要是早点出发就赶上火车了（其实没赶上）。"),
+        ("If she had studied medicine, she would be a doctor now.", "她要是学了医现在就是医生了（其实没学）。")],
+       "第三条件句是「后悔专用」——事实与愿望相反；别和第二条件句混：had left 是过去，leave 是现在。"),
+      P("unless（除非）", "unless = if not「除非…否则」，自带否定。主句用现在时表将来或 will。与 if not 可互换但 unless 更简洁。",
+       "Unless + 现在时, will/现在时",
+       [("Unless you hurry, you will miss the bus.", "除非你快点，否则会错过公交。"),
+        ("We will go hiking unless it rains.", "除非下雨，否则我们去徒步。")],
+       "unless 已含 not——别写 unless it doesn't rain（双重否定）。主句该用 will 时别忘。")
+    ]
+  },
+  {
+    "id": "articles", "name": "冠词与介词", "enName": "Articles & Prepositions",
+    "summary": "a/an/the/零冠词——三个小词定生死",
+    "points": [
+      P("a vs an（辅音/元音音素）", "看发音不看字母：元音音素开头用 an，辅音音素开头用 a。hour（h 不发音）用 an，university（u 发 /ju:/）用 a。",
+       "a + 辅音音素开头 ｜ an + 元音音素开头",
+       [("an hour later", "一小时后（h 不发音）。"),
+        ("a university student", "一个大学生（u 发 /ju/）。")],
+       "别按字母判：an hour / a university——判断标准是第一个音素，不是第一个字母。"),
+      P("the（特指）", "双方都知道指什么用 the：上文提过、独一无二、序数词和最高级前。首次提到用 a/an，再次提到换 the。",
+       "the + 上文提过/独一无二/序数最高级",
+       [("I bought a book. The book is about history.", "我买了本书。那本书讲历史（第二次提到用 the）。"),
+        ("The sun rises in the east.", "太阳从东方升起（独一无二）。")],
+       "乐器前加 the（play the piano），三餐前不加（have breakfast）——固定搭配死记。"),
+      P("零冠词（复数泛指/不可数）", "复数名词表泛指、不可数名词、三餐、球类运动、学科名前不加冠词。专有名词一般也不加。",
+       "复数泛指/不可数/三餐球类学科 → 零冠词",
+       [("Dogs are loyal animals.", "狗是忠诚的动物（复数泛指）。"),
+        ("I study physics at college.", "我大学学物理（学科零冠词）。")],
+       "go to school（上学）vs go to the school（去那所学校）——有无冠词改变含义，这是经典考点。"),
+      P("介词 at/in/on（时间）", "at 点时间（at 6:00），in 年月季节（in May / in 2025），on 具体某天（on Monday）。记住口诀：大 in 小 at，有修饰用 on。",
+       "at 点 ｜ in 年月季 ｜ on 具体日",
+       [("at six o'clock", "在六点。"),
+        ("on Monday morning", "在周一早上。")],
+       "at night 是固定搭配（不用 in the night），但 in the morning/afternoon/evening 要带 the。"),
+      P("介词 in/on/at（地点）", "at 小地点（at the bus stop），in 大地点/立体空间（in Beijing / in the box），on 表面（on the wall）。记住：大 in 小 at 面上 on。",
+       "at 点 ｜ in 面/空间 ｜ on 表面",
+       [("at the corner", "在拐角。"),
+        ("on the wall", "在墙上。")],
+       "at home / at school 是固定零冠词搭配；in the morning 也固定——介词搭配靠语感积累，别硬套公式。")
+    ]
+  },
+  {
+    "id": "relclauses", "name": "关系从句", "enName": "Relative Clauses",
+    "summary": "who/which/that——给名词加「定语从句」",
+    "points": [
+      P("who/which/that（关系代词）", "人用 who/that，物用 which/that，从句缺主语或宾语时用。that 口语万能，介词后只能用 which/whom。",
+       "人 who/that ｜ 物 which/that ｜ 介词后 which",
+       [("The man who called you is my boss.", "给你打电话的人是我老板。"),
+        ("This is the book that I mentioned.", "这就是我提过的那本书。")],
+       "介词后不能用 that——from which 可以，from that 不行；which 可指整句（非限制性）。"),
+      P("非限制性定语从句（, which）", "逗号后的非限制性从句补充说明，不能省略关系词，不能用 that。which 可指代前面整件事。",
+       ", which / , who（不可用 that）",
+       [("He failed the exam, which surprised everyone.", "他考试没过，这让大家吃惊（which 指整件事）。"),
+        ("My father, who is a doctor, works here.", "我爸爸是医生，他在这里工作（补充说明）。")],
+       "非限制性从句里 that 被禁用——只能 , which / , who；which 指整句时前面加逗号。"),
+      P("whose（所属关系）", "whose = the + n. + of，表「…的」，人和物都能用。从句里作定语，后面直接接名词。",
+       "whose + 名词",
+       [("The girl whose father is a pilot wants to fly.", "爸爸是飞行员的那个女孩想开飞机。"),
+        ("I know a house whose garden is beautiful.", "我知道一座花园很美的房子。")],
+       "whose 不只指人——物也可以（a house whose garden）；别误加 of which 的双重结构。"),
+      P("关系副词 where/when/why", "先行词是地点用 where，时间用 when，理由用 why；等价于 in/at/on + which。从句里已有时空状语就不用关系代词。",
+       "地点 where ｜ 时间 when ｜ 理由 why（= in/at/on which）",
+       [("This is the city where I was born.", "这就是我出生的城市。"),
+        ("I remember the day when we first met.", "我记得我们初次见面的那天。")],
+       "where/when 后从句不再加 in/at——the city where I was born in 是冗余错误。")
+    ]
+  },
+  {
+    "id": "comparisons", "name": "比较结构", "enName": "Comparisons",
+    "summary": "than/as/比较级——「更…」「和…一样」",
+    "points": [
+      P("比较级 + than（更…）", "短音节加 -er，长音节用 more；不规则变化单独记。than 后接同类事物，比较对象要对等。",
+       "-er/more + than ｜ 不规则 better/farther/worse",
+       [("She is taller than her sister.", "她比姐姐高。"),
+        ("This task is more difficult than that one.", "这项任务比那项难。")],
+       "比较对象要同类——不能 the population of China is bigger than Japan（人 vs 国），要 than that of Japan。"),
+      P("as...as（和…一样）", "肯定同级比较 as + 原级 + as，否定 not so/as...as。程度副词（much/far/a lot）可修饰比较级但不修饰 as...as。",
+       "as + 原级 + as ｜ not so/as...as",
+       [("This box is as heavy as that one.", "这个箱子和那个一样重。"),
+        ("He is not so tall as his brother.", "他没有哥哥高。")],
+       "as...as 中间用原级——不能 as more...as；比较对象用 as...as you 时省略第二个 as 后的动词。"),
+      P("the + 最高级（最…）", "最高级前加 the，后接 in/of 范围（in the world / of the three）。不规则：the best / the worst / the farthest。",
+       "the + -est/more + in/of",
+       [("She is the smartest student in the class.", "她是班上最聪明的学生。"),
+        ("This is the worst movie I have ever seen.", "这是我看过的最烂的电影。")],
+       "最高级前的 the 别丢——most 前有 the 才是最高级（the most important），无 the 是程度强调（most people）。"),
+      P("倍数与比较（twice as...as）", "倍数表达：twice/half/the size + as...as。倍数词放 as 前，比较对象放第二个 as 后。",
+       "倍数 + as + 原级 + as",
+       [("This room is twice as big as that one.", "这个房间是那个的两倍大。"),
+        ("He runs three times as fast as me.", "他跑得有我三倍快。")],
+       "倍数词位置固定在第一个 as 前——twice as big as，不是 as twice big as。")
+    ]
+  },
+  {
+    "id": "nonfinite2", "name": "非谓语进阶", "enName": "Non-finite Advanced",
+    "summary": "to do / doing / done——非谓语的主被动与先后",
+    "points": [
+      P("to do vs doing（主动）", "表目的、未来、具体某次用 to do；表习惯、已知、一般事实用 doing。某些动词后固定接其一（enjoy doing / decide to do）。",
+       "to do（目的/未来）｜ doing（习惯/事实）",
+       [("I went to the library to study.", "我去图书馆学习（目的）。"),
+        ("She enjoys reading novels.", "她喜欢读小说（习惯）。")],
+       "stop to do（停下来去做另一件事）vs stop doing（停止正在做的事）——一字之差意思相反。"),
+      P("to do vs done（被动）", "逻辑主语是动作发出者用 doing，是承受者用 done。看到 by 强调执行者时优先 done。",
+       "主动 doing ｜ 被动 done",
+       [("The bridge built in 1990 is still strong.", "1990 年建的桥依然坚固（桥是被建）。"),
+        ("Seeing the dog, he stopped.", "看到狗，他停下了（他主动看）。")],
+       "非谓语的主语必须是句子主语——不能 Seen the dog, he stopped（他不是被看），要用 Seeing。"),
+      P("完成式 to have done / having done", "非谓语动作先于谓语动作发生用完成式。to have done（不定式完成）表「做过」，having done（分词完成）表先发生。",
+       "to have done / having done（先发生）",
+       [("He seems to have forgotten the meeting.", "他似乎忘了会议（先忘后 seem）。"),
+        ("Having finished the work, he went home.", "做完工作后他回家了。")],
+       "完成式强调「先于」——若两动作同时发生就用一般式，别滥用 have done。"),
+      P("独立主格（名词 + 非谓语）", "非谓语有自己独立的主语（名词），构成独立主格结构，多表伴随、原因。书面语高频。",
+       "名词 + doing/done/to do（独立主格）",
+       [("Weather permitting, we will go hiking.", "天允许的话我们就去徒步。"),
+        ("All things considered, the plan is practical.", "从各方面看，这计划是可行的。")],
+       "独立主格的逻辑主语是前面的名词，不是句子主语——Weather permitting 中 permitting 的主语是 weather。")
+    ]
+  },
+  {
+    "id": "modals2", "name": "情态动词进阶", "enName": "Modals Advanced",
+    "summary": "must have done / needn't——推测与必要性的精细表达",
+    "points": [
+      P("must have done（一定做了）", "对过去的肯定推测：must have + 过去分词。否定推测不用 mustn't have（那是禁止），用 can't/couldn't have。",
+       "must have + 过去分词（过去肯定推测）",
+       [("He must have missed the train.", "他一定错过了火车（推测）。"),
+        ("She must have forgotten about it.", "她一定把这事忘了。")],
+       "mustn't have done 不是「一定没做」而是「一定别做」——过去否定推测用 can't have done。"),
+      P("can't/couldn't have done（不可能做了）", "对过去的否定推测：不可能…。语气比 couldn't have 更强时用 could never have。can't have 是最常用形式。",
+       "can't/couldn't + have + 过去分词",
+       [("He can't have finished already.", "他不可能已经完成了。"),
+        ("That couldn't have been true.", "那不可能是真的。")],
+       "mustn't have（一定别做=禁止）≠ can't have（不可能=推测）——must 的否定是禁止，不是推测。"),
+      P("needn't vs don't have to（不必）", "needn't = don't have to「不必」，都表没有必要；但 mustn't = 禁止。needn't have done = 做了但其实不必（多余）。",
+       "needn't/don't have to（不必）｜ needn't have done（做了但多余）",
+       [("You needn't worry about it.", "你不必担心。"),
+        ("You needn't have cooked — we already ate.", "你不必做饭——我们已经吃过了（其实做了）。")],
+       "needn't have done 表「其实不必做但做了」，didn't need to do 表「没做且不必做」——完成与否含义不同。"),
+      P("should have done（本该做却没做）", "对过去的虚拟责备：should have + 过去分词「本应该…（但没）」。否定 should not have done = 本不该做（但做了）。",
+       "should have + 过去分词（过去虚拟）",
+       [("You should have told me earlier.", "你本该早点告诉我（其实没说）。"),
+        ("I shouldn't have eaten so much.", "我本不该吃那么多（其实吃了）。")],
+       "should have done 带责备/后悔语气，主语可以是别人；must have done 是中性推测——语气完全不同。")
+    ]
+  },
+  {
+    "id": "inversion", "name": "倒装与强调", "enName": "Inversion & Emphasis",
+    "summary": "Never have I…——倒装的书面语高级感",
+    "points": [
+      P("否定词开头倒装", "否定副词/短语放句首（Never / Seldom / Little / No sooner / Not only）时，助动词提到主语前构成倒装。",
+       "否定词 + 助动词 + 主语 + 动词",
+       [("Never have I seen such a beautiful view.", "我从没见过这么美的风景。"),
+        ("Little did he know what was waiting for him.", "他一点也不知道等着他的是什么。")],
+       "倒装只在否定词置首时发生——Not only he but also she came 是正常语序，Not only did he come... 才倒装。"),
+      P("Only + 状语倒装", "Only + 状语（时间/地点/方式）放句首时主句倒装；Only + 主语则不倒装。",
+       "Only + 状语, 助动词 + 主语",
+       [("Only then did I understand the truth.", "直到那时我才明白真相。"),
+        ("Only in this way can you solve the problem.", "只有这样你才能解决问题。")],
+       "Only 后面是主语就不倒装——Only he knew 是正常语序；Only by working hard can you pass 才倒装。"),
+      P("So/Such...that 倒装", "So + 形容词/副词或 Such + 名词 置于句首时，主句倒装表强调「如此…以至于」。",
+       "So/Such..., that 主句倒装",
+       [("So difficult was the exam that nobody passed.", "考试太难了，没人通过。"),
+        ("Such was his anger that he left.", "他如此愤怒以至于离开了。")],
+       "倒装版只表强调，口语里更常用正常语序 The exam was so difficult that...；书面/演讲用倒装。"),
+      P("There be 存在句与变异", "There be 表「存在」，可接真实主语或形式主语 it；将来用 There will be，完成用 There have been。",
+       "There + be + 名词",
+       [("There are three books on the desk.", "桌上有三本书。"),
+        ("There seems to be a problem.", "似乎有问题。")],
+       "There be 的真实主语是后面名词，动词与后者的数一致——There is a book and three pens（就近原则）。")
+    ]
+  },
+  {
+    "id": "relclauses2", "name": "从句进阶", "enName": "Clauses Advanced",
+    "summary": "让步/目的/结果从句的连接词选择",
+    "points": [
+      P("让步从句（although/though/even if）", "although/though 可放句首或句中，even if 更口语且可表将来假设。though 可作副词放句尾。",
+       "although/though/even if + 从句",
+       [("Although it was raining, we went out.", "虽然下雨了，我们还是出去了。"),
+        ("He is honest, though sometimes stubborn.", "他诚实，虽然有时固执（though 句尾）。")],
+       "although 和 but 不能同时用——Although it rained, but we went out 是典型中式错误。"),
+      P("目的从句（so that/in order that）", "正式目的从句用 so that/in order that + may/might/can/could；口语用 to + 动词。否定目的用 lest / for fear that。",
+       "so that + 主语 + may/can",
+       [("He spoke slowly so that everyone could understand.", "他说得慢以便大家能听懂。"),
+        ("She left early in order that she might catch the bus.", "她早点出发以便能赶上公交。")],
+       "so that 后必须有主语——不能 so that to catch the bus；to + 动词才是口语目的。"),
+      P("结果从句（so...that / such...that）", "so + 形/副 + that，such + (a/an) + 名词 + that。名词单数有 a 时必须 such a...that。",
+       "so + adj/adv + that ｜ such + a/an + n. + that",
+       [("It was so cold that the river froze.", "太冷了河都结冰了。"),
+        ("It was such a long film that we left early.", "电影太长所以我们早退了。")],
+       "so/such 选择看中心词——形容词用 so，名词用 such；such a 后必须是单数可数名词。"),
+      P("名词性从句（what/that 双功能）", "what = the thing that（含先行词），that 只起连接作用无义。主语从句 that 置首时可加 it 形式主语。",
+       "what = the thing that ｜ that（从属连词）",
+       [("What he said was true.", "他说的是真的（what=他说的话）。"),
+        ("It is important that you practice daily.", "你每天练习很重要（it 形式主语）。")],
+       "What he said 是主语从句（what 含先行词），That he said 不行——that 不能单独作主语从句的主语。")
+    ]
+  },
+  {
+    "id": "voice2", "name": "语态进阶", "enName": "Voice Advanced",
+    "summary": "get/have + done——被动的口语与使役被动",
+    "points": [
+      P("get/have + 过去分词（口语被动）", "口语中用 get/have + done 替代 be + done，have 表「让别人做」，get 表「遭遇（多为坏事）」。",
+       "get/have + 过去分词",
+       [("I got my hair cut.", "我理了发（让理发师剪）。"),
+        ("He had his phone stolen.", "他的手机被偷了（遭遇坏事）。")],
+       "have + 人 + do = 让某人做（主动），have + 物 + done = 让某事被做（被动）——宾语决定语态。"),
+      P("be supposed to（应该/据说）", "表按理应该、据说、被期望。过去式 was supposed to = 本该（但没实现），表遗憾。",
+       "be supposed to + 动词原形",
+       [("You are supposed to submit it by Friday.", "你应该周五前提交。"),
+        ("He was supposed to call, but he didn't.", "他本该打电话的，但没打。")],
+       "was supposed to = 本该做却没做（虚拟遗憾），与 should have done 同义——别理解成过去式推测。"),
+      P("be + 不定式（表安排/注定）", "be + to do 表按计划注定发生、官方安排；be about to do 表马上就要发生（进行时）。",
+       "be to do（安排/注定）｜ be about to do（即将）",
+       [("The president is to visit Japan next month.", "总统下月访问日本（官方安排）。"),
+        ("The train is about to leave.", "火车马上要开了。")],
+       "be to do 是正式安排/注定，be about to do 是眼前即将发生——别混：The train is to leave 是时刻表。"),
+      P("被动与系表（be + done 的完成含义）", "be + 过去分词既是被动也是系表（状态）：The door is closed 可表被动也可表关着的状态，看语境。",
+       "be + 过去分词（被动/状态两可）",
+       [("The window was broken by the ball.", "窗户被球打碎了（被动，有 by）。"),
+        ("The window was broken — we need a new one.", "窗户碎了（状态，无 by）。")],
+       "有 by 短语是被动，无 by 描述状态是系表——The store is closed（关着）vs The store was closed by the owner（被关）。")
+    ]
+  },
+  {
+    "id": "connectors2", "name": "连接词进阶", "enName": "Connectors Advanced",
+    "summary": "however/therefore/moreover——书面连接词的逻辑关系",
+    "points": [
+      P("转折（however/nevertheless/yet）", "however/nevertheless 正式转折，常放句首加逗号；yet 口语也可放句尾。although 是从句级转折。",
+       "However, + 逗号 ｜ 句尾 yet",
+       [("He tried hard. However, he failed.", "他努力了。然而失败了。"),
+        ("It was raining. Yet they went out.", "下雨了。但他们还是出去了。")],
+       "however 是副词不能连从句——However it rained 不行，However it was raining 才对。"),
+      P("因果（therefore/thus/consequently）", "therefore/thus 正式因果，放句首加逗号；as/since/because 是从句级原因。thus 比 therefore 更书面。",
+       "Therefore, + 主句 ｜ because/since + 从句",
+       [("He was ill. Therefore, he didn't come.", "他病了。因此没来。"),
+        ("As it was raining, we stayed home.", "因为下雨，我们待在家。")],
+       "therefore 是副词连接两个分句，不能接在句中——He therefore didn't come 可以，He was ill therefore he didn't come 不行。"),
+      P("递进（moreover/furthermore/in addition）", "表递进补充，放句首加逗号。furthermore 比 moreover 更正式。in addition (to) 后接名词或动名词。",
+       "Moreover/Furthermore, + 逗号 ｜ in addition to + 名词",
+       [("The plan is cheap. Moreover, it is effective.", "这计划便宜。而且有效。"),
+        ("In addition to English, she speaks French.", "除了英语她还会说法语。")],
+       "moreover/furthermore 后必须加逗号；in addition to 后接名词性成分，不能接完整句。"),
+      P("条件与让步混合（provided that / as long as）", "provided that/as long as = 只要…就，比 if 更正式，表必要条件。on condition that 更正式（书面/法律）。",
+       "provided that/as long as + 从句",
+       [("You may go out as long as you finish your homework.", "只要做完作业你就可以出去。"),
+        ("Provided that the weather is fine, the event will be held.", "只要天气好，活动就会举行。")],
+       "provided that/as long as 后从句用现在时表将来——不能 Provided that it will rain。")
+    ]
+  },
+  {
+    "id": "ellipsis", "name": "省略与替代", "enName": "Ellipsis & Substitution",
+    "summary": "so/not do/one——避免重复的替身词",
+    "points": [
+      P("so/not 替代（动词/形容词）", "上文肯定用 so，否定用 not（或 neither/nor）。so 替代前文整个肯定内容，not 替代否定内容。",
+       "so（肯定替代）｜ not/neither（否定替代）",
+       [("— Will it rain? — I think so.", "— 会下雨吗？— 我想会（= it will rain）。"),
+        ("— I don't like it. — Neither do I.", "— 我不喜欢。— 我也不（= I don't like it either）。")],
+       "so 只能替代表内容，不能替代表否定——否定回应用 not 或 neither，别用 so。"),
+      P("do/does/did 替代（动词）", "为避免重复，用 do/does/did 替代上文出现过的实义动词，时态随主语和时态变化。",
+       "do/does/did + 副词/状语（替带动词）",
+       [("— Does she like coffee? — Yes, she does.", "— 她喜欢咖啡吗？— 是的，喜欢。"),
+        ("He studies harder than I do.", "他比我学习更努力（do=study）。")],
+       "do 替代的是整个谓语动词——He runs faster than I do 中 do = runs，不是原形。"),
+      P("one/ones（替代名词）", "one 替代前面提到的单数可数名词，ones 替代复数；有前置定语时必须用 one，不能用 it（it 指同一物，one 指同类物）。",
+       "one = 同类单数 ｜ ones = 同类复数 ｜ it = 同一物",
+       [("I don't have a pen. Do you have one?", "我没有笔。你有吗（同类不同物）？"),
+        ("This book is better than the one I read.", "这本书比我读过的那本好（同一类）。")],
+       "it 指同一个，one 指同类——I lost my pen and I'm looking for it（丢的那支）vs one（任何一支）。"),
+      P("不定式与分词的省略", "上文已提的不定式可省 to（but to / except to），介词后接动名词保留介词。",
+       "to 可省（but/except/than 后）",
+       [("He did nothing but sleep.", "他除了睡觉什么都不干（省 to）。"),
+        ("There is no choice but to wait.", "除了等待别无选择（but to 保留）。")],
+       "but/except/than 后接不定式可省 to，但 but 前有实义动词 did 时保留 to——did nothing but sleep 省，have no choice but to wait 不省。")
+    ]
+  },
+  {
+    "id": "subjunctive", "name": "虚拟语气进阶", "enName": "Subjunctive Advanced",
+    "summary": "suggest that he go——建议命令后的动词原形",
+    "points": [
+      P("suggest/insist 后 that 从句用原形", "表建议、命令、要求、坚持的动词后 that 从句用动词原形（不管人称时态），否定在动词前加 not。",
+       "suggest/insist/recommend + that + 主语 + 动词原形",
+       [("The doctor suggested that he take the medicine.", "医生建议他吃药（take 不加 s）。"),
+        ("I insist that she be on time.", "我坚持她要准时（be 不用 is）。")],
+       "原形虚拟不分人称时态——He suggested that she goes 是错的，必须 go；否定用 not go 不用 doesn't go。"),
+      P("wish + 过去式（与现在相反）", "wish 后接过去式表与现在事实相反的愿望。与过去相反用 had done，将来用 would do。",
+       "wish + 过去式（现在）｜ had done（过去）｜ would do（将来）",
+       [("I wish I knew the answer.", "我要是知道答案就好了（其实不知道）。"),
+        ("I wish I had studied harder.", "我要是当时更努力就好了（其实没努力）。")],
+       "wish 后不能用 will——I wish I will know 是错的；现在相反用过去式，过去相反用过去完成。"),
+      P("It's time / would rather（该…了/宁愿）", "It's time + 过去式 = 该…了（其实还没做）；would rather + 过去式 = 宁愿（对别人）或虚拟愿望。",
+       "It's time + 过去式 ｜ would rather + 过去式",
+       [("It's time we left.", "该走了（其实还没走）。"),
+        ("I would rather you stayed home.", "我宁愿你待在家（其实你可能要出门）。")],
+       "It's time 后接过去式表虚拟「该做却没做」；would rather 后接过去式表对现在的虚拟愿望。"),
+      P("as if/as though（好像…似的）", "表与事实相反的比喻用过去式；表可能真实用现在式。与 wish 同理，时态回移表「非真实」。",
+       "as if + 过去式（非真实）｜ 现在式（可能真实）",
+       [("He talks as if he knew everything.", "他说得好像什么都知道（其实不一定）。"),
+        ("It looks as if it will rain.", "看起来要下雨了（可能真实）。")],
+       "as if 后时态回移表非真实——He talks as if he knows 是「他确实知道」的语气，用过去式才表「装作知道」。")
+    ]
+  }
+]
+
+d['rooms'].extend(new_rooms)
+d['subtitle'] = '18 宫室 · 90 语法点'
+json.dump(d, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+print('added', len(new_rooms), 'rooms')
+print('total points now:', sum(len(r['points']) for r in d['rooms']))
