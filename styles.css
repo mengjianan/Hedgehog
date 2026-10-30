@@ -903,6 +903,36 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .home-stat b { color: var(--sage-d); font-weight: 600; }
 
+/* 首页进度可视化（批5 B）：掌握词数 / 连续天数 / 本周完成度 */
+.home-prog {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.hp-cell {
+  flex: 1;
+  max-width: 150px;
+  text-align: center;
+  padding: 8px 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.hp-cell b {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  color: var(--sage-d);
+}
+.hp-cell span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--mut);
+  letter-spacing: 0.04em;
+}
+
 /* 房间页（场景） */
 .room-head {
   position: relative;
@@ -1427,6 +1457,10 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   body.home-view .hall b { font-size: 13px; }
   body.home-view .hall small { font-size: 10px; }
   body.home-view .home-stat { margin-top: 10px; font-size: 12px; }
+  body.home-view .home-prog { margin-top: 8px; gap: 6px; }
+  body.home-view .hp-cell { padding: 5px 4px; border-radius: 8px; }
+  body.home-view .hp-cell b { font-size: 15px; }
+  body.home-view .hp-cell span { font-size: 9.5px; }
   body.home-view .data-row { margin-top: 10px; gap: 8px; }
   body.home-view .data-row .mini-btn { padding: 3px 10px; font-size: 11px; }
   body.home-view .footnote { margin-top: 10px; }

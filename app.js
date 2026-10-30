@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-30.4'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-30.5'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -201,6 +201,31 @@
     var k = dateKey(new Date());
     m[k] = (m[k] || 0) + 1;
     lsSet('hedgehog:stamps', m);
+  }
+  // 连续天数：从今天（或昨天，今天还没打卡不算断）往前数连续有打卡的天数
+  function streakDays() {
+    var m = lsGet('hedgehog:stamps', {});
+    var d = new Date();
+    if (!m[dateKey(d)]) d.setDate(d.getDate() - 1);
+    var n = 0;
+    while (m[dateKey(d)]) {
+      n++;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+  // 本周完成度：本周（周一起）已打卡天数 / 7
+  function weekRatio() {
+    var m = lsGet('hedgehog:stamps', {});
+    var d = new Date();
+    var dow = (d.getDay() + 6) % 7;
+    var monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
+    var on = 0;
+    for (var i = 0; i <= dow; i++) {
+      var dt = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      if (m[dateKey(dt)]) on++;
+    }
+    return { on: on, total: 7 };
   }
   function weeklyHTML() {
     var m = lsGet('hedgehog:stamps', {});
@@ -604,6 +629,23 @@
   }
 
   // ---------- 视图：首页（门厅搜索 + 快捷入口） ----------
+  // 进度可视化（批5 B）：掌握词数 / 连续天数 / 本周完成度
+  function homeProgressHTML() {
+    var mastered = 0;
+    var k = known();
+    Object.keys(k).forEach(function (ref) { if (k[ref]) mastered++; });
+    var streak = streakDays();
+    var wk = weekRatio();
+    var wkPct = Math.round((wk.on / wk.total) * 100);
+    return (
+      '<div class="home-prog" role="group" aria-label="学习进度">' +
+      '<div class="hp-cell"><b>' + mastered + '</b><span>掌握词数</span></div>' +
+      '<div class="hp-cell"><b>' + streak + '</b><span>连续天数</span></div>' +
+      '<div class="hp-cell"><b>' + wkPct + '%</b><span>本周 ' + wk.on + '/' + wk.total + ' 天</span></div>' +
+      '</div>'
+    );
+  }
+
   function viewHome() {
     var coreWords = coreLists().reduce(function (n, l) { return n + l.words.length; }, 0);
     var scenes = sceneLists();
@@ -635,6 +677,7 @@
       halls +
       '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
       (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
+      homeProgressHTML() +
       '<div class="data-row">' +
       '<button class="mini-btn" data-act="export-data">导出进度</button>' +
       '<button class="mini-btn" data-act="import-data">导入进度</button>' +
