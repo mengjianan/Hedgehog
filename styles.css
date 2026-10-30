@@ -1396,6 +1396,25 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .study-card .sw { font-size: 27px; }
   .matrix-table td b { font-size: 18px; }
   .morph-form { font-size: 14px; }
+
+  /* 首页固定一屏（body.home-view）：压缩 hero/宫格/统计/数据行，一屏放下 */
+  body.home-view .page { overflow: hidden; }
+  body.home-view .view { padding-top: 6px; padding-bottom: 12px; }
+  body.home-view .hero { padding: 6px 10px 4px; }
+  body.home-view .hero-sticker { width: 108px; padding: 7px 7px 15px; margin-bottom: 4px; }
+  body.home-view .hero h2 { font-size: 17px; margin: 2px 0; }
+  body.home-view .hero .sub { font-size: 11px; margin: 0; }
+  body.home-view .search-row { margin-top: 8px; max-width: none; }
+  body.home-view .search-row input { padding: 8px 12px; font-size: 14px; }
+  body.home-view .halls { grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
+  body.home-view .hall { padding: 8px 4px; }
+  body.home-view .hall .k { font-size: 9px; letter-spacing: 0.14em; }
+  body.home-view .hall b { font-size: 13px; }
+  body.home-view .hall small { font-size: 10px; }
+  body.home-view .home-stat { margin-top: 10px; font-size: 12px; }
+  body.home-view .data-row { margin-top: 10px; gap: 8px; }
+  body.home-view .data-row .mini-btn { padding: 3px 10px; font-size: 11px; }
+  body.home-view .footnote { margin-top: 10px; }
 }
 
 /* ---------- 考场（仿真卷 + 本机真题卷） ---------- */

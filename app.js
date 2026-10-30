@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.17'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.18'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -617,6 +617,8 @@
       '<span class="k">STUDY</span><b>基础表</b><small>词根 · 音表</small></a>' +
       '<a class="hall hall-link" href="#/grammar">' +
       '<span class="k">GRAMMAR</span><b>语法</b><small>三语语法宫</small></a>' +
+      '<a class="hall hall-link" href="#/exam">' +
+      '<span class="k">EXAM</span><b>考场</b><small>仿真卷 · 小测验</small></a>' +
       '<a class="hall hall-link" href="#/favorites">' +
       '<span class="k">CABINET</span><b>收藏</b><small>' + favs().length + ' 件</small></a>' +
       '</div>';
@@ -2886,6 +2888,8 @@
     }
     // 离开考场即退出专注模式（隐藏本子装饰）
     if (name !== 'exam') document.body.classList.remove('exam-focus');
+    // 首页标记（手机端固定一屏压缩的 CSS 作用域）
+    document.body.classList.toggle('home-view', name === 'home');
 
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
