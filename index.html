@@ -12,9 +12,10 @@
     <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
     <link rel="icon" href="icons/hedgehog.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=17" />
+    <link rel="stylesheet" href="styles.css?v=18" />
   </head>
-  <body>
+  <!-- body.booting：启动比对缓存期间密码门不可见（防刷新时一闪而过，见 styles.css） -->
+  <body class="booting">
     <!-- 密码门 -->
     <div class="gate" id="gate">
       <div class="gate-card">
@@ -55,6 +56,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=17"></script>
+    <script src="app.js?v=18"></script>
   </body>
 </html>

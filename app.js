@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-30.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-30.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -3649,10 +3649,16 @@
 
   // ---------- 启动 ----------
   function openApp() {
+    document.body.classList.remove('booting'); // 缓存直进：全程不露密码门（批3）
     $('gate').hidden = true;
     $('app').hidden = false;
     if (!location.hash) location.hash = '#/home';
     route();
+  }
+
+  // 揭示密码门：无缓存/缓存过期才让密码门可见（启动比对期间 body.booting 隐藏它）
+  function revealGate() {
+    document.body.classList.remove('booting');
   }
 
   // 每轮站数设置（#4）：背词页输入框改完即生效并记住
@@ -3745,7 +3751,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=17', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=18', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 IndexedDB：解锁一次本机永久记住）。
@@ -3753,9 +3759,13 @@
   // （旧缓存没有 ETag 记录也视作过期，部署后各设备重输一次密码即拿新词库）。
   // 旧版 localStorage 缓存自动搬进 IDB 后删除；断网时跳过对比直接用缓存。
   (function bootFromCache() {
+    // 兜底：HEAD 比对挂住（弱网）超过 4 秒，揭示密码门让用户能手动解锁，别困在空桌面
+    var bootFallback = setTimeout(revealGate, 4000);
+    function done() { clearTimeout(bootFallback); }
     function adopt(cd) {
       if (cd && cd.version >= 6 && cd.tables && cd.tables.length) {
         setData(cd);
+        done();
         openApp();
         return true;
       }
@@ -3769,6 +3779,8 @@
         hint.style.color = 'var(--mut)';
         hint.textContent = '词库已更新，请重新解锁';
       }
+      done();
+      revealGate(); // 缓存过期：该露密码门了
     }
     function loadCached() {
       return idbGet('data').then(function (cd) {
@@ -3782,6 +3794,11 @@
           if (adopt(lcd)) return idbSet('data', lcd).catch(function () {});
         }
         if (cd) idbDel('data').catch(function () {});
+        done();
+        revealGate(); // 本机无缓存：露密码门
+      }, function () {
+        done();
+        revealGate();
       });
     }
     fetch('data/words.enc.gz', { method: 'HEAD', cache: 'no-store' })
@@ -3795,7 +3812,8 @@
         // 词库更新过（或旧缓存没有指纹）：作废缓存，要求重新解锁
         idbGet('data').then(function (cd) {
           if (cd || localStorage.getItem('hedgehog:data')) evict();
-        }).catch(function () {});
+          else { done(); revealGate(); } // 没缓存也没指纹记录：直接露门
+        }).catch(function () { done(); revealGate(); });
       })
       .catch(function () {
         // 断网/HEAD 失败：离线可用优先，直接用本地缓存

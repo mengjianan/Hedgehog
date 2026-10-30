@@ -22,6 +22,8 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* 启动中（body.booting）：密码门不可见，防刷新一闪而过；无缓存/缓存过期时 JS 会移除 booting 揭示密码门 */
+body.booting .gate { visibility: hidden; }
 html { -webkit-text-size-adjust: 100%; }
 
 body {
