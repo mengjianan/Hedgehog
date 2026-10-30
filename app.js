@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.14'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.15'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1127,7 +1127,23 @@
         pronStart((cur && cur.l.speech) || 'en-US');
       }
       if (session) { session.shState = 'rec'; route(); }
-    }, function () { toast('麦克风被拒绝，无法录音'); });
+    }, function (err) {
+      // 分错误类型给针对性提示（手机上失败常不是「拒绝」而是权限/占用/iOS PWA bug）
+      var n = err && err.name;
+      if (n === 'NotAllowedError') {
+        toast('麦克风被拒绝 · 安卓：设置→应用→浏览器→权限里开启麦克风；iOS：Safari 设置→麦克风');
+      } else if (n === 'NotFoundError') {
+        toast('找不到麦克风设备 · 请确认麦克风可用（没插耳机/没被占用）');
+      } else if (n === 'NotReadableError' || n === 'AbortError') {
+        toast('麦克风被占用 · 请关掉正在录音的 App（微信语音/电话）再试');
+      } else if (n === 'SecurityError') {
+        toast('非 HTTPS 环境无法录音 · 请用 https:// 打开本站');
+      } else if (navigator.standalone === true && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        toast('iOS「添加到主屏幕」的 PWA 有录音 bug · 请在 Safari 浏览器里打开本站再录音');
+      } else {
+        toast('录音启动失败：' + (n || '未知错误') + ' · 可重试或换个浏览器');
+      }
+    });
   }
   function shStop() {
     pronStop(); // 关发音识别（若开了）
