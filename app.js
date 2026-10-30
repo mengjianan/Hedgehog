@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.18'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-30.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -618,7 +618,7 @@
       '<a class="hall hall-link" href="#/grammar">' +
       '<span class="k">GRAMMAR</span><b>语法</b><small>三语语法宫</small></a>' +
       '<a class="hall hall-link" href="#/exam">' +
-      '<span class="k">EXAM</span><b>考场</b><small>仿真卷 · 小测验</small></a>' +
+      '<span class="k">EXAM</span><b>考场</b><small>JLPT / TOPIK / IELTS 仿真卷</small></a>' +
       '<a class="hall hall-link" href="#/favorites">' +
       '<span class="k">CABINET</span><b>收藏</b><small>' + favs().length + ' 件</small></a>' +
       '</div>';
@@ -1325,8 +1325,8 @@
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
         '<b>串门混考</b>' +
         '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
-        '<a class="entry-card exam-entry" href="#/exam"><b>考场</b>' +
-        '<small>JLPT / TOPIK / IELTS 仿真卷 · 倒计时 · 成绩换算 · 错题入复习</small></a>' +
+        '<a class="entry-card" href="#/quiz"><b>小测验</b>' +
+        '<small>从巡游词库抽题 · 题数可自定义</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
       var scenes = sceneLists();
@@ -1955,6 +1955,146 @@
       '<section class="table-section"><h3>' + esc(s.title) + '</h3>' +
       note + inner + '</section>'
     );
+  }
+
+  // ---------- 小测验（#/quiz）：巡游词库抽题混合练习，无倒计时无标尺（批2 #4后半） ----------
+  var quiz = null; // {qs, qi, results:[bool], picked, checked, spellVal, spoken, logged}
+  var quizSize = lsGet('hedgehog:quiz-size', 10); // 题数可自定义（默认 10）
+
+  function buildQuiz(n) {
+    var pool = ALL.filter(function (e) { return e.x.w && e.x.zh; });
+    if (pool.length < 4) return [];
+    var picks = shuffle(pool).slice(0, n);
+    var allWords = pool.map(function (e) { return e.x; });
+    var qs = [];
+    picks.forEach(function (e, i) {
+      var kind = ['meaning', 'listen', 'spell'][i % 3]; // 三题型轮换混合
+      if (kind === 'spell') {
+        qs.push({ kind: 'spell', ref: e.ref, stem: e.x.zh, w: e.x.w, le: e.l.lang });
+        return;
+      }
+      var dis = pickDis3(e.x, e.l.words, {}, e.l.id, function (x) { return x.zh; });
+      if (dis.length < 3) dis = pickDis3(e.x, allWords, {}, null, function (x) { return x.zh; });
+      if (dis.length < 3) return;
+      qs.push({
+        kind: kind, ref: e.ref, le: e.l.lang,
+        stem: kind === 'listen' ? '听发音，选出正确的词义' : e.x.w,
+        spoken: kind === 'listen' ? e.x.w : null,
+        options: optSet(e.x.zh, dis)
+      });
+    });
+    return qs;
+  }
+
+  function quizSpellOk(q, val) {
+    return String(val || '').trim().toLowerCase() === String(q.w || '').trim().toLowerCase();
+  }
+
+  function viewQuiz() {
+    if (!quiz) {
+      return (
+        '<a class="back-link" href="#/study">← 巡游</a>' +
+        '<h2>小测验</h2>' +
+        '<p class="sub">从词库抽题 · 词汇辨义 / 听辨 / 拼写混合 · 无倒计时无标尺</p>' +
+        '<div class="size-row">题数 <input id="quizSizeInput" type="number" min="5" max="50" step="1" value="' +
+        quizSize + '" /> 题 <small>5~50，改完自动生效</small></div>' +
+        '<div class="study-actions"><button class="btn" data-act="quiz-begin">开始测验（' +
+        quizSize + ' 题）</button></div>'
+      );
+    }
+    if (quiz.qi >= quiz.qs.length) { // 成绩单
+      var wrongs = [];
+      quiz.qs.forEach(function (q, i) {
+        if (!quiz.results[i]) {
+          var okT = q.kind === 'spell' ? q.w : ((q.options || []).filter(function (o) { return o.ok; })[0] || {}).t || '';
+          wrongs.push('<div class="rev-row wrong"><b>' + (i + 1) + '.</b>' +
+            '<span class="rev-stem">' + esc(q.kind === 'spell' ? q.stem : q.stem) +
+            (q.spoken ? ' <button class="mini-btn" data-say="' + esc(q.spoken) +
+              '" data-le="' + esc(YOUDAO_LE[q.le] || 'en') + '">🔊</button>' : '') +
+            '</span><span class="rev-ok">正确 ' + esc(okT) + '</span></div>');
+        }
+      });
+      var doneN = quiz.results.filter(Boolean).length;
+      return (
+        '<h2>小测验 · 成绩单</h2>' +
+        '<div class="card exam-result">' +
+        '<div class="exam-score">' + doneN + '<small>/' + quiz.qs.length + ' 题正确</small></div>' +
+        '<p class="exam-passline">对 ' + doneN + ' · 错 ' + (quiz.qs.length - doneN) + '</p>' +
+        (wrongs.length ? '<details class="exam-review" open><summary>错题 ' + wrongs.length + ' 题</summary>' +
+          wrongs.join('') + '</details>' : '') +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="quiz-again">再来一轮</button>' +
+        '<a class="btn ghost" href="#/study">回巡游</a>' +
+        '</div></div>'
+      );
+    }
+    var q = quiz.qs[quiz.qi];
+    // 听辨题进题自动播（每题只播一次；移动端可能需再点 🔊）
+    if (q.kind === 'listen' && quiz.spoken !== quiz.qi) {
+      quiz.spoken = quiz.qi;
+      setTimeout(function () {
+        playAudio(q.spoken, YOUDAO_LE[q.le] || 'en', q.spoken, IDX[q.ref]);
+      }, 150);
+    }
+    var head =
+      '<a class="back-link" href="#/study">← 巡游（进度不保存）</a>' +
+      '<h2>小测验</h2>' +
+      '<div class="study-meta"><span>第 ' + (quiz.qi + 1) + '/' + quiz.qs.length + ' 题</span>' +
+      '<span>对 ' + quiz.results.filter(Boolean).length + ' · 错 ' +
+      quiz.results.filter(function (r) { return r === false; }).length + '</span></div>' +
+      '<div class="progress"><i style="width:' +
+      Math.round((quiz.qi / quiz.qs.length) * 100) + '%"></i></div>';
+    var body;
+    if (q.kind === 'spell') {
+      var sv = quiz.checked ? esc(quiz.spellVal) : '';
+      body =
+        '<div class="card study-card">' +
+        '<div class="spell-hint">看中文，写出这个词</div>' +
+        '<div class="sw">' + esc(q.stem) + '</div>' +
+        '<div class="spell-row">' +
+        '<input id="quizSpell" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" ' +
+        'placeholder="输入单词" value="' + sv + '"' + (quiz.checked ? ' disabled' : '') + ' />' +
+        (quiz.checked ? '' : '<button class="btn" data-act="quiz-spell-check">检查</button>') +
+        '</div>' +
+        (quiz.checked
+          ? '<p class="lit-banner" style="text-align:center">' +
+            (quiz.results[quiz.qi] ? '✓ 答对' : '✗ 不对 · 正确答案：<b>' + esc(q.w) + '</b>') + '</p>'
+          : '') +
+        quizNav() +
+        '</div>';
+    } else {
+      var opts = (q.options || []).map(function (o, idx) {
+        var cls = 'exam-opt';
+        if (quiz.picked === idx) cls += o.ok ? ' right' : ' wrong';
+        else if (quiz.checked && o.ok) cls += ' reveal';
+        return '<button class="' + cls + '" data-act="quiz-pick" data-i="' + idx + '"' +
+          (quiz.checked ? ' disabled' : '') + '>' + esc(o.t) + '</button>';
+      }).join('');
+      body =
+        '<div class="card study-card">' +
+        (q.spoken
+          ? '<button class="icon-btn" data-say="' + esc(q.spoken) +
+            '" data-le="' + esc(YOUDAO_LE[q.le] || 'en') + '">' + ICON.sound + '</button>'
+          : '') +
+        '<div class="sw">' + esc(q.stem) + '</div>' +
+        '<div class="exam-opts">' + opts + '</div>' +
+        (quiz.checked
+          ? '<p class="lit-banner" style="text-align:center">' +
+            (quiz.results[quiz.qi] ? '✓ 答对' : '✗ 答错') + '</p>'
+          : '') +
+        quizNav() +
+        '</div>';
+    }
+    return head + body;
+  }
+
+  function quizNav() {
+    if (!quiz.checked) return '';
+    return '<div class="study-actions">' +
+      (quiz.qi + 1 >= quiz.qs.length
+        ? '<button class="btn" data-act="quiz-next">看成绩</button>'
+        : '<button class="btn" data-act="quiz-next">下一题</button>') +
+      '</div>';
   }
 
   // ---------- 路由 ----------
@@ -2876,6 +3016,9 @@
       document.body.classList.toggle('exam-focus', !!(exam && exam.phase === 'run'));
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
+    } else if (name === 'quiz') {
+      view.innerHTML = viewQuiz();
+      nav = 'study';
     } else if (name === 'copybook') {
       view.innerHTML = viewCopybook();
       nav = 'study';
@@ -2894,7 +3037,7 @@
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
-    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7, exam: 4 }[name] || 1;
+    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7, exam: 4, quiz: 4 }[name] || 1;
     var pn = $('pageNum');
     if (pn) pn.textContent = '— ' + pnum + ' —';
     if (pageChanged) window.scrollTo(0, 0); // 只在真正换页时回顶；页内操作保持滚动位置
@@ -2921,6 +3064,18 @@
           ev.preventDefault();
           var b = $('spellCheckBtn');
           if (b) b.click();
+        }
+      });
+    }
+
+    var qsi = $('quizSpell'); // 小测验拼写题：回车=检查
+    if (qsi) {
+      qsi.focus();
+      qsi.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          var qb = document.querySelector('[data-act="quiz-spell-check"]');
+          if (qb) qb.click();
         }
       });
     }
@@ -3102,6 +3257,44 @@
       logStamp();
       tableQuiz = null;
       route();
+    } else if (act === 'quiz-begin') { // 小测验：开始
+      quiz = {
+        qs: buildQuiz(quizSize), qi: 0, results: [],
+        picked: -1, checked: false, spellVal: '', spoken: null, logged: false
+      };
+      route();
+    } else if (act === 'quiz-pick') { // 小测验：选项题选答案
+      if (!quiz || quiz.checked) return;
+      var qz = quiz.qs[quiz.qi];
+      var qpi = parseInt(el.getAttribute('data-i'), 10);
+      quiz.picked = qpi;
+      quiz.checked = true;
+      quiz.results[quiz.qi] = !!(qz.options[qpi] && qz.options[qpi].ok);
+      route();
+    } else if (act === 'quiz-spell-check') { // 小测验：拼写题检查
+      if (!quiz || quiz.checked) return;
+      var qzs = quiz.qs[quiz.qi];
+      var qsi = $('quizSpell');
+      quiz.spellVal = qsi ? qsi.value : '';
+      quiz.checked = true;
+      quiz.results[quiz.qi] = quizSpellOk(qzs, quiz.spellVal);
+      route();
+    } else if (act === 'quiz-next') { // 小测验：下一题/看成绩
+      if (!quiz) return;
+      quiz.qi++;
+      quiz.picked = -1;
+      quiz.checked = false;
+      quiz.spellVal = '';
+      if (quiz.qi >= quiz.qs.length && !quiz.logged) {
+        quiz.logged = true;
+        logStamp(); // 完成一轮记打卡（对错不影响打卡）
+      }
+      route();
+      window.scrollTo(0, 0);
+    } else if (act === 'quiz-again') { // 小测验：再来一轮
+      quiz = null;
+      route();
+      window.scrollTo(0, 0);
     } else if (act === 'exam-pick-file') {
       var fi = $('examImportFile');
       if (fi) fi.click();
@@ -3309,6 +3502,14 @@
       if (!isNaN(n)) {
         sessionSize = Math.max(5, Math.min(100, n));
         lsSet('hedgehog:session-size', sessionSize);
+        route();
+      }
+    }
+    if (e.target && e.target.id === 'quizSizeInput') { // 小测验题数（5~50，默认 10）
+      var qn = parseInt(e.target.value, 10);
+      if (!isNaN(qn)) {
+        quizSize = Math.max(5, Math.min(50, qn));
+        lsSet('hedgehog:quiz-size', quizSize);
         route();
       }
     }
