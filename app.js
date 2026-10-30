@@ -25,7 +25,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-28.16'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-28.17'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2777,7 +2777,11 @@
           var a = exam.answers[si][qi];
           var hasText = (q2.writing || q2.fill) && typeof a === 'string' && a.trim() ||
             q2.writing && exam.texts && exam.texts[si] && (exam.texts[si][qi] || '').trim();
-          var cls = 'sheet-no' + (si === exam.secIdx && qi === exam.qi ? ' cur' : '') + (a >= 0 || hasText ? ' done' : '');
+          // 答题卡着色：答对=绿(done)，答错=红(wrong)，未答=白；写作自评不判错
+          var cls = 'sheet-no' + (si === exam.secIdx && qi === exam.qi ? ' cur' : '');
+          if (q2.writing) { if (hasText) cls += ' done'; }
+          else if (q2.fill) { if (hasText) cls += fillOk(q2, a) ? ' done' : ' wrong'; }
+          else if (a >= 0) { cls += (q2.options && q2.options[a] && q2.options[a].ok) ? ' done' : ' wrong'; }
           return '<button class="' + cls + '" data-act="exam-goto" data-si="' + si + '" data-qi="' + qi + '">' +
             (base + qi + 1) + '</button>';
         }).join('') + '</div>';
