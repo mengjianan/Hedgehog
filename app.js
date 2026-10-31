@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.7'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.8'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1066,13 +1066,35 @@
   var shRec = null;   // MediaRecorder 实例
   var shChunks = [];  // 录音片段
   var shURL = null;   // 回放 blob URL（回放后即弃）
+  // 是否安装版打开（iOS Safari 的 standalone + 安卓 PWA 的 display-mode；navigator.standalone 安卓上永远 undefined）
+  function isPWA() {
+    return navigator.standalone === true ||
+      !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+  // 查浏览器对本站麦克风权限的真实状态（granted/prompt/denied），驱动针对性提示
+  function micPermState() {
+    if (!navigator.permissions || !navigator.permissions.query) return Promise.resolve('unknown');
+    return navigator.permissions.query({ name: 'microphone' }).then(function (st) {
+      return st.state;
+    }).catch(function () { return 'unknown'; });
+  }
   function shRecord() {
     if (!window.isSecureContext && location.hostname !== 'localhost') { toast('非 HTTPS 环境无法录音 · 请用 https:// 打开'); return; }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('本机不支持录音'); return; }
-    // 安卓 PWA（添加到主屏幕）与 Chrome 站点权限是分开的——系统给浏览器的权限不传导给 PWA
-    if (navigator.standalone === true && /Android/i.test(navigator.userAgent)) {
-      toast('提示：PWA 的麦克风权限与浏览器分开 · 若被拒，请在 Chrome 浏览器里打开本站并允许麦克风');
-    }
+    micPermState().then(function (st) {
+      // 权限已被拒：先给「怎么改回来」的路，不再盲目弹系统框（弹了也直接失败）
+      if (st === 'denied') {
+        if (isPWA()) {
+          toast('安装版的麦克风权限和浏览器是分开的 · 请在 Chrome 浏览器里打开本站录音，或给桌面图标授权：长按图标→应用信息→权限→麦克风');
+        } else {
+          toast('本站麦克风权限已被拒 · 点地址栏锁图标→网站设置→麦克风→允许，然后重试');
+        }
+        return;
+      }
+      startRec();
+    });
+  }
+  function startRec() {
     // 安卓部分设备 MediaRecorder 默认 mimeType(audio/webm) 不支持 → 逐个探测回退
     var mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
     var chosenMime = '';
@@ -1105,17 +1127,21 @@
       }
       if (session) { session.shState = 'rec'; route(); }
     }, function (err) {
-      // 分错误类型给针对性提示（手机上失败常不是「拒绝」而是权限/占用/iOS PWA bug）
+      // 分错误类型给针对性提示（手机上失败常不是「拒绝」而是权限/占用/PWA 分权）
       var n = err && err.name;
       if (n === 'NotAllowedError') {
-        toast('麦克风被拒绝 · 安卓：设置→应用→浏览器→权限里开启麦克风；iOS：Safari 设置→麦克风');
+        if (isPWA()) {
+          toast('安装版拿不到麦克风 · 请在 Chrome 浏览器里打开本站录音，或长按桌面图标→应用信息→权限→麦克风');
+        } else {
+          toast('麦克风被拒 · 点地址栏锁图标→网站设置→麦克风→允许后重试');
+        }
       } else if (n === 'NotFoundError') {
         toast('找不到麦克风设备 · 请确认麦克风可用（没插耳机/没被占用）');
       } else if (n === 'NotReadableError' || n === 'AbortError') {
         toast('麦克风被占用 · 请关掉正在录音的 App（微信语音/电话）再试');
       } else if (n === 'SecurityError') {
         toast('非 HTTPS 环境无法录音 · 请用 https:// 打开本站');
-      } else if (navigator.standalone === true && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      } else if (isPWA() && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
         toast('iOS「添加到主屏幕」的 PWA 有录音 bug · 请在 Safari 浏览器里打开本站再录音');
       } else {
         toast('录音启动失败：' + (n || '未知错误') + ' · 可重试或换个浏览器');
