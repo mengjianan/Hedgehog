@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.10'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.11'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1094,15 +1094,20 @@
   }
   // 安卓部分设备 isTypeSupported 撒谎（声称支持但 start 抛错）→ 逐个格式尝试，全挂退回默认
   function makeRecorder(stream) {
-    var cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    // 构造 + start 一起试：安卓部分机型 isTypeSupported 撒谎（构造过、start 抛 TypeError）→ 该格式整体跳过
+    function tryStart(mime) {
+      var rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      rec.start();
+      return rec;
+    }
+    var cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', ''];
     for (var i = 0; i < cands.length; i++) {
       try {
-        if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(cands[i])) {
-          return { rec: new MediaRecorder(stream, { mimeType: cands[i] }), mime: cands[i] };
-        }
-      } catch (err) {} // 该格式构造也失败 → 试下一个
+        if (cands[i] && (!window.MediaRecorder || !MediaRecorder.isTypeSupported || !MediaRecorder.isTypeSupported(cands[i]))) continue;
+        return { rec: tryStart(cands[i]), mime: cands[i] };
+      } catch (err) {} // 该格式构造或 start 失败 → 试下一个（最后的 '' = 平台默认格式）
     }
-    try { return { rec: new MediaRecorder(stream), mime: '' }; } catch (err2) { return null; }
+    return null;
   }
   function startRec() {
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
@@ -1127,7 +1132,6 @@
           shStream = null;
           if (session) { session.shState = 'done'; route(); }
         };
-        shRec.start();
         // 发音评分（默认关）：并行跑 SpeechRecognition 识别你说的内容
         if (pronOn() && pronAvailable()) {
           var cur = IDX[session.queue[session.idx]];
@@ -1140,7 +1144,7 @@
         try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (er3) {}
         shRec = null;
         shStream = null;
-        toast('录音启动失败：' + ((er2 && er2.name) || er2) + ' · 麦克风已释放，再点一次试试');
+        toast('录音启动失败：' + ((er2 && er2.name) || er2) + (er2 && er2.message ? '（' + String(er2.message).slice(0, 60) + '）' : '') + ' · 再点一次试试');
       }
     }, function (err) {
       // 分错误类型给针对性提示（手机上失败常不是「拒绝」而是权限/占用/PWA 分权）
