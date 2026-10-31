@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.11'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.12'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1122,8 +1122,7 @@
         }
         var chosenMime = mk.mime;
         shRec = mk.rec;
-        shRec.stream = stream;
-        shStream = stream;
+        shStream = stream; // 流单独跟踪（MediaRecorder.stream 新版 Chrome 只读，赋值抛 TypeError）
         shRec.ondataavailable = function (ev) { if (ev.data && ev.data.size) shChunks.push(ev.data); };
         shRec.onstop = function () {
           if (shURL) URL.revokeObjectURL(shURL);
