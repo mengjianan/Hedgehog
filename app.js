@@ -18,7 +18,7 @@
   var SCRIPTS = []; // 雅思听力情景脚本库 [{id, lang, part, title, script, qs}]
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
-  var pickMode = 'card'; // 选厅模式：card 认卡 / spell 拼写
+  var pickMode = 'lr'; // 选厅模式：lr 听读 / ls 听说 / rw 读写（旧单动作模式已删，并入三复合）
   var sessionSize = lsGet('hedgehog:session-size', 10); // 每轮站数（#4 背词页可设）
   var autoNextSec = lsGet('hedgehog:auto-next', 0); // 自动下一题秒数：0=关（默认），5/10/15（批2 #1）
   var autoNextTimer = null;
@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-30.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -996,39 +996,7 @@
     );
   }
 
-  // 拼写模式卡片：看中文写词（系统手写输入可直接填入）
-  function spellCardHTML(e, ref) {
-    if (!session.spellChecked) {
-      return (
-        '<div class="card study-card spell">' +
-        '<div class="spell-hint">看中文，写出这个词</div>' +
-        '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
-        '<div class="spell-tools">' +
-        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
-        '<span class="tour-slot">可先听发音 · 支持手写输入</span></div>' +
-        '<div class="spell-row">' +
-        '<input id="spellInput" type="text" autocomplete="off" autocapitalize="none" ' +
-        'autocorrect="off" spellcheck="false" placeholder="输入或手写" />' +
-        '<button class="btn" id="spellCheckBtn" data-act="spell-check">检查</button>' +
-        '</div></div>'
-      );
-    }
-    return (
-      '<div class="card study-card spell">' +
-      '<div class="spell-result ' + (session.spellOk ? 'ok' : 'err') + '">' +
-      (session.spellOk ? '✓ 正确' : '✗ 不对') +
-      '</div>' +
-      '<div class="sw">' + esc(e.x.w) + '</div>' +
-      '<div class="sipa">' + esc(e.x.pron) + ' · ' + esc(e.x.zh) + '</div>' +
-      (session.spellOk
-        ? ''
-        : '<div class="spell-answer">正确答案：<b>' + esc(e.x.w) + '</b></div>') +
-      '<button class="btn" data-act="spell-next" style="margin-top:16px">下一站</button>' +
-      '</div>'
-    );
-  }
-
-  // 跟读卡片：播发音 → 录自己 → 回放对比 → 自评（录音回放后即弃，不落盘）
+  // 跟读卡片：播发音 → 录自己 → 回放对比 → 自评（录音回放后即弃，不落盘；听说模式第二步复用）
   function shadowCardHTML(e, ref) {
     var st = session.shState || 'idle'; // idle 待跟读 / rec 录音中 / done 回放对比
     var base =
@@ -1089,67 +1057,6 @@
   }
 
   // 搭配跟读卡片：播整个搭配短语 → 录自己跟读整块 → 回放对比 → 自评
-  function shadowColCardHTML(e, ref) {
-    var collos = (e.x.collo || []).filter(function (c) { return c && c.length > 2; });
-    if (!collos.length) {
-      return '<div class="card study-card shadow"><div class="spell-hint">这个词暂无搭配，跳过</div>' +
-        '<button class="btn" data-act="good" style="width:100%;margin-top:12px">下一站</button></div>';
-    }
-    // 本轮固定用第一个搭配
-    var phrase = collos[0];
-    var st = session.shState || 'idle';
-    var base =
-      '<div class="card study-card shadow">' +
-      '<div class="spell-hint">听整个搭配 → 跟读整块 → 回放对比</div>' +
-      '<div class="sw" style="font-size:26px;line-height:1.4">' + esc(phrase) + '</div>' +
-      '<div class="sipa">' + esc(e.x.w) + ' · ' + esc(e.x.zh) + '</div>' +
-      '<div class="spell-tools">' +
-      '<button class="icon-btn" data-act="shcol-play-native" data-ref="' + esc(ref) + '" data-phrase="' + esc(phrase) + '">' + ICON.sound + '</button>' +
-      '<span class="tour-slot">先听整块发音</span></div>';
-    if (st === 'idle') {
-      return base +
-        '<div class="study-actions">' +
-        '<button class="btn" data-act="sh-record">🎙 开始录音跟读</button>' +
-        '</div>' +
-        '<button class="btn ghost" data-act="blur" style="width:100%;margin-top:8px">先跳过（模糊）</button>' +
-        '</div>';
-    }
-    if (st === 'rec') {
-      return base +
-        '<div class="study-actions"><span class="tour-slot">● 录音中… 整块读出来</span></div>' +
-        '<button class="btn" data-act="sh-stop" style="width:100%;margin-top:10px">⏹ 停止并回放</button>' +
-        '</div>';
-    }
-    var pronHtml2 = '';
-    if (pronOn() && pronAvailable() && session.pronText != null) {
-      var said2 = session.pronText;
-      var hit2 = pronMatch(phrase, said2);
-      pronHtml2 =
-        '<div class="pron-line' + (hit2 ? ' ok' : '') + '">' +
-        '🗣 识别：<b>' + (said2 ? esc(said2) : '（没听清）') + '</b>' +
-        (hit2 ? ' ✓ 接近搭配' : ' · 再试一次？') + '</div>';
-    }
-    return base + pronHtml2 +
-      '<div class="spell-tools"><span class="tour-slot">🔊 回放你的跟读，和原声对比</span></div>' +
-      '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="sh-play">▶ 再听我的</button>' +
-      '<button class="btn ghost" data-act="sh-again">重录</button>' +
-      '</div>' +
-      '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
-      '<button class="btn" data-act="good">✓ 对了</button>' +
-      '</div>' +
-      pronToggleHTML() +
-      '</div>';
-  }
-
-  // 播搭配整块发音（Youdao 读整个短语）
-  function speakCol(ref, phrase) {
-    var e = IDX[ref];
-    if (!e) return;
-    playAudio(phrase, YOUDAO_LE[e.l.lang] || 'en', phrase, e);
-  }
-
   var shRec = null;   // MediaRecorder 实例
   var shChunks = [];  // 录音片段
   var shURL = null;   // 回放 blob URL（回放后即弃）
@@ -1264,82 +1171,7 @@
     return s.indexOf(head) >= 0;
   }
 
-  // 听力理解卡片：先播发音（不显示文字）→ 猜词义 → 显示答案自评
-  function listeningCardHTML(e, ref) {
-    if (!session.liOpts) {
-      // 生成 4 个中文义选项：正确义 + 3 个同词性/同场景干扰
-      var used = {};
-      var dis = pickDis3(e.x, e.l.words, used, e.l.id, function (x) { return x.zh; });
-      var opts = dis.map(function (d) { return { t: d, ok: false }; });
-      opts.push({ t: e.x.zh, ok: true });
-      session.liOpts = shuffle(opts);
-      session.liChecked = false;
-    }
-    var optsHtml = session.liOpts.map(function (o, idx) {
-      var cls = 'exam-opt';
-      if (session.liChecked) {
-        if (o.ok) cls += ' reveal';
-        else if (session.liPicked === idx) cls += ' wrong';
-      }
-      return '<button class="' + cls + '" data-act="li-pick" data-i="' + idx + '"' +
-        (session.liChecked ? ' disabled' : '') + '>' + esc(o.t) + '</button>';
-    }).join('');
-    return (
-      '<div class="card study-card listen">' +
-      '<div class="spell-hint">听发音 · 选出正确的中文意思</div>' +
-      '<div class="spell-tools">' +
-      '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
-      '<span class="tour-slot">先听发音，不看文字</span></div>' +
-      (session.liChecked
-        ? '<div class="sw" style="margin-top:8px">' + esc(e.x.w) + '</div>' +
-          '<div class="sipa">' + esc(e.x.pron) + '</div>' +
-          (session.liOk ? '' : '<div class="spell-answer">正确：' + esc(e.x.zh) + '</div>')
-        : '') +
-      '<div class="exam-opts">' + optsHtml + '</div>' +
-      (session.liChecked
-        ? '<div class="study-actions">' +
-          '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
-          '<button class="btn" data-act="good">✓ 认识</button>' +
-          '</div>'
-        : '') +
-      '</div>'
-    );
-  }
-
-  // 书写模式卡片：凭记忆手写 → 与答案并排比对 → 自评
-  function writeCardHTML(e, ref) {
-    if (!session.wmCompare) {
-      return (
-        '<div class="card study-card write">' +
-        '<div class="spell-hint">凭记忆在板子上手写这个词</div>' +
-        '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
-        '<div class="spell-tools">' +
-        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
-        '<span class="tour-slot">听发音可选 · 写完点比对</span></div>' +
-        '<canvas id="wmCanvas" width="720" height="300"></canvas>' +
-        '<div class="cb-tools">' +
-        '<button class="btn" data-act="wm-done">写好了 · 比对</button>' +
-        '<button class="btn ghost" data-act="wm-clear">清一下</button>' +
-        '</div></div>'
-      );
-    }
-    return (
-      '<div class="card study-card write">' +
-      '<div class="wm-compare">' +
-      '<figure class="wm-ours"><figcaption>你写的</figcaption>' +
-      (session.wmShot ? '<img src="' + session.wmShot + '" alt="我的书写" />' : '') +
-      '</figure>' +
-      '<figure class="wm-model"><figcaption>正确答案</figcaption>' +
-      '<div class="write-model">' + esc(e.x.w) + '</div>' +
-      '<div class="sipa">' + esc(e.x.pron) + '</div>' +
-      '</figure></div>' +
-      '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
-      '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="wm-again">✗ 再练</button>' +
-      '<button class="btn" data-act="wm-good">✓ 对了</button>' +
-      '</div></div>'
-    );
-  }
+  // （旧「听力/拼写/书写/搭配」单动作卡片已删：动作并入三复合模式 compositeCardHTML）
 
   // 三复合模式（批2 A）：听读 lr / 听说 ls / 读写 rw —— 两动作串联，最后一个词一次判
   function compositeCardHTML(e, ref) {
@@ -1357,7 +1189,50 @@
           '</div></div>'
         );
       }
-      if (!session.spellChecked) { // 写：看中文默写，检查只判对错不进站
+      // 写：键盘输入 或 手写板（可切换），写完一起判
+      var pad = session.rwPad || 'kb';
+      var padSeg =
+        '<div class="seg-ctl">' +
+        '<button type="button" class="seg tiny' + (pad === 'kb' ? ' on' : '') +
+        '" data-act="rw-pad" data-pad="kb">⌨ 键盘</button>' +
+        '<button type="button" class="seg tiny' + (pad === 'hw' ? ' on' : '') +
+        '" data-act="rw-pad" data-pad="hw">✍ 手写板</button>' +
+        '</div>';
+      if (pad === 'hw') {
+        if (session.wmCompare) { // 手写完 → 与答案并排比对 → 一起判
+          return (
+            '<div class="card study-card write">' +
+            '<div class="wm-compare">' +
+            '<figure class="wm-ours"><figcaption>你写的</figcaption>' +
+            (session.wmShot ? '<img src="' + session.wmShot + '" alt="我的书写" />' : '') +
+            '</figure>' +
+            '<figure class="wm-model"><figcaption>正确答案</figcaption>' +
+            '<div class="write-model">' + esc(e.x.w) + '</div>' +
+            '<div class="sipa">' + esc(e.x.pron) + '</div>' +
+            '</figure></div>' +
+            '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
+            '<div class="study-actions">' +
+            '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+            '<button class="btn" data-act="good">✓ 认识</button>' +
+            '</div></div>'
+          );
+        }
+        return (
+          '<div class="card study-card write">' +
+          '<div class="spell-hint">凭记忆在板子上手写这个词</div>' +
+          '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
+          '<div class="spell-tools">' +
+          '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
+          '<span class="tour-slot">听发音可选 · 写完点比对</span></div>' +
+          padSeg +
+          '<canvas id="rwCanvas" width="720" height="300"></canvas>' +
+          '<div class="cb-tools">' +
+          '<button class="btn" data-act="rw-done">写好了 · 比对</button>' +
+          '<button class="btn ghost" data-act="rw-clear">清一下</button>' +
+          '</div></div>'
+        );
+      }
+      if (!session.spellChecked) { // 键盘默写：检查只判对错不进站
         return (
           '<div class="card study-card spell">' +
           '<div class="spell-hint">看中文，写出这个词</div>' +
@@ -1365,14 +1240,15 @@
           '<div class="spell-tools">' +
           '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
           '<span class="tour-slot">可先听发音</span></div>' +
+          padSeg +
           '<div class="spell-row">' +
           '<input id="cpSpellInput" type="text" autocomplete="off" autocapitalize="none" ' +
-          'autocorrect="off" spellcheck="false" placeholder="输入或手写" />' +
+          'autocorrect="off" spellcheck="false" placeholder="输入单词" />' +
           '<button class="btn" data-act="cp-check">检查</button>' +
           '</div></div>'
         );
       }
-      return ( // 读写都做完 → 一起判
+      return ( // 键盘检查完 → 一起判
         '<div class="card study-card spell">' +
         '<div class="spell-result ' + (session.spellOk ? 'ok' : 'err') + '">' +
         (session.spellOk ? '✓ 写对了' : '✗ 不对') + '</div>' +
@@ -1426,18 +1302,6 @@
       var dueN = dueRefsNow().length;
       var modeSeg =
         '<div class="seg-ctl">' +
-        '<button type="button" class="seg' + (pickMode === 'card' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="card">认卡</button>' +
-        '<button type="button" class="seg' + (pickMode === 'listen' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="listen">听力</button>' +
-        '<button type="button" class="seg' + (pickMode === 'shadow' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="shadow">跟读</button>' +
-        '<button type="button" class="seg' + (pickMode === 'shadowcol' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="shadowcol">搭配</button>' +
-        '<button type="button" class="seg' + (pickMode === 'spell' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="spell">拼写</button>' +
-        '<button type="button" class="seg' + (pickMode === 'write' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="write">书写</button>' +
         '<button type="button" class="seg' + (pickMode === 'lr' ? ' on' : '') +
         '" data-act="set-mode" data-mode="lr">听读</button>' +
         '<button type="button" class="seg' + (pickMode === 'ls' ? ' on' : '') +
@@ -1445,14 +1309,14 @@
         '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
         '" data-act="set-mode" data-mode="rw">读写</button>' +
         '</div>';
-      // 自动下一题（批2 #1）：仅「已显示词感」的认卡状态触发，自动判认识进站
+      // 自动下一题（批2 #1）：复合模式判分页（good/blur 出现时）倒计时自动判认识进站
       var autoSeg =
         '<div class="size-row">自动下一题 ' +
         [[0, '关'], [5, '5秒'], [10, '10秒'], [15, '15秒']].map(function (p) {
           return '<button type="button" class="seg tiny' + (autoNextSec === p[0] ? ' on' : '') +
             '" data-act="set-auto-next" data-sec="' + p[0] + '">' + p[1] + '</button>';
         }).join('') +
-        ' <small>开启后认卡「已显示词感」倒计时自动判认识</small></div>';
+        ' <small>开启后到判分页倒计时自动判认识</small></div>';
       var cards = '';
       if (dueN) {
         cards +=
@@ -1468,12 +1332,26 @@
         '<small>从巡游词库抽题 · 题数可自定义</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
         '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
-      var scenes = sceneLists();
+      var scenes = sceneLists().filter(function (l) {
+        return sceneLang === 'all' || l.lang === sceneLang;
+      });
       var cores = coreLists();
       var groups = '';
-      if (scenes.length) {
+      if (sceneLists().length) {
+        // 语言筛选 chips（与词库页共用 sceneLang 状态与 scene-filter 动作）
+        var sceneChips =
+          '<div class="filter-chips">' +
+          [['all', '全部'], ['en', '英语'], ['ko', '韩语'], ['ja', '日语']]
+            .map(function (p) {
+              return (
+                '<button class="fchip' + (sceneLang === p[0] ? ' on' : '') +
+                '" data-act="scene-filter" data-lang="' + p[0] + '">' + p[1] + '</button>'
+              );
+            })
+            .join('') +
+          '</div>';
         groups +=
-          '<p class="picker-h">场景厅 · 巡游点灯</p>' +
+          '<p class="picker-h">场景厅 · 巡游点灯</p>' + sceneChips +
           '<div class="wordlist">' + scenes.map(pickBtn).join('') + '</div>';
       }
       if (cores.length) {
@@ -1517,15 +1395,10 @@
     }
     var ref = session.queue[session.idx];
     var e = IDX[ref];
-    var x = e.x;
     var l = e.l;
     var pct = Math.round((session.idx / session.queue.length) * 100);
     var kindLabel =
       session.kind === 'review' ? '今日复习' : session.kind === 'mix' ? '串门混考' : '巡游中';
-    var slotNote =
-      '<span class="tour-slot">' + esc(l.title.replace(/（.*?）/, '')) +
-      (isScene(l) ? ' · No.' + (l.words.indexOf(x) + 1) + ' 展台' : '') +
-      '</span> ';
     var head =
       '<h2>巡游</h2>' +
       '<div class="study-meta"><span>' + kindLabel + ' · ' + esc(l.title.replace(/（.*?）/, '')) +
@@ -1535,45 +1408,17 @@
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
-    if (session.mode === 'shadow') return head + shadowCardHTML(e, ref);
-    if (session.mode === 'shadowcol') return head + shadowColCardHTML(e, ref);
-    if (session.mode === 'listen') return head + listeningCardHTML(e, ref);
-    if (session.mode === 'spell') return head + spellCardHTML(e, ref);
-    if (session.mode === 'write') return head + writeCardHTML(e, ref);
-    if (session.mode === 'lr' || session.mode === 'ls' || session.mode === 'rw') {
-      return head + compositeCardHTML(e, ref);
-    }
+    // 只剩三复合模式（旧认卡/听力/跟读/搭配/拼写/书写单动作模式已删）
+    return head + compositeCardHTML(e, ref);
+  }
 
-    if (!session.revealed) {
-      return (
-        head +
-        '<div class="card study-card">' +
-        slotNote +
-        '<div class="sw">' + esc(x.w) + '</div>' +
-        '<div class="sipa">' + esc(x.pron) + '</div>' +
-        '<div class="study-actions">' +
-        '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
-        '</div>' +
-        '<button class="btn" data-act="reveal" style="margin-top:14px">显示词感</button>' +
-        '</div>'
-      );
-    }
-    var collo = (x.collo || []).map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('');
-    return (
-      head +
-      '<div class="card study-card">' +
-      slotNote +
-      '<div class="sw">' + esc(x.w) + '</div>' +
-      '<div class="sipa">' + esc(x.pron) + ' · ' + esc(x.zh) + '</div>' +
-      '<div class="study-back">' +
-      '<div class="entry-section"><span class="entry-label">词感</span><p style="text-align:left">' + esc(x.sense) + '</p></div>' +
-      '<div class="entry-section"><span class="entry-label">搭配</span><div class="collo">' + collo + '</div></div>' +
-      '</div>' +
-      '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="blur">模糊</button>' +
-      '<button class="btn" data-act="good">认识</button>' +
-      '</div></div>'
-    );
+  // 判分页判定：good/blur 按钮出现的状态（滑动手势/自动下一题只在此触发）
+  function atJudgeStep() {
+    if (!session) return false;
+    if (session.mode === 'lr') return (session.cpStep || 0) >= 1;
+    if (session.mode === 'rw') return !!(session.spellChecked || session.wmCompare);
+    if (session.mode === 'ls') return session.shState === 'done';
+    return false;
   }
 
   // 开一轮：kind = normal(按厅) / review(今日到期) / mix(串门混考)
@@ -1611,14 +1456,14 @@
       idx: 0,
       good: 0,
       bad: 0,
-      mode: opts.mode || 'card',
+      mode: opts.mode || 'lr',
       kind: opts.kind || 'normal',
       listId: opts.listId || null,
-      revealed: false,
       spellChecked: false,
       spellOk: false,
       wmCompare: false,
       wmShot: null,
+      rwPad: lsGet('hedgehog:rw-pad', 'kb'), // 读写模式书写方式：kb 键盘 / hw 手写板
       logged: false,
       cpStep: 0,
       cpListened: null,
@@ -1643,7 +1488,6 @@
 
   function advanceSession() {
     session.idx++;
-    session.revealed = false;
     session.spellChecked = false;
     session.spellOk = false;
     session.wmCompare = false;
@@ -1652,10 +1496,6 @@
     session.cpStep = 0; // 复合模式：换站回第一步
     session.cpListened = null;
     shDispose(); // 跟读录音即弃：换站时释放 blob
-    session.liOpts = null; // 听力理解：换站重新生成选项
-    session.liChecked = false;
-    session.liPicked = -1;
-    session.liOk = false;
     if (session.idx >= session.queue.length && !session.logged) {
       session.logged = true;
       logStamp();
@@ -1817,7 +1657,7 @@
   }
 
   function initCanvas() {
-    var cv = $('cbCanvas') || $('wmCanvas');
+    var cv = $('cbCanvas') || $('wmCanvas') || $('rwCanvas');
     if (!cv) return;
     var ctx = cv.getContext('2d');
     ctx.fillStyle = '#fdfbf4';
@@ -3202,18 +3042,6 @@
       q.addEventListener('input', function () { renderResults(q.value); });
     }
 
-    var si = $('spellInput');
-    if (si) {
-      si.focus();
-      si.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Enter') {
-          ev.preventDefault();
-          var b = $('spellCheckBtn');
-          if (b) b.click();
-        }
-      });
-    }
-
     var qsi = $('quizSpell'); // 小测验拼写题：回车=检查
     if (qsi) {
       qsi.focus();
@@ -3270,12 +3098,11 @@
 
     initCanvas();
 
-    // 自动下一题（批2 #1）：仅认卡「已显示词感」状态计时，到点自动判认识进站
+    // 自动下一题（批2 #1）：仅复合模式判分页（good/blur 出现）计时，到点自动判认识进站
     if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = null; }
-    if (autoNextSec > 0 && session && session.mode === 'card' && session.revealed &&
-        session.idx < session.queue.length) {
+    if (autoNextSec > 0 && atJudgeStep() && session.idx < session.queue.length) {
       autoNextTimer = setTimeout(function () {
-        if (!session || session.mode !== 'card' || !session.revealed) return;
+        if (!atJudgeStep()) return;
         recordStudy(true); // 自动判认识
         advanceSession();
         route();
@@ -3313,13 +3140,12 @@
     }
   }
 
-  // ---------- 认卡手势（批2 #1，只绑一次）：上滑=模糊、下滑=认识 ----------
-  // 仅在认卡「已显示词感」状态生效；拼写/书写/听力等模式不启用（无 revealed 即不触发）
+  // ---------- 判分页手势（批2 #1，只绑一次）：上滑=模糊、下滑=认识 ----------
+  // 仅在复合模式判分页（good/blur 出现）生效；听/写进行中不启用
   var sw = { y0: 0, dy: 0, on: false, card: null };
   var SWIPE_TH = 80; // 阈值像素
   function swipeOK() {
-    return session && session.mode === 'card' && session.revealed &&
-      session.idx < session.queue.length;
+    return atJudgeStep() && session.idx < session.queue.length;
   }
   $('view').addEventListener('touchstart', function (e) {
     if (!swipeOK() || e.touches.length !== 1) { sw.on = false; return; }
@@ -3551,9 +3377,6 @@
     } else if (act === 'study-home') {
       session = null;
       route();
-    } else if (act === 'reveal') {
-      session.revealed = true;
-      route();
     } else if (act === 'good' || act === 'blur') {
       recordStudy(act === 'good');
       advanceSession();
@@ -3562,24 +3385,29 @@
       if (!session) return;
       session.cpStep = (session.cpStep || 0) + 1;
       route();
-    } else if (act === 'cp-check') { // 复合模式·读写：检查只判对错，进站由 good/blur 一起判
+    } else if (act === 'cp-check') { // 复合模式·读写键盘：检查只判对错，进站由 good/blur 一起判
       if (!session || session.spellChecked) return;
       var cpi = $('cpSpellInput');
       var cpx = IDX[session.queue[session.idx]];
       session.spellOk = checkSpelling(cpi ? cpi.value : '', cpx.x);
       session.spellChecked = true;
       route();
+    } else if (act === 'rw-pad') { // 复合模式·读写：切换键盘/手写板
+      if (!session) return;
+      session.rwPad = el.getAttribute('data-pad') === 'hw' ? 'hw' : 'kb';
+      lsSet('hedgehog:rw-pad', session.rwPad);
+      route();
+    } else if (act === 'rw-done') { // 复合模式·读写手写板：写好比对（截图并排，不自动进站）
+      if (!session) return;
+      var rwc = $('rwCanvas');
+      session.wmShot = rwc ? rwc.toDataURL('image/jpeg', 0.6) : null;
+      session.wmCompare = true;
+      route();
+    } else if (act === 'rw-clear') {
+      clearPad('rwCanvas');
     } else if (act === 'set-auto-next') { // 自动下一题秒数（0=关）
       autoNextSec = parseInt(el.getAttribute('data-sec'), 10) || 0;
       lsSet('hedgehog:auto-next', autoNextSec);
-      route();
-    } else if (act === 'li-pick') { // 听力理解：选词义
-      if (!session || session.liChecked) return;
-      var liI = parseInt(el.getAttribute('data-i'), 10);
-      session.liPicked = liI;
-      session.liOk = !!(session.liOpts[liI] && session.liOpts[liI].ok);
-      session.liChecked = true;
-      recordStudy(session.liOk);
       route();
     } else if (act === 'sh-record') {
       shRecord();
@@ -3590,21 +3418,9 @@
     } else if (act === 'sh-again') {
       shDispose();
       if (session) { session.shState = 'idle'; route(); }
-    } else if (act === 'shcol-play-native') { // 搭配跟读：播整块原声
-      speakCol(el.getAttribute('data-ref'), el.getAttribute('data-phrase'));
     } else if (act === 'pron-toggle') { // 发音评分开关（默认关）
       if (!pronOn() && !confirm('开启后识别发音需要联网：你说的音频会发送给 Google 服务器。\n只用于跟读打分，不保存。确定开启？')) return;
       setPron(!pronOn());
-      route();
-    } else if (act === 'spell-check') {
-      var si = $('spellInput');
-      var sent = IDX[session.queue[session.idx]];
-      session.spellOk = checkSpelling(si ? si.value : '', sent.x);
-      session.spellChecked = true;
-      recordStudy(session.spellOk);
-      route();
-    } else if (act === 'spell-next') {
-      advanceSession();
       route();
     } else if (act === 'save-sent') {
       var ta = $('sentInput');
@@ -3614,21 +3430,8 @@
       lsSet('hedgehog:sentences', sentMap);
       var sh = $('sentHint');
       if (sh) sh.textContent = ta && ta.value.trim() ? '已保存到本机 ✓' : '已清空';
-    } else if (act === 'wm-done') {
-      var wmc = $('wmCanvas');
-      session.wmShot = wmc ? wmc.toDataURL('image/jpeg', 0.6) : null;
-      session.wmCompare = true;
-      route();
-    } else if (act === 'wm-clear') {
+    } else if (act === 'wm-clear') { // 词页书写练习板清空（读写模式手写板用 rw-clear）
       clearPad('wmCanvas');
-    } else if (act === 'wm-good') {
-      recordStudy(true);
-      advanceSession();
-      route();
-    } else if (act === 'wm-again') {
-      recordStudy(false);
-      advanceSession();
-      route();
     } else if (act === 'export-data') {
       var dump = {};
       Object.keys(localStorage).forEach(function (k) {
