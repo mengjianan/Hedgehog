@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.8'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.9'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1071,28 +1071,25 @@
     return navigator.standalone === true ||
       !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   }
-  // 查浏览器对本站麦克风权限的真实状态（granted/prompt/denied），驱动针对性提示
+  // 查浏览器对本站麦克风权限的真实状态（granted/prompt/denied），只在失败路径用来细化提示。
+  // 必须 try/catch：不少安卓浏览器 permissions.query 对 microphone 同步抛 TypeError，会把整个点击处理链炸掉（按钮静默无反应）
   function micPermState() {
-    if (!navigator.permissions || !navigator.permissions.query) return Promise.resolve('unknown');
-    return navigator.permissions.query({ name: 'microphone' }).then(function (st) {
-      return st.state;
-    }).catch(function () { return 'unknown'; });
+    try {
+      if (!navigator.permissions || !navigator.permissions.query) return Promise.resolve('unknown');
+      return Promise.resolve(navigator.permissions.query({ name: 'microphone' }))
+        .then(function (st) { return (st && st.state) || 'unknown'; })
+        .catch(function () { return 'unknown'; });
+    } catch (err) { return Promise.resolve('unknown'); }
   }
   function shRecord() {
-    if (!window.isSecureContext && location.hostname !== 'localhost') { toast('非 HTTPS 环境无法录音 · 请用 https:// 打开'); return; }
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('本机不支持录音'); return; }
-    micPermState().then(function (st) {
-      // 权限已被拒：先给「怎么改回来」的路，不再盲目弹系统框（弹了也直接失败）
-      if (st === 'denied') {
-        if (isPWA()) {
-          toast('安装版的麦克风权限和浏览器是分开的 · 请在 Chrome 浏览器里打开本站录音，或给桌面图标授权：长按图标→应用信息→权限→麦克风');
-        } else {
-          toast('本站麦克风权限已被拒 · 点地址栏锁图标→网站设置→麦克风→允许，然后重试');
-        }
-        return;
-      }
+    try {
+      if (!window.isSecureContext && location.hostname !== 'localhost') { toast('非 HTTPS 环境无法录音 · 请用 https:// 打开'); return; }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('本机不支持录音'); return; }
+      // 必须在点击的同步链路里直接调 getUserMedia：放进 promise 回调会丢用户手势，部分浏览器直接静默拒绝
       startRec();
-    });
+    } catch (err) {
+      toast('录音启动异常：' + ((err && err.name) || err)); // 兜底：任何同步异常不再静默
+    }
   }
   function startRec() {
     // 安卓部分设备 MediaRecorder 默认 mimeType(audio/webm) 不支持 → 逐个探测回退
