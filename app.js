@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.9'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.10'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1066,6 +1066,7 @@
   var shRec = null;   // MediaRecorder 实例
   var shChunks = [];  // 录音片段
   var shURL = null;   // 回放 blob URL（回放后即弃）
+  var shStream = null; // 麦克风流（stop 兜底释放，防浏览器一直显示在录音）
   // 是否安装版打开（iOS Safari 的 standalone + 安卓 PWA 的 display-mode；navigator.standalone 安卓上永远 undefined）
   function isPWA() {
     return navigator.standalone === true ||
@@ -1091,38 +1092,56 @@
       toast('录音启动异常：' + ((err && err.name) || err)); // 兜底：任何同步异常不再静默
     }
   }
-  function startRec() {
-    // 安卓部分设备 MediaRecorder 默认 mimeType(audio/webm) 不支持 → 逐个探测回退
-    var mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
-    var chosenMime = '';
-    for (var mi = 0; mi < mimeCandidates.length; mi++) {
-      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(mimeCandidates[mi])) { chosenMime = mimeCandidates[mi]; break; }
-    }
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      shChunks = [];
+  // 安卓部分设备 isTypeSupported 撒谎（声称支持但 start 抛错）→ 逐个格式尝试，全挂退回默认
+  function makeRecorder(stream) {
+    var cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (var i = 0; i < cands.length; i++) {
       try {
-        shRec = chosenMime ? new MediaRecorder(stream, { mimeType: chosenMime }) : new MediaRecorder(stream);
-      } catch (er) {
-        stream.getTracks().forEach(function (t) { t.stop(); });
-        toast('录音格式不受支持（NotSupportedError）· 请换 Chrome 浏览器');
-        return;
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(cands[i])) {
+          return { rec: new MediaRecorder(stream, { mimeType: cands[i] }), mime: cands[i] };
+        }
+      } catch (err) {} // 该格式构造也失败 → 试下一个
+    }
+    try { return { rec: new MediaRecorder(stream), mime: '' }; } catch (err2) { return null; }
+  }
+  function startRec() {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      // 成功回调里的异常不会进下面的失败回调（会静默 unhandledrejection：浏览器在录、界面不动）→ 整体兜底
+      try {
+        shChunks = [];
+        var mk = makeRecorder(stream);
+        if (!mk) {
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          toast('录音格式不受支持 · 请换 Chrome 浏览器');
+          return;
+        }
+        var chosenMime = mk.mime;
+        shRec = mk.rec;
+        shRec.stream = stream;
+        shStream = stream;
+        shRec.ondataavailable = function (ev) { if (ev.data && ev.data.size) shChunks.push(ev.data); };
+        shRec.onstop = function () {
+          if (shURL) URL.revokeObjectURL(shURL);
+          shURL = URL.createObjectURL(new Blob(shChunks, { type: chosenMime || 'audio/webm' }));
+          try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (er) {}
+          shStream = null;
+          if (session) { session.shState = 'done'; route(); }
+        };
+        shRec.start();
+        // 发音评分（默认关）：并行跑 SpeechRecognition 识别你说的内容
+        if (pronOn() && pronAvailable()) {
+          var cur = IDX[session.queue[session.idx]];
+          session.pronText = null;
+          pronStart((cur && cur.l.speech) || 'en-US');
+        }
+        if (session) { session.shState = 'rec'; route(); }
+      } catch (er2) {
+        // 中途失败：释放麦克风（否则浏览器一直显示在录音），给出可行动的提示
+        try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (er3) {}
+        shRec = null;
+        shStream = null;
+        toast('录音启动失败：' + ((er2 && er2.name) || er2) + ' · 麦克风已释放，再点一次试试');
       }
-      shRec.stream = stream;
-      shRec.ondataavailable = function (ev) { if (ev.data && ev.data.size) shChunks.push(ev.data); };
-      shRec.onstop = function () {
-        if (shURL) URL.revokeObjectURL(shURL);
-        shURL = URL.createObjectURL(new Blob(shChunks, { type: chosenMime || 'audio/webm' }));
-        try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (er) {}
-        if (session) { session.shState = 'done'; route(); }
-      };
-      shRec.start();
-      // 发音评分（默认关）：并行跑 SpeechRecognition 识别你说的内容
-      if (pronOn() && pronAvailable()) {
-        var cur = IDX[session.queue[session.idx]];
-        session.pronText = null;
-        pronStart((cur && cur.l.speech) || 'en-US');
-      }
-      if (session) { session.shState = 'rec'; route(); }
     }, function (err) {
       // 分错误类型给针对性提示（手机上失败常不是「拒绝」而是权限/占用/PWA 分权）
       var n = err && err.name;
@@ -1147,7 +1166,14 @@
   }
   function shStop() {
     pronStop(); // 关发音识别（若开了）
-    if (shRec && shRec.state !== 'inactive') { shRec.stop(); shRec = null; }
+    if (shRec && shRec.state !== 'inactive') {
+      shRec.stop(); // 正常路径：onstop 里收尾并释放流
+      shRec = null;
+    } else if (shStream) {
+      // 卡死兜底：没有活跃 recorder 但流还开着（浏览器仍显示在录音）→ 直接释放
+      try { shStream.getTracks().forEach(function (t) { t.stop(); }); } catch (er) {}
+      shStream = null;
+    }
   }
   function shPlay() {
     if (!shURL) { toast('还没有录音'); return; }
@@ -1156,6 +1182,10 @@
   }
   function shDispose() {
     if (shURL) { URL.revokeObjectURL(shURL); shURL = null; }
+    if (shStream) { // 换站时若流还开着（录音中断跳站），强制释放麦克风
+      try { shStream.getTracks().forEach(function (t) { t.stop(); }); } catch (er) {}
+      shStream = null;
+    }
     shChunks = [];
   }
 
