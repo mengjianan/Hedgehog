@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1321,21 +1321,19 @@
             '" data-act="set-auto-next" data-sec="' + p[0] + '">' + p[1] + '</button>';
         }).join('') +
         ' <small>开启后到判分页倒计时自动判认识</small></div>';
-      var cards = '';
+      // 入口卡一行 4 个小框（紧凑，不带描述行）
+      var cards = '<div class="entry-row">';
       if (dueN) {
         cards +=
           '<button class="entry-card review" data-act="start-study" data-kind="review">' +
-          '<b>今日复习 · ' + Math.min(dueN, sessionSize) + ' 站</b>' +
-          '<small>到期的词自动回到这里 · 记忆间隔 1 / 3 / 7 / 15 天</small></button>';
+          '<b>今日复习</b><small>↻' + Math.min(dueN, sessionSize) + ' 站</small></button>';
       }
       cards +=
         '<button class="entry-card" data-act="start-study" data-kind="mix">' +
-        '<b>串门混考</b>' +
-        '<small>随机跨厅抽 ' + sessionSize + ' 站 · 交错练习记得更牢</small></button>' +
-        '<a class="entry-card" href="#/quiz"><b>小测验</b>' +
-        '<small>从巡游词库抽题 · 题数可自定义</small></a>' +
-        '<a class="entry-card" href="#/copybook"><b>练字本</b>' +
-        '<small>画板写写贴贴 · 字形肌肉记忆</small></a>';
+        '<b>串门混考</b><small>抽' + sessionSize + '站</small></button>' +
+        '<a class="entry-card" href="#/quiz"><b>小测验</b><small>混合出题</small></a>' +
+        '<a class="entry-card" href="#/copybook"><b>练字本</b><small>写写贴贴</small></a>' +
+        '</div>';
       var scenes = sceneLists().filter(function (l) {
         return sceneLang === 'all' || l.lang === sceneLang;
       });
@@ -1369,8 +1367,9 @@
       return (
         '<h2>巡游</h2>' +
         '<p class="sub">先选模式，再选出发点 · 每轮 ' + sessionSize + ' 站 · 进度存在本机</p>' +
+        weeklyHTML() +
         sizeRow +
-        modeSeg + autoSeg + cards + groups + weeklyHTML()
+        modeSeg + autoSeg + cards + groups
       );
     }
     if (session.idx >= session.queue.length) {

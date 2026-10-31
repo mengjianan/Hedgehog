@@ -1108,6 +1108,22 @@ button.mini-card { cursor: pointer; font: inherit; text-align: left; color: var(
 .entry-card small { color: var(--mut); font-size: 12.5px; }
 .entry-card.review { border-left-color: var(--sage); background: #fbfdf9; }
 
+/* 巡游入口卡一行 4 框（紧凑）：只作用于 .entry-row 内，考场选卷的 entry-card 不受影响 */
+.entry-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.entry-row .entry-card {
+  margin-top: 0;
+  padding: 10px 8px;
+  text-align: center;
+  border-left-width: 3px;
+}
+.entry-row .entry-card b { font-size: 13px; letter-spacing: 0.02em; }
+.entry-row .entry-card small { display: block; margin-top: 2px; font-size: 11px; }
+
 /* 复习角标 */
 .due-b { color: #a56a32; font-weight: 600; white-space: nowrap; }
 
