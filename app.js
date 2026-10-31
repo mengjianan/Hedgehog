@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -971,7 +971,7 @@
   }
 
   function pickBtn(l) {
-    // 场景厅按钮与词库一致：按全库该场景词算待学数（#2）
+    // 出发卡与词库页场景厅卡片同款 mini-card（en/b/small 三行，lang 左边线）；按全库该场景词算待学数（#2）
     var pend;
     if (isScene(l)) {
       var k = known();
@@ -988,9 +988,13 @@
         ? '待学 ' + pend + ' 词'
         : '已全会 · 可复习';
     if (dc) sub += ' · ↻' + dc + ' 待复习';
+    var en = isScene(l)
+      ? (l.enName || '')
+      : String(l.id || '').toUpperCase().replace(/-/g, ' ');
     return (
-      '<button class="word-chip' + (isScene(l) && isLit(l) ? ' lit' : '') + '" ' +
+      '<button class="mini-card lang-' + l.lang + '" ' +
       'data-act="start-study" data-kind="normal" data-list="' + l.id + '">' +
+      '<span class="en">' + esc(en) + '</span>' +
       '<b>' + esc(l.title.replace(/（.*?）/, '')) + '</b>' +
       '<small>' + sub + '</small></button>'
     );

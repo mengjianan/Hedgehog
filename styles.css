@@ -729,6 +729,8 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 
 /* 场景厅语言筛选 */
 .filter-chips { display: flex; gap: 8px; margin-top: -6px; flex-wrap: wrap; }
+/* 背词页 chips 挂在 picker-h 后：picker-h 下边距小，-6px 会顶进标题文字，恢复正间距 */
+.picker-h + .filter-chips { margin-top: 8px; }
 .fchip {
   font-size: 13px;
   color: var(--mut);
@@ -814,6 +816,8 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .mini-card b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: 0.06em; margin: 1px 0; }
 .mini-card small { color: var(--mut); font-size: 12px; }
+/* 背词页出发卡是 button 形态的 mini-card（词库页场景厅同款外观） */
+button.mini-card { cursor: pointer; font: inherit; text-align: left; color: var(--ink); width: 100%; }
 
 .floor { position: relative; padding: 10px 0; max-width: 680px; margin: 0 auto; }
 .floor::before {
