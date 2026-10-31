@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.6'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1313,14 +1313,6 @@
         '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
         '" data-act="set-mode" data-mode="rw">读写</button>' +
         '</div>';
-      // 自动下一题（批2 #1）：复合模式判分页（good/blur 出现时）倒计时自动判认识进站
-      var autoSeg =
-        '<div class="size-row">自动下一题 ' +
-        [[0, '关'], [5, '5秒'], [10, '10秒'], [15, '15秒']].map(function (p) {
-          return '<button type="button" class="seg tiny' + (autoNextSec === p[0] ? ' on' : '') +
-            '" data-act="set-auto-next" data-sec="' + p[0] + '">' + p[1] + '</button>';
-        }).join('') +
-        ' <small>开启后到判分页倒计时自动判认识</small></div>';
       // 入口卡一行 4 个小框（紧凑，不带描述行）
       var cards = '<div class="entry-row">';
       if (dueN) {
@@ -1361,15 +1353,23 @@
           '<p class="picker-h">词库</p>' +
           '<div class="wordlist">' + cores.map(pickBtn).join('') + '</div>';
       }
+      // 设置行：每轮站数 + 自动下一题合并一行（提示小字去掉防爆行）
       var sizeRow =
-        '<div class="size-row">每轮 <input id="sizeInput" type="number" min="5" max="100" step="1" value="' +
-        sessionSize + '" /> 站 <small>5~100，改完自动生效</small></div>';
+        '<div class="size-row">' +
+        '<span>每轮 <input id="sizeInput" type="number" min="5" max="100" step="1" value="' +
+        sessionSize + '" /> 站</span>' +
+        '<span class="opt-auto">自动下一题 ' +
+        [[0, '关'], [5, '5秒'], [10, '10秒'], [15, '15秒']].map(function (p) {
+          return '<button type="button" class="seg tiny' + (autoNextSec === p[0] ? ' on' : '') +
+            '" data-act="set-auto-next" data-sec="' + p[0] + '">' + p[1] + '</button>';
+        }).join('') +
+        '</span></div>';
       return (
         '<h2>巡游</h2>' +
         '<p class="sub">先选模式，再选出发点 · 每轮 ' + sessionSize + ' 站 · 进度存在本机</p>' +
         weeklyHTML() +
         sizeRow +
-        modeSeg + autoSeg + cards + groups
+        modeSeg + cards + groups
       );
     }
     if (session.idx >= session.queue.length) {

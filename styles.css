@@ -236,10 +236,11 @@ img { max-width: 100%; }
   border-top: 1px dashed var(--line-d);
 }
 .view .sub { margin: -8px 0 18px; color: var(--mut); font-size: 13.5px; }
-/* 每轮站数设置（#4） */
-.size-row { display: flex; align-items: center; gap: 6px; margin: -6px 0 14px; font-size: 13.5px; color: var(--mut); }
+/* 设置行：每轮站数 + 自动下一题（合并一行，窄屏自动换行） */
+.size-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; margin: -6px 0 14px; font-size: 13.5px; color: var(--mut); }
 .size-row input { width: 64px; padding: 5px 8px; border: 1px solid var(--line, #ccc); border-radius: 8px; font-size: 15px; text-align: center; }
 .size-row small { opacity: .75; }
+.opt-auto { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
 
 .card {
