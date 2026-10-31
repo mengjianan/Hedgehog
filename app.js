@@ -18,7 +18,7 @@
   var SCRIPTS = []; // 雅思听力情景脚本库 [{id, lang, part, title, script, qs}]
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
-  var pickMode = 'lr'; // 选厅模式：lr 听读 / ls 听说 / rw 读写（旧单动作模式已删，并入三复合）
+  var pickMode = 'lr'; // 选厅模式：lr 听认 / ls 跟读 / rw 读写（旧单动作模式已删，并入三复合）
   var sessionSize = lsGet('hedgehog:session-size', 10); // 每轮站数（#4 背词页可设）
   var autoNextSec = lsGet('hedgehog:auto-next', 0); // 自动下一题秒数：0=关（默认），5/10/15（批2 #1）
   var autoNextTimer = null;
@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.3'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.4'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1000,7 +1000,7 @@
     );
   }
 
-  // 跟读卡片：播发音 → 录自己 → 回放对比 → 自评（录音回放后即弃，不落盘；听说模式第二步复用）
+  // 跟读卡片：播发音 → 录自己 → 回放对比 → 自评（录音回放后即弃，不落盘；跟读模式第二步复用）
   function shadowCardHTML(e, ref) {
     var st = session.shState || 'idle'; // idle 待跟读 / rec 录音中 / done 回放对比
     var base =
@@ -1177,7 +1177,7 @@
 
   // （旧「听力/拼写/书写/搭配」单动作卡片已删：动作并入三复合模式 compositeCardHTML）
 
-  // 三复合模式（批2 A）：听读 lr / 听说 ls / 读写 rw —— 两动作串联，最后一个词一次判
+  // 三复合模式（批2 A）：听认 lr（盲听→看词感）/ 跟读 ls（听→录音对比）/ 读写 rw —— 两动作串联，最后一个词一次判
   function compositeCardHTML(e, ref) {
     var m = session.mode;
     var step = session.cpStep || 0;
@@ -1281,7 +1281,7 @@
         '</div></div>'
       );
     }
-    if (m === 'lr') { // 听读第二步：看词感 → 判
+    if (m === 'lr') { // 听认第二步：看词感 → 判
       var collo = (e.x.collo || []).map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('');
       return (
         '<div class="card study-card">' +
@@ -1307,9 +1307,9 @@
       var modeSeg =
         '<div class="seg-ctl">' +
         '<button type="button" class="seg' + (pickMode === 'lr' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="lr">听读</button>' +
+        '" data-act="set-mode" data-mode="lr">听认</button>' +
         '<button type="button" class="seg' + (pickMode === 'ls' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="ls">听说</button>' +
+        '" data-act="set-mode" data-mode="ls">跟读</button>' +
         '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
         '" data-act="set-mode" data-mode="rw">读写</button>' +
         '</div>';
