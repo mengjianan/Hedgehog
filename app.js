@@ -19,6 +19,7 @@
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'lr'; // 选厅模式：lr 听认 / ls 跟读 / rw 读写（旧单动作模式已删，并入三复合）
+  var wordNav = null; // 词页导航上下文：{ref, next}（词头区上滑/↓=下一个，Enter=标认识）
   var sessionSize = lsGet('hedgehog:session-size', 10); // 每轮站数（#4 背词页可设）
   var autoNextSec = lsGet('hedgehog:auto-next', 0); // 自动下一题秒数：0=关（默认），5/10/15（批2 #1）
   var autoNextTimer = null;
@@ -27,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.6'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.7'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -560,10 +561,11 @@
     a.src = url;
     var settled = false;
     a.addEventListener('canplay', function () {
-      if (!settled) { settled = true; toast('▶ ' + label); }
+      // 不显示单词：听辨/听认场景弹词等于泄题
+      if (!settled) { settled = true; toast('▶'); }
     });
     a.addEventListener('error', function () {
-      if (!settled) { settled = true; toast('发音源不可用：' + label); }
+      if (!settled) { settled = true; toast('发音源不可用'); }
       if (e) speakTTS(e);
     });
     var p = a.play();
@@ -1182,18 +1184,23 @@
     var m = session.mode;
     var step = session.cpStep || 0;
     if (m === 'rw') {
-      if (step === 0) { // 读：看清词形读音
+      // 先写后读（用户定序）：写（键盘/手写板）→ 读（看真词）→ 判
+      if (step >= 1) { // 读：对答案，读一读 → 判
         return (
           '<div class="card study-card">' +
-          '<div class="spell-hint">先读：看清这个词</div>' +
+          '<div class="spell-hint">对答案：读一读这个词</div>' +
           '<div class="sw">' + esc(e.x.w) + '</div>' +
-          '<div class="sipa">' + esc(e.x.pron) + '</div>' +
+          '<div class="sipa">' + esc(e.x.pron) + ' · ' + esc(e.x.zh) + '</div>' +
           '<div class="study-actions">' +
-          '<button class="btn" data-act="cp-next">记住了 → 去默写</button>' +
+          '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
+          '</div>' +
+          '<div class="study-actions">' +
+          '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+          '<button class="btn" data-act="good">✓ 认识</button>' +
           '</div></div>'
         );
       }
-      // 写：键盘输入 或 手写板（可切换），写完一起判
+      // 写（step 0）：键盘输入 或 手写板（可切换），写完去「读」页一起判
       var pad = session.rwPad || 'kb';
       var padSeg =
         '<div class="seg-ctl">' +
@@ -1203,7 +1210,7 @@
         '" data-act="rw-pad" data-pad="hw">✍ 手写板</button>' +
         '</div>';
       if (pad === 'hw') {
-        if (session.wmCompare) { // 手写完 → 与答案并排比对 → 一起判
+        if (session.wmCompare) { // 手写完 → 与答案并排比对 → 去读
           return (
             '<div class="card study-card write">' +
             '<div class="wm-compare">' +
@@ -1216,14 +1223,13 @@
             '</figure></div>' +
             '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
             '<div class="study-actions">' +
-            '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
-            '<button class="btn" data-act="good">✓ 认识</button>' +
+            '<button class="btn" data-act="cp-next">读一读 → 判</button>' +
             '</div></div>'
           );
         }
         return (
           '<div class="card study-card write">' +
-          '<div class="spell-hint">凭记忆在板子上手写这个词</div>' +
+          '<div class="spell-hint">先写：看中文，凭记忆手写这个词</div>' +
           '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
           '<div class="spell-tools">' +
           '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
@@ -1236,10 +1242,10 @@
           '</div></div>'
         );
       }
-      if (!session.spellChecked) { // 键盘默写：检查只判对错不进站
+      if (!session.spellChecked) { // 键盘默写：检查只判对错，答案在「读」页揭晓
         return (
           '<div class="card study-card spell">' +
-          '<div class="spell-hint">看中文，写出这个词</div>' +
+          '<div class="spell-hint">先写：看中文，写出这个词</div>' +
           '<div class="spell-zh">' + esc(e.x.zh) + '</div>' +
           '<div class="spell-tools">' +
           '<button class="icon-btn" data-act="speak" data-ref="' + esc(ref) + '">' + ICON.sound + '</button>' +
@@ -1252,14 +1258,12 @@
           '</div></div>'
         );
       }
-      return ( // 键盘检查完 → 一起判
+      return ( // 键盘检查完 → 去读页对答案
         '<div class="card study-card spell">' +
         '<div class="spell-result ' + (session.spellOk ? 'ok' : 'err') + '">' +
         (session.spellOk ? '✓ 写对了' : '✗ 不对') + '</div>' +
-        (session.spellOk ? '' : '<div class="spell-answer">正确答案：<b>' + esc(e.x.w) + '</b></div>') +
         '<div class="study-actions">' +
-        '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
-        '<button class="btn" data-act="good">✓ 认识</button>' +
+        '<button class="btn" data-act="cp-next">对答案 → 读</button>' +
         '</div></div>'
       );
     }
@@ -1419,7 +1423,7 @@
   function atJudgeStep() {
     if (!session) return false;
     if (session.mode === 'lr') return (session.cpStep || 0) >= 1;
-    if (session.mode === 'rw') return !!(session.spellChecked || session.wmCompare);
+    if (session.mode === 'rw') return (session.cpStep || 0) >= 1; // 先写后读：读页即判分页
     if (session.mode === 'ls') return session.shState === 'done';
     return false;
   }
@@ -2974,6 +2978,7 @@
   var lastRouteHash = null; // 区分「换页」与「页内重渲染」：后者不滚顶，防选卷/勾板块时页面颤动
   function route() {
     if (!DATA) return;
+    wordNav = null; // 默认非词页；词页分支里重新赋值
     var h = location.hash.replace(/^#\/?/, '');
     var pageChanged = h !== lastRouteHash;
     lastRouteHash = h;
@@ -2987,6 +2992,13 @@
       var w = decodeURIComponent(parts.slice(2).join('/'));
       view.innerHTML = viewWord(listId, w);
       nav = 'categories';
+      // 词页导航上下文：词头区上滑/↓ 键=下一个词，Enter=标认识
+      var curW = IDX[listId + '/' + w];
+      if (curW) {
+        var wi = curW.l.words.indexOf(curW.x);
+        var wnext = curW.l.words[(wi + 1) % curW.l.words.length];
+        wordNav = { ref: curW.ref, next: '#/word/' + curW.l.id + '/' + encodeURIComponent(wnext.w) };
+      } else wordNav = null;
     } else if (name === 'categories') {
       view.innerHTML = parts[1] ? viewList(parts[1]) : viewCategories();
       nav = 'categories';
@@ -3183,6 +3195,49 @@
     recordStudy(dy > 0); // 下滑=认识，上滑=模糊
     advanceSession();
     route();
+  });
+
+  // ---------- 词页导航（只绑一次）：词头区上滑=下一个词；↓=下一个；Enter=标认识 ----------
+  var wsw = { y0: 0, dy: 0, on: false, el: null };
+  $('view').addEventListener('touchstart', function (e) {
+    if (!wordNav || e.touches.length !== 1) { wsw.on = false; return; }
+    var head = e.target.closest ? e.target.closest('.word-head') : null;
+    if (!head) { wsw.on = false; return; } // 只在词头区劫持上滑，页面其他地方正常滚动
+    wsw.on = true;
+    wsw.el = head;
+    wsw.y0 = e.touches[0].clientY;
+    wsw.dy = 0;
+  }, { passive: true });
+  $('view').addEventListener('touchmove', function (e) {
+    if (!wsw.on) return;
+    wsw.dy = e.touches[0].clientY - wsw.y0;
+    if (wsw.dy > -8) return; // 只认上滑（往下拉不管，留给页面回滚）
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  $('view').addEventListener('touchend', function () {
+    if (!wsw.on) { return; }
+    var dy = wsw.dy;
+    wsw.on = false; wsw.el = null;
+    if (dy > -SWIPE_TH || !wordNav) return; // 阈值内不跳
+    location.hash = wordNav.next;
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (!wordNav) return;
+    var tag = ev.target && ev.target.tagName;
+    // 不抢输入框/按钮的按键（按钮 Enter=点击自身）
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      location.hash = wordNav.next;
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      var k = known();
+      if (k[wordNav.ref]) { toast('已是认识状态'); return; }
+      k[wordNav.ref] = 1;
+      lsSet('hedgehog:known', k);
+      scheduleRef(wordNav.ref, true);
+      toast('✓ 已标认识 · 明天回访');
+    }
   });
 
   // ---------- 事件委托（只绑一次） ----------
