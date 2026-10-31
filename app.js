@@ -27,7 +27,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.4'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-10-31.5'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2005,6 +2005,7 @@
       });
       var doneN = quiz.results.filter(Boolean).length;
       return (
+        '<a class="back-link" href="#/study">← 巡游</a>' +
         '<h2>小测验 · 成绩单</h2>' +
         '<div class="card exam-result">' +
         '<div class="exam-score">' + doneN + '<small>/' + quiz.qs.length + ' 题正确</small></div>' +

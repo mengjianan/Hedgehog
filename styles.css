@@ -1129,6 +1129,8 @@ button.mini-card { cursor: pointer; font: inherit; text-align: left; color: var(
 
 /* 本周打卡格 */
 .weekly { margin-top: 26px; }
+/* 打卡格移到巡游页顶部后，紧跟的「每轮 N 站」不再要 -6px 贴顶，否则叠进打卡格 */
+.weekly + .size-row { margin-top: 12px; }
 .wk-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; max-width: 420px; }
 .wk-cell {
   border: 1px solid var(--line);
