@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-10-31.12'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-1.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1150,7 +1150,8 @@
       var n = err && err.name;
       if (n === 'NotAllowedError') {
         if (isPWA()) {
-          toast('安装版拿不到麦克风 · 请在 Chrome 浏览器里打开本站录音，或长按桌面图标→应用信息→权限→麦克风');
+          // 安装版权限独立，toast 一闪而过容易漏看 → 用 alert 钉住步骤
+          alert('安装版的麦克风权限和浏览器是分开的，需要单独授权：\n\n方法一：长按桌面图标 → 应用信息 → 权限 → 麦克风 → 允许，然后回来重试\n\n方法二：删掉桌面图标，直接在 Chrome 浏览器里打开本站使用');
         } else {
           toast('麦克风被拒 · 点地址栏锁图标→网站设置→麦克风→允许后重试');
         }
@@ -3712,7 +3713,7 @@
   // 注册 service worker（安卓 Chrome 的 PWA 安装条件 + 壳离线）
   // updateViaCache:none —— sw 脚本本身不走 HTTP 缓存，版本更新秒级生效
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js?v=18', { updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('sw.js?v=19', { updateViaCache: 'none' }).catch(function () {});
   }
 
   // 本机已解锁过则直接进入（数据存 IndexedDB：解锁一次本机永久记住）。
