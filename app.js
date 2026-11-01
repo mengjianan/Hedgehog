@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-1.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-1.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1082,10 +1082,59 @@
         .catch(function () { return 'unknown'; });
     } catch (err) { return Promise.resolve('unknown'); }
   }
+  // 麦克风帮助浮层：快捷方式/安装版/微信内打开打不开麦克风时的一键出路。
+  // 桌面图标快捷方式和安装版的录音权限与 Chrome 分开且网页无法代授权 → 唯一可靠解法是拉起 Chrome
+  function micEnvLine() {
+    var ua = navigator.userAgent;
+    var where = /MicroMessenger/.test(ua) ? '微信内打开'
+      : /QQBrowser|MQQBrowser/.test(ua) ? 'QQ浏览器'
+      : /HuaweiBrowser/.test(ua) ? '华为浏览器'
+      : /MiuiBrowser|XiaoMi/.test(ua) ? '小米浏览器'
+      : /UCBrowser|UBrowser/.test(ua) ? 'UC浏览器'
+      : /Edg\//.test(ua) ? 'Edge'
+      : /Chrome\//.test(ua) ? 'Chrome'
+      : /Safari\//.test(ua) ? 'Safari' : '浏览器';
+    return '当前：' + where + (isPWA() ? '（安装版）' : '') +
+      ' · 麦克风接口：' + (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? '有' : '无') +
+      ' · HTTPS：' + (window.isSecureContext ? '是' : '否');
+  }
+  function micHelp() {
+    var old = $('micHelp');
+    if (old) old.remove();
+    var android = /Android/i.test(navigator.userAgent);
+    var d = document.createElement('div');
+    d.id = 'micHelp';
+    d.className = 'mic-help';
+    d.innerHTML =
+      '<div class="mic-help-card">' +
+      '<h3>这里打不开麦克风</h3>' +
+      '<p class="mic-env">' + micEnvLine() + '</p>' +
+      '<p>桌面图标快捷方式、安装版、微信等 App 里打开时，录音权限和 Chrome 是分开的，网页没法替你授权。</p>' +
+      (android ? '<button class="primary" id="micChrome">用 Chrome 打开本站（推荐）</button>' : '') +
+      '<button id="micSteps">看手动授权步骤</button>' +
+      '<button id="micClose">关闭</button>' +
+      '</div>';
+    document.body.appendChild(d);
+    var cb = $('micChrome');
+    if (cb) cb.addEventListener('click', function () {
+      // Android intent 深链拉起 Chrome 打开本站；没装 Chrome 走 fallback（系统浏览器打开）
+      location.href = 'intent://' + location.host + location.pathname +
+        '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
+        encodeURIComponent(location.origin + location.pathname) + ';end';
+    });
+    $('micSteps').addEventListener('click', function () {
+      alert('手动授权步骤（前提：在 Chrome 浏览器里打开本站）：\n\n1. 浏览器打开：点地址栏锁图标 → 网站设置 → 麦克风 → 允许\n\n2. 桌面图标（安装版）：长按图标 → 应用信息 → 权限 → 麦克风 → 允许');
+    });
+    $('micClose').addEventListener('click', function () { d.remove(); });
+  }
   function shRecord() {
     try {
       if (!window.isSecureContext && location.hostname !== 'localhost') { toast('非 HTTPS 环境无法录音 · 请用 https:// 打开'); return; }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('本机不支持录音'); return; }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        // 内核浏览器/快捷方式常见：整个录音接口都没有 → 直接给出路
+        if (/Android/i.test(navigator.userAgent)) { micHelp(); } else { toast('本机不支持录音'); }
+        return;
+      }
       // 必须在点击的同步链路里直接调 getUserMedia：放进 promise 回调会丢用户手势，部分浏览器直接静默拒绝
       startRec();
     } catch (err) {
@@ -1149,9 +1198,9 @@
       // 分错误类型给针对性提示（手机上失败常不是「拒绝」而是权限/占用/PWA 分权）
       var n = err && err.name;
       if (n === 'NotAllowedError') {
-        if (isPWA()) {
-          // 安装版权限独立，toast 一闪而过容易漏看 → 用 alert 钉住步骤
-          alert('安装版的麦克风权限和浏览器是分开的，需要单独授权：\n\n方法一：长按桌面图标 → 应用信息 → 权限 → 麦克风 → 允许，然后回来重试\n\n方法二：删掉桌面图标，直接在 Chrome 浏览器里打开本站使用');
+        if (/Android/i.test(navigator.userAgent)) {
+          // 安卓：快捷方式/安装版/内核浏览器权限都和 Chrome 分开，统一给出路浮层（含一键跳 Chrome）
+          micHelp();
         } else {
           toast('麦克风被拒 · 点地址栏锁图标→网站设置→麦克风→允许后重试');
         }

@@ -728,6 +728,44 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* 麦克风帮助浮层（快捷方式/安装版打不开麦克风时的一键出路） */
+.mic-help {
+  position: fixed;
+  inset: 0;
+  background: rgba(47, 43, 36, 0.5);
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+.mic-help-card {
+  background: var(--card, #fdfcf8);
+  border: 1px solid var(--line, #ddd);
+  border-radius: 14px;
+  padding: 18px 16px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+.mic-help-card h3 { margin: 0 0 8px; font-size: 16px; }
+.mic-help-card p { margin: 6px 0; font-size: 13px; color: var(--mut, #888); line-height: 1.6; }
+.mic-help-card .mic-env { font-size: 11.5px; opacity: 0.85; }
+.mic-help-card button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line-d, #ccc);
+  border-radius: 10px;
+  background: var(--card, #fff);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--ink, #333);
+}
+.mic-help-card button.primary { background: var(--sage, #8fa088); border-color: var(--sage-d, #6b7f66); color: #fdfcf8; }
+
 /* 场景厅语言筛选 */
 .filter-chips { display: flex; gap: 8px; margin-top: -6px; flex-wrap: wrap; }
 /* 背词页 chips 挂在 picker-h 后：picker-h 下边距小，-6px 会顶进标题文字，恢复正间距 */
