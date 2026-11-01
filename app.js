@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-1.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-1.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -675,10 +675,6 @@
       '<p class="sub">学习走宫殿 · 查询走门厅</p>' +
       '<div class="search-row"><input id="q" type="search" placeholder="门厅搜索：abolish / 마음 / 環境" autocomplete="off" /></div>' +
       '</div>' +
-      '<div class="results" id="results"></div>' +
-      halls +
-      '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
-      (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
       homeProgressHTML() +
       '<div class="data-row">' +
       '<button class="mini-btn" data-act="export-data">导出进度</button>' +
@@ -686,6 +682,10 @@
       '<button class="mini-btn" data-act="refresh-words">刷新词库</button>' +
       '<input type="file" id="importFile" accept=".json,application/json" hidden />' +
       '</div>' +
+      '<div class="results" id="results"></div>' +
+      halls +
+      '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
+      (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · ' + APP_VER + '</p>'
     );
   }

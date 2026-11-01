@@ -1503,28 +1503,29 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .matrix-table td b { font-size: 18px; }
   .morph-form { font-size: 14px; }
 
-  /* 首页固定一屏（body.home-view）：压缩 hero/宫格/统计/数据行，一屏放下 */
+  /* 首页固定一屏（body.home-view）：压缩 hero/数据格/按钮/宫格，一屏放下不出滚动条 */
   body.home-view .page { overflow: hidden; }
-  body.home-view .view { padding-top: 6px; padding-bottom: 12px; }
-  body.home-view .hero { padding: 6px 10px 4px; }
-  body.home-view .hero-sticker { width: 108px; padding: 7px 7px 15px; margin-bottom: 4px; }
-  body.home-view .hero h2 { font-size: 17px; margin: 2px 0; }
-  body.home-view .hero .sub { font-size: 11px; margin: 0; }
-  body.home-view .search-row { margin-top: 8px; max-width: none; }
-  body.home-view .search-row input { padding: 8px 12px; font-size: 14px; }
-  body.home-view .halls { grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
-  body.home-view .hall { padding: 8px 4px; }
+  body.home-view .view { padding-top: 4px; padding-bottom: 8px; }
+  body.home-view .hero { padding: 4px 10px 0; }
+  body.home-view .hero-sticker { width: 72px; padding: 4px 4px 10px; margin-bottom: 0; }
+  body.home-view .hero h2 { font-size: 16px; margin: 0; }
+  body.home-view .hero .sub { display: none; } /* 一屏优先：副标让位 */
+  body.home-view .search-row { margin-top: 6px; max-width: none; }
+  body.home-view .search-row input { padding: 7px 12px; font-size: 14px; }
+  body.home-view .home-prog { margin-top: 8px; gap: 6px; }
+  body.home-view .hp-cell { padding: 4px 4px; border-radius: 8px; }
+  body.home-view .hp-cell b { font-size: 15px; }
+  body.home-view .hp-cell span { font-size: 9.5px; }
+  body.home-view .data-row { margin-top: 8px; gap: 8px; }
+  body.home-view .data-row .mini-btn { padding: 3px 10px; font-size: 11px; }
+  body.home-view .results { margin-top: 0; } /* 空态搜索结果不吃高度（有结果时自然撑开、可滚动由搜索场景自行处理） */
+  body.home-view .halls { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  body.home-view .hall { padding: 7px 4px; }
   body.home-view .hall .k { font-size: 9px; letter-spacing: 0.14em; }
   body.home-view .hall b { font-size: 13px; }
   body.home-view .hall small { font-size: 10px; }
-  body.home-view .home-stat { margin-top: 10px; font-size: 12px; }
-  body.home-view .home-prog { margin-top: 8px; gap: 6px; }
-  body.home-view .hp-cell { padding: 5px 4px; border-radius: 8px; }
-  body.home-view .hp-cell b { font-size: 15px; }
-  body.home-view .hp-cell span { font-size: 9.5px; }
-  body.home-view .data-row { margin-top: 10px; gap: 8px; }
-  body.home-view .data-row .mini-btn { padding: 3px 10px; font-size: 11px; }
-  body.home-view .footnote { margin-top: 10px; }
+  body.home-view .home-stat { margin-top: 8px; font-size: 12px; }
+  body.home-view .footnote { margin-top: 6px; font-size: 11px; }
 }
 
 /* ---------- 考场（仿真卷 + 本机真题卷） ---------- */
