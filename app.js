@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-1.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-3.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -965,8 +965,11 @@
   function minimapHTML() {
     var stops = session.queue
       .map(function (_, i) {
-        var cls = i < session.idx ? 'done' : i === session.idx ? 'cur' : '';
-        return '<span class="stop ' + cls + '">' + (i + 1) + '</span>';
+        // done：已过站或已判过（回看再判不重复计数，见 recordStudy）
+        var cls = i < session.idx || (session.judged && session.judged[i])
+          ? 'done' : i === session.idx ? 'cur' : '';
+        return '<span class="stop ' + cls + '" data-act="minimap-go" data-i="' + i +
+          '" title="回看第 ' + (i + 1) + ' 站">' + (i + 1) + '</span>';
       })
       .join('<span class="seg"></span>');
     return '<div class="minimap">' + stops + '</div>';
@@ -1518,6 +1521,7 @@
       ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
       '<span><button class="mini-btn" data-act="study-home">✕ 退出重选</button>' +
       ' 认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
+      '<p class="swipe-tip">👆 判分页上滑=认识 · 下滑=模糊 · 点小地图方块回看单词</p>' +
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
@@ -1580,20 +1584,26 @@
       logged: false,
       cpStep: 0,
       cpListened: null,
+      judged: {}, // 已判过的站（小地图回看再判不重复计对错）
     };
     return true;
   }
 
   // 记录一站的结果：认识→掌握+间隔晋级；模糊→退出掌握+明天回访
+  // 回看再判：掌握状态照常更新，但本轮对错计数只记首次（minimap 回看不刷爆 good/bad）
   function recordStudy(good) {
     var ref = session.queue[session.idx];
     var k = known();
     if (good) {
       k[ref] = 1;
-      session.good++;
     } else {
       delete k[ref];
-      session.bad++;
+    }
+    if (!session.judged) session.judged = {};
+    if (!session.judged[session.idx]) {
+      session.judged[session.idx] = true;
+      if (good) session.good++;
+      else session.bad++;
     }
     lsSet('hedgehog:known', k);
     scheduleRef(ref, good);
@@ -3262,7 +3272,7 @@
     }
   }
 
-  // ---------- 判分页手势（批2 #1，只绑一次）：上滑=模糊、下滑=认识 ----------
+  // ---------- 判分页手势（只绑一次）：上滑=认识、下滑=模糊 ----------
   // 仅在复合模式判分页（good/blur 出现）生效；听/写进行中不启用
   var sw = { y0: 0, dy: 0, on: false, card: null };
   var SWIPE_TH = 80; // 阈值像素
@@ -3298,7 +3308,7 @@
     card.style.transform = '';
     if (Math.abs(dy) < SWIPE_TH) return; // 回弹，不判
     if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = null; }
-    recordStudy(dy > 0); // 下滑=认识，上滑=模糊
+    recordStudy(dy < 0); // 上滑=认识，下滑=模糊（方向按用户定）
     advanceSession();
     route();
   });
@@ -3542,6 +3552,22 @@
     } else if (act === 'study-home') {
       session = null;
       route();
+    } else if (act === 'minimap-go') { // 小地图点站回看（对错只记首次，见 recordStudy）
+      if (!session) return;
+      var mgi = parseInt(el.getAttribute('data-i'), 10);
+      if (isNaN(mgi) || mgi < 0 || mgi >= session.queue.length) return;
+      session.idx = mgi;
+      // 重置该站进行中状态（与 advanceSession 相同的清理）
+      session.spellChecked = false;
+      session.spellOk = false;
+      session.wmCompare = false;
+      session.wmShot = null;
+      session.shState = 'idle';
+      session.cpStep = 0;
+      session.cpListened = null;
+      shDispose();
+      route();
+      window.scrollTo(0, 0);
     } else if (act === 'good' || act === 'blur') {
       recordStudy(act === 'good');
       advanceSession();

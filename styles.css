@@ -1120,11 +1120,23 @@ button.mini-card { cursor: pointer; font: inherit; text-align: left; color: var(
 .seg.on { background: var(--sage); color: #fdfcf8; }
 .seg.tiny { padding: 4px 11px; font-size: 12px; letter-spacing: 0.04em; }
 
-/* 认卡手势（批2 #1）：上滑=模糊、下滑=认识，跟手+回弹 */
+/* 判分手势：上滑=认识（绿）、下滑=模糊（灰），跟手+回弹 */
 .study-card.swipe-anim { transition: transform 0.2s ease; }
 .study-card.swiping { transition: none; }
-.study-card.swipe-up { box-shadow: 0 -3px 0 var(--mut); }
-.study-card.swipe-down { box-shadow: 0 3px 0 var(--sage-d); }
+.study-card.swipe-up { box-shadow: 0 -3px 0 var(--sage-d); }
+.study-card.swipe-down { box-shadow: 0 3px 0 var(--mut); }
+
+/* 巡游顶部滑动方向提示 */
+.swipe-tip {
+  text-align: center;
+  font-size: 11px;
+  color: var(--stone);
+  letter-spacing: 0.04em;
+  margin: 2px 0 4px;
+}
+/* 小地图方块可点回看 */
+.minimap .stop[data-act] { cursor: pointer; }
+.minimap .stop[data-act]:active { transform: scale(0.92); }
 
 /* 复习 / 混考入口卡 */
 .entry-card {
