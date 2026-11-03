@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-3.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-3.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1907,7 +1907,7 @@
         var opts = distract(it.display, items, function (x) { return x.display; })
           .map(function (v) { return { t: v, ok: false }; });
         opts.push({ t: it.display, ok: true });
-        qs.push({ type: '听音选字', stem: '听发音，选出对应的字母 / 假名', say: it.speak, le: t.lang, options: shuffle(opts), tip: it.tip });
+        qs.push({ type: '听音选字', stem: '听发音，选出对应的字母 / 假名', hint: true, say: it.speak, le: t.lang, options: shuffle(opts), tip: it.tip });
       } else if (it.alt && it.display) {
         // 看字母/词根 → 选读音/含义（或反向）
         var rev = Math.random() < 0.3 && it.speak;
@@ -1953,7 +1953,8 @@
     var body =
       '<div class="card study-card">' +
       (q.say ? '<button class="icon-btn" data-say="' + esc(q.say) + '" data-le="' + esc(LE_FOR[q.le] || 'ko') + '">' + ICON.sound + '</button>' : '') +
-      '<div class="sw">' + esc(q.stem) + '</div>' +
+      // 提示句（hint）用 spell-hint 小字；真题干（字母/假名/词根）用 sw 大字
+      '<div class="' + (q.hint ? 'spell-hint' : 'sw') + '">' + esc(q.stem) + '</div>' +
       '<div class="exam-opts">' + opts + '</div>' +
       (tableQuiz.picked >= 0
         ? '<p class="lit-banner" style="text-align:center">' + (q.options[tableQuiz.picked] && q.options[tableQuiz.picked].ok ? '✓ 答对' : '✗ 答错 · 正确答案：' + esc((q.options.filter(function (o) { return o.ok; })[0] || {}).t || '')) + '</p>' +
