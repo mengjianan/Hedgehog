@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-4.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-4.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1928,7 +1928,7 @@
   // ---------- 基础表练习（词根/韩语字母/五十音）----------
   var tableQuiz = null; // {tid, qs, qi, good, bad, picked}
 
-  function buildTableQuiz(t) {
+  function buildTableQuiz(t, mode) {
     var items = [];
     (t.sections || []).forEach(function (s) {
       if (s.type === 'grid') {
@@ -1973,6 +1973,24 @@
       return out;
     }
     var nQ = Math.min(10, items.length);
+    // 默写模式（手写作答，比对+自评）：听音默写 / 看义默写轮换
+    if (mode === 'write') {
+      for (var wi = 0; wi < nQ; wi++) {
+        var wit = pickItem();
+        var wkind = wi % 2 === 0 ? 'listen' : 'read';
+        if (wkind === 'listen' && wit.speak) {
+          qs.push({ type: '听音默写', write: true, hint: true, stem: '听发音，写下你听到的字',
+            say: wit.speak, le: t.lang, answer: wit.display, tip: wit.tip });
+        } else if (wit.alt && wit.display) {
+          // 看义默写：不给 say（表里 speak===display，播音=直接泄答案）
+          qs.push({ type: '看义默写', write: true, stem: wit.alt, answer: wit.display, tip: wit.tip });
+        } else if (wit.speak) {
+          qs.push({ type: '听音默写', write: true, hint: true, stem: '听发音，写下你听到的字',
+            say: wit.speak, le: t.lang, answer: wit.display, tip: wit.tip });
+        }
+      }
+      return qs;
+    }
     for (var i = 0; i < nQ; i++) {
       var it = pickItem();
       var kind = i % 2 === 0 ? 'listen' : 'read';
@@ -2004,19 +2022,77 @@
     var t = TBY[id];
     if (!t) return viewTablesHub();
     if (!tableQuiz || tableQuiz.tid !== id) {
-      tableQuiz = { tid: id, qs: buildTableQuiz(t), qi: 0, good: 0, bad: 0, picked: -1 };
+      var qm0 = lsGet('hedgehog:tbl-mode', 'choice');
+      tableQuiz = { tid: id, mode: qm0, qs: buildTableQuiz(t, qm0), qi: 0, good: 0, bad: 0, picked: -1, hwShot: null };
     }
     var q = tableQuiz.qs[tableQuiz.qi];
     if (!q) return viewTablesHub();
+    var mode = tableQuiz.mode || 'choice';
+    var modeSeg =
+      '<div class="seg-ctl">' +
+      '<button type="button" class="seg' + (mode === 'choice' ? ' on' : '') +
+      '" data-act="tbl-mode" data-mode="choice">选择题</button>' +
+      '<button type="button" class="seg' + (mode === 'write' ? ' on' : '') +
+      '" data-act="tbl-mode" data-mode="write">默写</button>' +
+      '</div>';
     var head =
       '<a class="back-link" href="#/tables/' + esc(id) + '">← ' + esc(t.title) + '</a>' +
       '<h2>练习 · ' + esc(t.title) + '</h2>' +
       '<div class="study-meta"><span>第 ' + (tableQuiz.qi + 1) + '/' + tableQuiz.qs.length + ' 题 · ' + esc(q.type) + '</span>' +
       '<span>对 ' + tableQuiz.good + ' · 错 ' + tableQuiz.bad + '</span></div>' +
+      modeSeg +
       '<div class="progress"><i style="width:' + Math.round((tableQuiz.qi / tableQuiz.qs.length) * 100) + '%"></i></div>';
     if (!tableQuiz.qs.length) {
       return head + '<div class="card study-card"><p>表数据不足以出题。</p></div>';
     }
+    var backBtn = '<a class="btn ghost" href="#/tables/' + esc(id) + '">回表格</a>';
+    var nextDone =
+      (tableQuiz.qi + 1 >= tableQuiz.qs.length
+        ? '<button class="btn" data-act="tbl-done">完成本轮</button>'
+        : '<button class="btn" data-act="tbl-next">下一题</button>');
+
+    // ---- 默写（手写作答：出题 → 比对 → 自评）----
+    if (q.write) {
+      if (tableQuiz.picked >= 0) { // 自评完 → 结果 + 下一题
+        fpadHide();
+        return head +
+          '<div class="card study-card">' +
+          '<p class="lit-banner" style="text-align:center">' +
+          (tableQuiz.picked === 1 ? '✓ 答对' : '✗ 不对 · 正确答案：<b>' + esc(q.answer) + '</b>') + '</p>' +
+          (q.tip ? '<p class="table-note">' + esc(q.tip) + '</p>' : '') +
+          '<div class="study-actions">' + nextDone + backBtn + '</div>' +
+          '</div>';
+      }
+      if (tableQuiz.hwShot) { // 比对页：你写的 vs 正确答案 → 自评
+        fpadHide();
+        return head +
+          '<div class="card study-card write">' +
+          '<div class="wm-compare">' +
+          '<figure class="wm-ours"><figcaption>你写的</figcaption>' +
+          '<img src="' + tableQuiz.hwShot + '" alt="我的书写" /></figure>' +
+          '<figure class="wm-model"><figcaption>正确答案</figcaption>' +
+          '<div class="write-model">' + esc(q.answer) + '</div></figure>' +
+          '</div>' +
+          (q.tip ? '<p class="table-note">' + esc(q.tip) + '</p>' : '') +
+          '<div class="study-actions">' +
+          '<button class="btn ghost" data-act="tbl-judge" data-good="0">✗ 再练</button>' +
+          '<button class="btn" data-act="tbl-judge" data-good="1">✓ 对了</button>' +
+          '</div></div>';
+      }
+      fpadShow(); // 出题即自动弹出手写板（用户确认：自动弹出）
+      return head +
+        '<div class="card study-card">' +
+        (q.say ? '<button class="icon-btn" data-say="' + esc(q.say) + '" data-le="' + esc(LE_FOR[q.le] || 'ko') + '">' + ICON.sound + '</button>' : '') +
+        '<div class="' + (q.hint ? 'spell-hint' : 'sw') + '">' + esc(q.stem) + '</div>' +
+        (q.hint ? '' : '<div class="spell-hint">看含义，在手写板上写下对应的字</div>') +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="tbl-check">写好了 · 比对</button>' +
+        '<button class="btn ghost" data-act="fpad-toggle">✍ 手写板</button>' +
+        backBtn +
+        '</div></div>';
+    }
+
+    // ---- 选择题（原逻辑）----
     var opts = q.options.map(function (o, idx) {
       var cls = 'exam-opt';
       if (tableQuiz.picked === idx) cls += o.ok ? ' right' : ' wrong';
@@ -2035,12 +2111,8 @@
           (q.tip ? '<p class="table-note">' + esc(q.tip) + '</p>' : '')
         : '') +
       '<div class="study-actions">' +
-      (tableQuiz.picked >= 0
-        ? (tableQuiz.qi + 1 >= tableQuiz.qs.length
-          ? '<button class="btn" data-act="tbl-done">完成本轮</button>'
-          : '<button class="btn" data-act="tbl-next">下一题</button>')
-        : '') +
-      '<a class="btn ghost" href="#/tables/' + esc(id) + '">回表格</a>' +
+      (tableQuiz.picked >= 0 ? nextDone : '') +
+      backBtn +
       '</div></div>';
     return head + body;
   }
@@ -3538,7 +3610,27 @@
       route();
     } else if (act === 'tbl-next') { // 基础表练习：下一题
       if (!tableQuiz) return;
-      tableQuiz.qi++; tableQuiz.picked = -1;
+      tableQuiz.qi++; tableQuiz.picked = -1; tableQuiz.hwShot = null;
+      route();
+    } else if (act === 'tbl-mode') { // 练习模式切换：选择题/默写（重开出题）
+      if (!tableQuiz) return;
+      var qm = el.getAttribute('data-mode') === 'write' ? 'write' : 'choice';
+      if (tableQuiz.mode === qm) return;
+      var qt = TBY[tableQuiz.tid];
+      lsSet('hedgehog:tbl-mode', qm);
+      tableQuiz = { tid: tableQuiz.tid, mode: qm, qs: buildTableQuiz(qt, qm), qi: 0, good: 0, bad: 0, picked: -1, hwShot: null };
+      if (qm === 'write') fpadShow(); else fpadHide();
+      route();
+    } else if (act === 'tbl-check') { // 默写：截图比对
+      if (!tableQuiz || tableQuiz.hwShot) return;
+      var fcv = $('fpadCanvas');
+      tableQuiz.hwShot = fcv ? fcv.toDataURL('image/jpeg', 0.6) : null;
+      route();
+    } else if (act === 'tbl-judge') { // 默写：比对后自评对错
+      if (!tableQuiz || tableQuiz.picked >= 0) return;
+      var jg = el.getAttribute('data-good') === '1';
+      tableQuiz.picked = jg ? 1 : 0;
+      if (jg) tableQuiz.good++; else tableQuiz.bad++;
       route();
     } else if (act === 'tbl-done') { // 基础表练习：完成本轮，记打卡
       if (!tableQuiz) return;
