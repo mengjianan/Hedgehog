@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-4.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-4.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1818,8 +1818,9 @@
     });
   }
   function initCanvas() {
-    bindDraw($('cbCanvas') || $('wmCanvas') || $('rwCanvas'));
+    bindDraw($('cbCanvas') || $('wmCanvas') || $('rwCanvas') || $('twCanvas'));
     bindDraw($('fpadCanvas')); // 悬浮手写板常驻 body，_bound 保证只绑一次
+    bindPadResize(); // 画板调高把手（每次渲染新把手要重绑，_bound 挡重复）
   }
 
   // ---------- 悬浮手写板：开关 / 标题栏拖动（位置记住）----------
@@ -1839,6 +1840,8 @@
     var el = $('fpad');
     if (!el) return;
     el.hidden = false;
+    var fh = lsGet('hedgehog:boxh-fpad', 0); // 恢复记住的板高
+    el.style.height = fh ? Math.min(fh, window.innerHeight - 100) + 'px' : '';
     fpadApplyPos(); // 有存的位置用存的；没有则保持 CSS 默认右下
     bindDraw($('fpadCanvas'));
   }
@@ -1887,6 +1890,31 @@
     $('fpadClear').addEventListener('click', function () { clearPad('fpadCanvas'); });
     $('fpadClose').addEventListener('click', fpadHide);
   })();
+  // 画板高度调节把手：拖动改容器高度，存 localStorage（内嵌 twBox / 悬浮 fpad 通用）
+  function bindPadResize() {
+    document.querySelectorAll('.pad-resize').forEach(function (h) {
+      if (h._bound) return;
+      h._bound = true;
+      var box = $(h.getAttribute('data-box'));
+      if (!box) return;
+      var key = 'hedgehog:boxh-' + h.getAttribute('data-box');
+      h.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault();
+        var sy = ev.clientY;
+        var sh = box.getBoundingClientRect().height;
+        function clamp(v) { return Math.max(100, Math.min(v, window.innerHeight - 120)); }
+        function mv(e2) { box.style.height = clamp(sh + (e2.clientY - sy)) + 'px'; }
+        function up() {
+          h.removeEventListener('pointermove', mv);
+          h.removeEventListener('pointerup', up);
+          lsSet(key, Math.round(clamp(box.getBoundingClientRect().height)));
+        }
+        h.setPointerCapture(ev.pointerId);
+        h.addEventListener('pointermove', mv);
+        h.addEventListener('pointerup', up);
+      });
+    });
+  }
 
   // 书阁：基础表入口页
   function viewTablesHub() {
@@ -2079,15 +2107,19 @@
           '<button class="btn" data-act="tbl-judge" data-good="1">✓ 对了</button>' +
           '</div></div>';
       }
-      fpadShow(); // 出题即自动弹出手写板（用户确认：自动弹出）
+      fpadHide(); // 默写用手写板=卡片内固定区（背词读写同款），不用悬浮板
+      var twH = lsGet('hedgehog:boxh-twBox', 160); // 手写板高度（可拖把手调，记住）
       return head +
         '<div class="card study-card">' +
         (q.say ? '<button class="icon-btn" data-say="' + esc(q.say) + '" data-le="' + esc(LE_FOR[q.le] || 'ko') + '">' + ICON.sound + '</button>' : '') +
         '<div class="' + (q.hint ? 'spell-hint' : 'sw') + '">' + esc(q.stem) + '</div>' +
         (q.hint ? '' : '<div class="spell-hint">看含义，在手写板上写下对应的字</div>') +
+        '<div class="tw-box" id="twBox" style="height:' + twH + 'px">' +
+        '<canvas id="twCanvas" width="720" height="300"></canvas>' +
+        '</div>' +
+        '<div class="pad-resize" data-box="twBox" title="上下拖动调节手写板高度"></div>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="tbl-check">写好了 · 比对</button>' +
-        '<button class="btn ghost" data-act="fpad-toggle">✍ 手写板</button>' +
         backBtn +
         '</div></div>';
     }
@@ -3619,12 +3651,11 @@
       var qt = TBY[tableQuiz.tid];
       lsSet('hedgehog:tbl-mode', qm);
       tableQuiz = { tid: tableQuiz.tid, mode: qm, qs: buildTableQuiz(qt, qm), qi: 0, good: 0, bad: 0, picked: -1, hwShot: null };
-      if (qm === 'write') fpadShow(); else fpadHide();
       route();
-    } else if (act === 'tbl-check') { // 默写：截图比对
+    } else if (act === 'tbl-check') { // 默写：截图比对（从卡片内固定手写板取）
       if (!tableQuiz || tableQuiz.hwShot) return;
-      var fcv = $('fpadCanvas');
-      tableQuiz.hwShot = fcv ? fcv.toDataURL('image/jpeg', 0.6) : null;
+      var tcv = $('twCanvas');
+      tableQuiz.hwShot = tcv ? tcv.toDataURL('image/jpeg', 0.6) : null;
       route();
     } else if (act === 'tbl-judge') { // 默写：比对后自评对错
       if (!tableQuiz || tableQuiz.picked >= 0) return;
