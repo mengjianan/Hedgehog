@@ -56,6 +56,18 @@
       </div>
     </div>
 
+    <!-- 悬浮手写板（基础表抄写 / 练习默写共用）：挂 body，不随页面切换销毁 -->
+    <div class="fpad" id="fpad" hidden>
+      <div class="fpad-bar" id="fpadBar">
+        <span class="fpad-title">✍ 手写板</span>
+        <span class="fpad-btns">
+          <button type="button" id="fpadClear">清一下</button>
+          <button type="button" id="fpadClose">收起</button>
+        </span>
+      </div>
+      <div class="fpad-body"><canvas id="fpadCanvas" width="720" height="540"></canvas></div>
+    </div>
+
     <script src="app.js?v=20"></script>
   </body>
 </html>

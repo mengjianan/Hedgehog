@@ -513,6 +513,7 @@ img { max-width: 100%; }
 /* ---------- 基础表 ---------- */
 .table-head { position: relative; padding: 20px 8px 4px; }
 .table-head h2 { display: inline; margin-right: 4px; }
+.table-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
 .table-section { margin-top: 28px; }
 .table-section h3 {
   font-size: 15.5px;
@@ -765,6 +766,60 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
   color: var(--ink, #333);
 }
 .mic-help-card button.primary { background: var(--sage, #8fa088); border-color: var(--sage-d, #6b7f66); color: #fdfcf8; }
+
+/* 悬浮手写板（基础表抄写 / 练习默写共用）：标题栏拖动，位置记住 */
+.fpad {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  width: min(92vw, 400px);
+  height: min(46vh, 320px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card, #fdfcf8);
+  border: 1px solid var(--line-d, #ccc);
+  border-radius: 12px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.28);
+  z-index: 110;
+  overflow: hidden;
+}
+.fpad-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--sage, #8fa088);
+  color: #fdfcf8;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  cursor: grab;
+  touch-action: none; /* 拖动时不让页面跟着滚 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fpad-bar:active { cursor: grabbing; }
+.fpad-btns { display: flex; gap: 6px; }
+.fpad-btns button {
+  border: 1px solid rgba(253, 252, 248, 0.55);
+  background: transparent;
+  color: #fdfcf8;
+  border-radius: 7px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.fpad-btns button:active { background: rgba(253, 252, 248, 0.18); }
+.fpad-body { flex: 1; min-height: 0; position: relative; }
+.fpad-body canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none; /* 画的时候不让页面滚 */
+}
+.fpad.dragging { opacity: 0.96; }
 
 /* 场景厅语言筛选 */
 .filter-chips { display: flex; gap: 8px; margin-top: -6px; flex-wrap: wrap; }

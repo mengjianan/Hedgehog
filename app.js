@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-3.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-4.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1779,9 +1779,10 @@
     ctx.fillRect(0, 0, cv.width, cv.height);
   }
 
-  function initCanvas() {
-    var cv = $('cbCanvas') || $('wmCanvas') || $('rwCanvas');
-    if (!cv) return;
+  // 画板绑定（防重复绑：页面画板每次渲染是新元素天然不重复；悬浮板是常驻元素要 _bound 挡）
+  function bindDraw(cv) {
+    if (!cv || cv._bound) return;
+    cv._bound = true;
     var ctx = cv.getContext('2d');
     ctx.fillStyle = '#fdfbf4';
     ctx.fillRect(0, 0, cv.width, cv.height);
@@ -1816,6 +1817,76 @@
       cv.addEventListener(t, function () { drawing = false; });
     });
   }
+  function initCanvas() {
+    bindDraw($('cbCanvas') || $('wmCanvas') || $('rwCanvas'));
+    bindDraw($('fpadCanvas')); // 悬浮手写板常驻 body，_bound 保证只绑一次
+  }
+
+  // ---------- 悬浮手写板：开关 / 标题栏拖动（位置记住）----------
+  function fpadPos() { return lsGet('hedgehog:fpad-pos', null); } // {x,y} left/top
+  function fpadApplyPos() {
+    var el = $('fpad'), p = fpadPos();
+    if (!el || !p) return;
+    // 夹在视口内（窗口变小后旧位置不越界）
+    var x = Math.max(4, Math.min(p.x, window.innerWidth - el.offsetWidth - 4));
+    var y = Math.max(4, Math.min(p.y, window.innerHeight - el.offsetHeight - 4));
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  }
+  function fpadShow() {
+    var el = $('fpad');
+    if (!el) return;
+    el.hidden = false;
+    fpadApplyPos(); // 有存的位置用存的；没有则保持 CSS 默认右下
+    bindDraw($('fpadCanvas'));
+  }
+  function fpadHide() {
+    var el = $('fpad');
+    if (el) el.hidden = true;
+  }
+  function fpadToggle() {
+    var el = $('fpad');
+    if (!el) return;
+    if (el.hidden) fpadShow();
+    else fpadHide();
+  }
+  (function bindFpadDrag() {
+    var bar = $('fpadBar');
+    if (!bar) return;
+    var drag = null;
+    bar.addEventListener('pointerdown', function (ev) {
+      if (ev.target.closest('button')) return; // 按钮不触发拖动
+      var el = $('fpad');
+      var r = el.getBoundingClientRect();
+      drag = { dx: ev.clientX - r.left, dy: ev.clientY - r.top };
+      bar.setPointerCapture(ev.pointerId);
+      el.classList.add('dragging');
+    });
+    bar.addEventListener('pointermove', function (ev) {
+      if (!drag) return;
+      var el = $('fpad');
+      var x = ev.clientX - drag.dx;
+      var y = ev.clientY - drag.dy;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    });
+    ['pointerup', 'pointercancel'].forEach(function (t) {
+      bar.addEventListener(t, function () {
+        if (!drag) return;
+        drag = null;
+        var el = $('fpad');
+        el.classList.remove('dragging');
+        var r = el.getBoundingClientRect();
+        lsSet('hedgehog:fpad-pos', { x: Math.round(r.left), y: Math.round(r.top) });
+      });
+    });
+    $('fpadClear').addEventListener('click', function () { clearPad('fpadCanvas'); });
+    $('fpadClose').addEventListener('click', fpadHide);
+  })();
 
   // 书阁：基础表入口页
   function viewTablesHub() {
@@ -1845,7 +1916,10 @@
       '<h2>' + esc(t.title) + '</h2>' +
       '<em class="lang-tag lang-' + t.lang + '">' + (LANG_NAME[t.lang] || t.lang) + '</em>' +
       '<p class="sub">' + esc(t.subtitle || '') + '</p>' +
-      '<a class="btn" href="#/tables/' + esc(id) + '/practice" style="display:inline-block;margin-top:8px">开始练习</a>' +
+      '<div class="table-actions">' +
+      '<a class="btn" href="#/tables/' + esc(id) + '/practice">开始练习</a>' +
+      '<button class="btn ghost" data-act="fpad-toggle">✍ 抄写</button>' +
+      '</div>' +
       '</div>' + body +
       '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
     );
@@ -3471,6 +3545,8 @@
       logStamp();
       tableQuiz = null;
       route();
+    } else if (act === 'fpad-toggle') { // 悬浮手写板：弹出/收回
+      fpadToggle();
     } else if (act === 'quiz-begin') { // 小测验：开始
       quiz = {
         qs: buildQuiz(quizSize), qi: 0, results: [],
