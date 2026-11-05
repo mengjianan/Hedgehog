@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-5.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-5.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -574,7 +574,7 @@
     var settled = false;
     a.addEventListener('canplay', function () {
       // 不显示单词：听辨/听认场景弹词等于泄题
-      if (!settled) { settled = true; toast('播放中'); }
+      if (!settled) { settled = true; toast('▶'); }
     });
     a.addEventListener('error', function () {
       if (!settled) { settled = true; toast('发音源不可用'); }
