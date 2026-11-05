@@ -899,6 +899,17 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
 }
 .mini-btn:hover { border-color: var(--sage); color: var(--sage-d); }
 
+/* 按钮/提示内嵌细线图标与文字对齐 */
+.btn svg,
+.seg svg,
+.swipe-tip svg,
+.tour-slot svg,
+.fpad-title svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.swipe-tip svg { margin-right: 2px; }
+
 /* ---------- 宫殿总图 ---------- */
 .halls {
   display: grid;

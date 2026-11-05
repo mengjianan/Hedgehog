@@ -28,14 +28,26 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-5.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-5.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
     sound:
       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M17.8 6.8a7 7 0 0 1 0 10.4"/></svg>',
     star:
-      '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.7-4.2 3.9 1.1 5.6L12 16.4l-5.1 2.6 1.1-5.6-4.2-3.9 5.7-.7L12 3.6z"/></svg>'
+      '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.7-4.2 3.9 1.1 5.6L12 16.4l-5.1 2.6 1.1-5.6-4.2-3.9 5.7-.7L12 3.6z"/></svg>',
+    pen:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.12 2.12 0 0 0-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/></svg>',
+    keyboard:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"/></svg>',
+    mic:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18.5V21"/></svg>',
+    play:
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+    up:
+      '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+    down:
+      '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>'
   };
 
   var PAPER_CLASSES = ['paper-grid', 'paper-lined', 'paper-blank'];
@@ -1019,7 +1031,7 @@
     if (st === 'idle') {
       return base +
         '<div class="study-actions">' +
-        '<button class="btn" data-act="sh-record">开始录音跟读</button>' +
+        '<button class="btn" data-act="sh-record">' + ICON.mic + ' 开始录音跟读</button>' +
         '</div>' +
         '<button class="btn ghost" data-act="blur" style="width:100%;margin-top:8px">先跳过（模糊）</button>' +
         '</div>';
@@ -1041,9 +1053,9 @@
         (hit ? ' ✓ 接近原词' : ' · 再试一次？') + '</div>';
     }
     return base + pronHtml +
-      '<div class="spell-tools"><span class="tour-slot">回放你的跟读，和原声对比</span></div>' +
+      '<div class="spell-tools"><span class="tour-slot">' + ICON.sound + ' 回放你的跟读，和原声对比</span></div>' +
       '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="sh-play">再听我的</button>' +
+      '<button class="btn ghost" data-act="sh-play">' + ICON.play + ' 再听我的</button>' +
       '<button class="btn ghost" data-act="sh-again">重录</button>' +
       '</div>' +
       '<div class="study-actions">' +
@@ -1314,9 +1326,9 @@
       var padSeg =
         '<div class="seg-ctl">' +
         '<button type="button" class="seg tiny' + (pad === 'kb' ? ' on' : '') +
-        '" data-act="rw-pad" data-pad="kb">键盘</button>' +
+        '" data-act="rw-pad" data-pad="kb">' + ICON.keyboard + ' 键盘</button>' +
         '<button type="button" class="seg tiny' + (pad === 'hw' ? ' on' : '') +
-        '" data-act="rw-pad" data-pad="hw">手写板</button>' +
+        '" data-act="rw-pad" data-pad="hw">' + ICON.pen + ' 手写板</button>' +
         '</div>';
       if (pad === 'hw') {
         if (session.wmCompare) { // 手写完 → 与答案并排比对 → 去读
@@ -1521,7 +1533,7 @@
       ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
       '<span><button class="mini-btn" data-act="study-home">✕ 退出重选</button>' +
       ' 认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
-      '<p class="swipe-tip">判分页上滑=认识 · 下滑=模糊 · 点小地图方块回看单词</p>' +
+      '<p class="swipe-tip">' + ICON.up + ' 判分页上滑=认识 · ' + ICON.down + ' 下滑=模糊 · 点小地图方块回看单词</p>' +
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
@@ -1946,7 +1958,7 @@
       '<p class="sub">' + esc(t.subtitle || '') + '</p>' +
       '<div class="table-actions">' +
       '<a class="btn" href="#/tables/' + esc(id) + '/practice">开始练习</a>' +
-      '<button class="btn ghost" data-act="fpad-toggle">抄写</button>' +
+      '<button class="btn ghost" data-act="fpad-toggle">' + ICON.pen + ' 抄写</button>' +
       '</div>' +
       '</div>' + body +
       '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
