@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-4.3'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-5.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -562,7 +562,7 @@
     var settled = false;
     a.addEventListener('canplay', function () {
       // 不显示单词：听辨/听认场景弹词等于泄题
-      if (!settled) { settled = true; toast('▶'); }
+      if (!settled) { settled = true; toast('播放中'); }
     });
     a.addEventListener('error', function () {
       if (!settled) { settled = true; toast('发音源不可用'); }
@@ -1019,7 +1019,7 @@
     if (st === 'idle') {
       return base +
         '<div class="study-actions">' +
-        '<button class="btn" data-act="sh-record">🎙 开始录音跟读</button>' +
+        '<button class="btn" data-act="sh-record">开始录音跟读</button>' +
         '</div>' +
         '<button class="btn ghost" data-act="blur" style="width:100%;margin-top:8px">先跳过（模糊）</button>' +
         '</div>';
@@ -1041,9 +1041,9 @@
         (hit ? ' ✓ 接近原词' : ' · 再试一次？') + '</div>';
     }
     return base + pronHtml +
-      '<div class="spell-tools"><span class="tour-slot">🔊 回放你的跟读，和原声对比</span></div>' +
+      '<div class="spell-tools"><span class="tour-slot">回放你的跟读，和原声对比</span></div>' +
       '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="sh-play">▶ 再听我的</button>' +
+      '<button class="btn ghost" data-act="sh-play">再听我的</button>' +
       '<button class="btn ghost" data-act="sh-again">重录</button>' +
       '</div>' +
       '<div class="study-actions">' +
@@ -1314,9 +1314,9 @@
       var padSeg =
         '<div class="seg-ctl">' +
         '<button type="button" class="seg tiny' + (pad === 'kb' ? ' on' : '') +
-        '" data-act="rw-pad" data-pad="kb">⌨ 键盘</button>' +
+        '" data-act="rw-pad" data-pad="kb">键盘</button>' +
         '<button type="button" class="seg tiny' + (pad === 'hw' ? ' on' : '') +
-        '" data-act="rw-pad" data-pad="hw">✍ 手写板</button>' +
+        '" data-act="rw-pad" data-pad="hw">手写板</button>' +
         '</div>';
       if (pad === 'hw') {
         if (session.wmCompare) { // 手写完 → 与答案并排比对 → 去读
@@ -1521,7 +1521,7 @@
       ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
       '<span><button class="mini-btn" data-act="study-home">✕ 退出重选</button>' +
       ' 认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
-      '<p class="swipe-tip">👆 判分页上滑=认识 · 下滑=模糊 · 点小地图方块回看单词</p>' +
+      '<p class="swipe-tip">判分页上滑=认识 · 下滑=模糊 · 点小地图方块回看单词</p>' +
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
 
@@ -1946,7 +1946,7 @@
       '<p class="sub">' + esc(t.subtitle || '') + '</p>' +
       '<div class="table-actions">' +
       '<a class="btn" href="#/tables/' + esc(id) + '/practice">开始练习</a>' +
-      '<button class="btn ghost" data-act="fpad-toggle">✍ 抄写</button>' +
+      '<button class="btn ghost" data-act="fpad-toggle">抄写</button>' +
       '</div>' +
       '</div>' + body +
       '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
@@ -2298,7 +2298,7 @@
           wrongs.push('<div class="rev-row wrong"><b>' + (i + 1) + '.</b>' +
             '<span class="rev-stem">' + esc(q.kind === 'spell' ? q.stem : q.stem) +
             (q.spoken ? ' <button class="mini-btn" data-say="' + esc(q.spoken) +
-              '" data-le="' + esc(YOUDAO_LE[q.le] || 'en') + '">🔊</button>' : '') +
+              '" data-le="' + esc(YOUDAO_LE[q.le] || 'en') + '">' + ICON.sound + '</button>' : '') +
             '</span><span class="rev-ok">正确 ' + esc(okT) + '</span></div>');
         }
       });
@@ -2808,7 +2808,7 @@
           var disL = pickDis3(l1, all, usedOptL, wordList.id, function (x) { return x.zh; });
           if (disL.length < 3) break;
           qs.push({
-            type: '聴解・即時応答', stem: '🔊 ' + spoken, spoken: spoken,
+            type: '聴解・即時応答', stem: spoken, spoken: spoken,
             options: optSet(l1.zh, disL), ref: wordList.id + '/' + l1.w
           });
         }
@@ -2827,7 +2827,7 @@
           // 雅思听力（l1/l2/l4）不把原文打上屏幕（否则看着句子选中文不用听）；原文存 raw，交卷后解析区才显示
           qs.push({
             type: s.key === 'l-cont' ? '내용 파악' : '听句选义',
-            stem: s.key === 'l-cont' ? '🔊 ' + pick.en : '听句子，选出正确的中文意思',
+            stem: s.key === 'l-cont' ? pick.en : '听句子，选出正确的中文意思',
             spoken: pick.en, raw: s.key === 'l-cont' ? null : pick.en,
             options: optSet(pick.zh, disLC), ref: wordList.id + '/' + l2.w
           });
@@ -2882,7 +2882,7 @@
           }).map(function (x) { return x.w; });
           if (disF.length < 3) break;
           qs.push({
-            type: '选词填空', stem: '🔊 ' + fsent.split(fw.w).join('（　）'),
+            type: '选词填空', stem: fsent.split(fw.w).join('（　）'),
             spoken: fsent, raw: fsent, // 完整句（含答案词），交卷后解析区显示
             options: optSet(fw.w, disF), ref: wordList.id + '/' + fw.w
           });
@@ -3142,7 +3142,7 @@
           }
           return '<div class="rev-row' + (ok ? '' : ' wrong') + '">' + no +
             '<span class="rev-stem">' + esc(q.raw || q.stem) +
-            (q.spoken ? ' <button class="mini-btn" data-act="exam-rev-play" data-si="' + si + '" data-qi="' + qi + '">🔊</button>' : '') +
+            (q.spoken ? ' <button class="mini-btn" data-act="exam-rev-play" data-si="' + si + '" data-qi="' + qi + '">' + ICON.sound + '</button>' : '') +
             '</span>' +
             '<span class="rev-pick">你选 ' + esc(yourT) + (ok ? ' ✓' : '') + '</span>' +
             (ok ? '' : '<span class="rev-ok">正确 ' + esc(okT) + '</span>') +
@@ -3152,7 +3152,7 @@
         // 听力脚本板块：解析区板块头显示整段脚本 + 重播（考中不显示的原文此时出现）
         var revScript = s.script
           ? '<div class="rev-script"><span class="rev-script-t">' + esc(s.script.title) +
-            ' <button class="mini-btn" data-act="exam-rev-script" data-si="' + si + '">🔊 重播</button></span>' +
+            ' <button class="mini-btn" data-act="exam-rev-script" data-si="' + si + '">' + ICON.sound + ' 重播</button></span>' +
             '<p>' + esc(s.script.text) + '</p></div>'
           : '';
         return '<div class="rev-sec"><b>' + esc(s.title) + '</b>' + revScript + revRows + '</div>';
