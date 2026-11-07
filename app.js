@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-7.6'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-7.7'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1909,7 +1909,9 @@
       return '<div class="dlg-line ' + (ln.who === 'A' ? 'who-a' : 'who-b') + '">' +
         '<div class="dlg-bub">' +
         '<p class="dlg-en">' + esc(ln.en) + '</p>' +
-        '<p class="dlg-zh">' + esc(ln.zh) + '</p>' +
+        '<p class="dlg-tr"><b class="kd-el">日</b>' + esc(ln.ja || '') + '</p>' +
+        '<p class="dlg-tr"><b class="kd-el">韩</b>' + esc(ln.ko || '') + '</p>' +
+        '<p class="dlg-tr"><b class="kd-el">中</b>' + esc(ln.zh) + '</p>' +
         '</div>' +
         '<button class="mini-btn" data-act="dlg-say" data-i="' + i + '" title="朗读这句">' +
         ICON.sound + '</button>' +
