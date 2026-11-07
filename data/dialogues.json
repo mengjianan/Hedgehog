@@ -1817,6 +1817,582 @@
           "ko": "네, 한 시간 정도요。"
         }
       ]
+    },
+    {
+      "id": "w17",
+      "grp": "work",
+      "title": "工作交接",
+      "en": "Handover",
+      "lines": [
+        {
+          "who": "A",
+          "en": "Let's go over the handover.",
+          "zh": "我们过一下交接。",
+          "ja": "引き継ぎの内容を確認しましょう。",
+          "ko": "인수인계 내용을 확인해 봅시다。"
+        },
+        {
+          "who": "B",
+          "en": "I've listed all my tasks.",
+          "zh": "我把任务都列好了。",
+          "ja": "すべてのタスクをリストアップしました。",
+          "ko": "모든 업무를 목록으로 정리했어요。"
+        },
+        {
+          "who": "A",
+          "en": "Who covers the client account?",
+          "zh": "客户由谁接？",
+          "ja": "クライアント担当は誰がやる？",
+          "ko": "고객 담당은 누가 맡나요?"
+        },
+        {
+          "who": "B",
+          "en": "Sarah starts on Monday.",
+          "zh": "萨拉周一开始。",
+          "ja": "サラが月曜から始める。",
+          "ko": "사라가 월요일부터 시작해요。"
+        }
+      ]
+    },
+    {
+      "id": "w18",
+      "grp": "work",
+      "title": "视频会议",
+      "en": "Video meeting",
+      "lines": [
+        {
+          "who": "A",
+          "en": "Can you hear me?",
+          "zh": "能听到我说话吗？",
+          "ja": "声は聞こえますか？",
+          "ko": "제 목소리 들리세요?"
+        },
+        {
+          "who": "B",
+          "en": "Yes, but your video is off.",
+          "zh": "能，但你没开视频。",
+          "ja": "聞こえます、でも映像がオフです。",
+          "ko": "네, 근데 영상이 꺼져 있어요。"
+        },
+        {
+          "who": "A",
+          "en": "One second, let me turn it on.",
+          "zh": "等一下，我开一下。",
+          "ja": "ちょっと待って、入れます。",
+          "ko": "잠깐만, 켤게요。"
+        },
+        {
+          "who": "B",
+          "en": "Okay, we can start.",
+          "zh": "好，可以开始了。",
+          "ja": "よし、始めましょう。",
+          "ko": "좋아, 시작하죠。"
+        }
+      ]
+    },
+    {
+      "id": "w19",
+      "grp": "work",
+      "title": "赶截止日期",
+      "en": "Deadline crunch",
+      "lines": [
+        {
+          "who": "A",
+          "en": "The deadline is tomorrow.",
+          "zh": "截止日期是明天。",
+          "ja": "締め切りは明日です。",
+          "ko": "마감은 내일이에요。"
+        },
+        {
+          "who": "B",
+          "en": "I'll work late tonight.",
+          "zh": "今晚我加班。",
+          "ja": "今夜は残業します。",
+          "ko": "오늘 밤 야근할게요。"
+        },
+        {
+          "who": "A",
+          "en": "Need any help?",
+          "zh": "要帮忙吗？",
+          "ja": "手伝いはいる？",
+          "ko": "도움 필요해요?"
+        },
+        {
+          "who": "B",
+          "en": "Just review my draft when it is done.",
+          "zh": "写完帮我审下初稿就行。",
+          "ja": "できたら下書きを見てください。",
+          "ko": "다 되면 초안 좀 봐줘요。"
+        }
+      ]
+    },
+    {
+      "id": "w20",
+      "grp": "work",
+      "title": "离职道别",
+      "en": "Goodbye and good luck",
+      "lines": [
+        {
+          "who": "A",
+          "en": "Friday is my last day.",
+          "zh": "周五是我最后一天。",
+          "ja": "金曜が最後の日です。",
+          "ko": "금요일이 마지막 날이에요。"
+        },
+        {
+          "who": "B",
+          "en": "We'll miss you!",
+          "zh": "我们会想你的！",
+          "ja": "忘れないでね！",
+          "ko": "우리 그리울 거예요!"
+        },
+        {
+          "who": "A",
+          "en": "Let's keep in touch.",
+          "zh": "保持联系。",
+          "ja": "連絡を取り続けましょう。",
+          "ko": "연락 계속하자。"
+        },
+        {
+          "who": "B",
+          "en": "Definitely. Call me anytime.",
+          "zh": "一定，随时打给我。",
+          "ja": "もちろん。いつでも電話して。",
+          "ko": "물론. 언제든 전화해。"
+        }
+      ]
+    },
+    {
+      "id": "w21",
+      "grp": "work",
+      "title": "跨部门协调",
+      "en": "Cross-team sync",
+      "lines": [
+        {
+          "who": "A",
+          "en": "We need input from marketing.",
+          "zh": "我们需要市场部的意见。",
+          "ja": "マーケティングの意見が必要です。",
+          "ko": "마케팅의 의견이 필요해요。"
+        },
+        {
+          "who": "B",
+          "en": "I'll set up a sync.",
+          "zh": "我来约个对齐会。",
+          "ja": "顔合わせの場を設定します。",
+          "ko": "미팅을 잡을게요。"
+        },
+        {
+          "who": "A",
+          "en": "Make it before Friday.",
+          "zh": "排在周五之前。",
+          "ja": "金曜日までに。",
+          "ko": "금요일 전으로요。"
+        },
+        {
+          "who": "B",
+          "en": "Will do, sending the invite now.",
+          "zh": "好，我这就发邀请。",
+          "ja": "わかりました、招待を送ります。",
+          "ko": "알겠어요, 지금 초대장 보낼게요。"
+        }
+      ]
+    },
+    {
+      "id": "w22",
+      "grp": "work",
+      "title": "带新人",
+      "en": "Mentoring a new hire",
+      "lines": [
+        {
+          "who": "A",
+          "en": "How's your first week?",
+          "zh": "第一周感觉怎么样？",
+          "ja": "初週はどう？",
+          "ko": "첫 주는 어때요?"
+        },
+        {
+          "who": "B",
+          "en": "Busy but good.",
+          "zh": "忙但挺好的。",
+          "ja": "忙しいけど順調です。",
+          "ko": "바쁘지만 좋아요。"
+        },
+        {
+          "who": "A",
+          "en": "Any questions so far?",
+          "zh": "到现在有什么问题吗？",
+          "ja": "何か質問は？",
+          "ko": "아직 질문 있어요?"
+        },
+        {
+          "who": "B",
+          "en": "How do I submit expenses?",
+          "zh": "报销怎么提交？",
+          "ja": "経費はどうやって申請するの？",
+          "ko": "경비는 어떻게 신청하나요?"
+        }
+      ]
+    },
+    {
+      "id": "d30",
+      "grp": "life",
+      "title": "图书馆",
+      "en": "At the library",
+      "lines": [
+        {
+          "who": "A",
+          "en": "Can I get a library card?",
+          "zh": "我能办借书证吗？",
+          "ja": "図書カードを作りたいです。",
+          "ko": "도서증을 만들고 싶어요。"
+        },
+        {
+          "who": "B",
+          "en": "Do you have proof of address?",
+          "zh": "有地址证明吗？",
+          "ja": "住所の証明はありますか？",
+          "ko": "주소 증명 있으세요?"
+        },
+        {
+          "who": "A",
+          "en": "Yes, a utility bill.",
+          "zh": "有，水电费单。",
+          "ja": "はい、請求書があります。",
+          "ko": "네, 고지서 있어요。"
+        },
+        {
+          "who": "B",
+          "en": "Sign here and it's done.",
+          "zh": "签字就好了。",
+          "ja": "ここにサインしてください。",
+          "ko": "여기에 서명하면 돼요。"
+        }
+      ]
+    },
+    {
+      "id": "d31",
+      "grp": "life",
+      "title": "外卖点单",
+      "en": "Food delivery",
+      "lines": [
+        {
+          "who": "A",
+          "en": "I'd like to order for delivery.",
+          "zh": "我想点外卖。",
+          "ja": "デリバリーオーダーをお願いします。",
+          "ko": "배달로 주문하고 싶어요。"
+        },
+        {
+          "who": "B",
+          "en": "What would you like?",
+          "zh": "想吃点什么？",
+          "ja": "何になさいますか？",
+          "ko": "무엇을 드릴까요?"
+        },
+        {
+          "who": "A",
+          "en": "Two dumplings and a soup.",
+          "zh": "两份饺子加一份汤。",
+          "ja": "餃子2つとスープです。",
+          "ko": "만두 두 개와 수프요。"
+        },
+        {
+          "who": "B",
+          "en": "That's thirty minutes.",
+          "zh": "大概三十分钟。",
+          "ja": "30分ほどかかります。",
+          "ko": "30분 정도 걸려요。"
+        }
+      ]
+    },
+    {
+      "id": "d32",
+      "grp": "life",
+      "title": "快递取件",
+      "en": "Package pickup",
+      "lines": [
+        {
+          "who": "A",
+          "en": "I'm here to pick up a package.",
+          "zh": "我来取包裹。",
+          "ja": "荷物を受け取りに来ました。",
+          "ko": "소포를 받으러 왔어요。"
+        },
+        {
+          "who": "B",
+          "en": "Name and ID, please.",
+          "zh": "姓名和证件。",
+          "ja": "お名前と身分証を。",
+          "ko": "성함과 신분증 주세요。"
+        },
+        {
+          "who": "A",
+          "en": "Chen Li, here you go.",
+          "zh": "陈力，给你。",
+          "ja": "陳リです、はい。",
+          "ko": "천리예요, 여기요。"
+        },
+        {
+          "who": "B",
+          "en": "Sign on the screen.",
+          "zh": "在屏幕上签字。",
+          "ja": "画面にサインしてください。",
+          "ko": "화면에 서명해 주세요。"
+        }
+      ]
+    },
+    {
+      "id": "d33",
+      "grp": "life",
+      "title": "停车场",
+      "en": "Parking",
+      "lines": [
+        {
+          "who": "A",
+          "en": "Is there parking here?",
+          "zh": "这里有停车位吗？",
+          "ja": "駐車場はありますか？",
+          "ko": "주차장 있어요?"
+        },
+        {
+          "who": "B",
+          "en": "Yes, underground.",
+          "zh": "有，在地下。",
+          "ja": "地下にあります。",
+          "ko": "지하에 있어요。"
+        },
+        {
+          "who": "A",
+          "en": "How much an hour?",
+          "zh": "一小时多少钱？",
+          "ja": "1時間いくら？",
+          "ko": "한 시간에 얼마예요?"
+        },
+        {
+          "who": "B",
+          "en": "Five dollars.",
+          "zh": "5美元。",
+          "ja": "5ドルです。",
+          "ko": "5달러예요。"
+        }
+      ]
+    },
+    {
+      "id": "d34",
+      "grp": "life",
+      "title": "货币兑换",
+      "en": "Currency exchange",
+      "lines": [
+        {
+          "who": "A",
+          "en": "I'd like to change some money.",
+          "zh": "我想换钱。",
+          "ja": "両替をお願いします。",
+          "ko": "환전하고 싶어요。"
+        },
+        {
+          "who": "B",
+          "en": "How much?",
+          "zh": "换多少？",
+          "ja": "いくらですか？",
+          "ko": "얼마를 바꿀까요?"
+        },
+        {
+          "who": "A",
+          "en": "Five hundred dollars.",
+          "zh": "500美元。",
+          "ja": "500ドルです。",
+          "ko": "500달러요。"
+        },
+        {
+          "who": "B",
+          "en": "Here's the local currency.",
+          "zh": "这是当地货币。",
+          "ja": "現地通貨です。",
+          "ko": "현지 통화입니다。"
+        }
+      ]
+    },
+    {
+      "id": "d35",
+      "grp": "life",
+      "title": "修车",
+      "en": "Car repair",
+      "lines": [
+        {
+          "who": "A",
+          "en": "My car won't start.",
+          "zh": "我的车发动不了。",
+          "ja": "車が掛からない。",
+          "ko": "차가 안 걸려요。"
+        },
+        {
+          "who": "B",
+          "en": "Let's check the battery.",
+          "zh": "检查一下电瓶。",
+          "ja": "バッテリーを確認しましょう。",
+          "ko": "배터리를 확인해 봅시다。"
+        },
+        {
+          "who": "A",
+          "en": "Can you fix it today?",
+          "zh": "今天能修好吗？",
+          "ja": "今日中に直せますか？",
+          "ko": "오늘 안에 고칠 수 있나요?"
+        },
+        {
+          "who": "B",
+          "en": "Yes, by five.",
+          "zh": "能，五点前。",
+          "ja": "はい、5時までに。",
+          "ko": "네, 5시까지요。"
+        }
+      ]
+    },
+    {
+      "id": "d36",
+      "grp": "life",
+      "title": "看牙医",
+      "en": "At the dentist",
+      "lines": [
+        {
+          "who": "A",
+          "en": "I have a toothache.",
+          "zh": "我牙疼。",
+          "ja": "歯が痛いです。",
+          "ko": "이가 아파요。"
+        },
+        {
+          "who": "B",
+          "en": "Which tooth?",
+          "zh": "哪颗牙？",
+          "ja": "どの歯ですか？",
+          "ko": "어느 이예요?"
+        },
+        {
+          "who": "A",
+          "en": "The back left one.",
+          "zh": "左边后面那颗。",
+          "ja": "左奥の歯です。",
+          "ko": "왼쪽 뒤쪽이요。"
+        },
+        {
+          "who": "B",
+          "en": "Let's take an X-ray.",
+          "zh": "拍个片子看看。",
+          "ja": "レントゲンを撮りましょう。",
+          "ko": "엑스레이를 찍어 봅시다。"
+        }
+      ]
+    },
+    {
+      "id": "d37",
+      "grp": "life",
+      "title": "游乐园",
+      "en": "Amusement park",
+      "lines": [
+        {
+          "who": "A",
+          "en": "Let's ride the roller coaster!",
+          "zh": "我们去坐过山车！",
+          "ja": "ジェットコースターに乗ろう！",
+          "ko": "롤러코스터 타자!"
+        },
+        {
+          "who": "B",
+          "en": "I'm scared...",
+          "zh": "我有点怕……",
+          "ja": "怖いけど…",
+          "ko": "무서운데…"
+        },
+        {
+          "who": "A",
+          "en": "Come on, it'll be fun.",
+          "zh": "来吧，会很有趣的。",
+          "ja": "いいよ、楽しいよ。",
+          "ko": "좋아, 재미있을 거야。"
+        },
+        {
+          "who": "B",
+          "en": "Okay, but you go first.",
+          "zh": "好，但你先坐。",
+          "ja": "わかった、先に乗って。",
+          "ko": "알았어, 너 먼저 타。"
+        }
+      ]
+    },
+    {
+      "id": "d38",
+      "grp": "life",
+      "title": "交水电费",
+      "en": "Paying utilities",
+      "lines": [
+        {
+          "who": "A",
+          "en": "The electricity bill is due.",
+          "zh": "电费到期了。",
+          "ja": "電気料金の支払い期限です。",
+          "ko": "전기 요금 납부 기한이에요。"
+        },
+        {
+          "who": "B",
+          "en": "I'll pay it online.",
+          "zh": "我网上交。",
+          "ja": "オンラインで払います。",
+          "ko": "온라인으로 낼게요。"
+        },
+        {
+          "who": "A",
+          "en": "Send me the confirmation.",
+          "zh": "确认单发我。",
+          "ja": "確認画面を送って。",
+          "ko": "확인증 보내줘。"
+        },
+        {
+          "who": "B",
+          "en": "Done.",
+          "zh": "支付完成了。",
+          "ja": "完了しました。",
+          "ko": "끝났어요。"
+        }
+      ]
+    },
+    {
+      "id": "d39",
+      "grp": "life",
+      "title": "丢东西找回",
+      "en": "Lost and found",
+      "lines": [
+        {
+          "who": "A",
+          "en": "I think I left my umbrella here.",
+          "zh": "我好像把伞落这儿了。",
+          "ja": "傘をここに忘れたかもしれません。",
+          "ko": "우산을 여기 두고 온 것 같아요。"
+        },
+        {
+          "who": "B",
+          "en": "What does it look like?",
+          "zh": "什么样的？",
+          "ja": "どんな形ですか？",
+          "ko": "어떤 건가요?"
+        },
+        {
+          "who": "A",
+          "en": "Black, with a wooden handle.",
+          "zh": "黑色的，木头手柄。",
+          "ja": "黒くて木の持ち手です。",
+          "ko": "검은색이고 나무 손잡이요。"
+        },
+        {
+          "who": "B",
+          "en": "Here it is, someone turned it in.",
+          "zh": "在这儿，有人捡到了。",
+          "ja": "これです、届け出がありました。",
+          "ko": "여기 있어요, 누가 주셨어요。"
+        }
+      ]
     }
   ]
 }
