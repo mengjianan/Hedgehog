@@ -1797,8 +1797,14 @@ body.exam-focus .view { padding-top: 8px; }
   border-radius: 999px; padding: 1px 8px; font-weight: 500;
 }
 .kd-zh { font-size: 19px; margin-top: 8px; color: var(--ink2); }
-.kd-ex { margin: 10px 0 0; font-size: 14.5px; color: var(--ink2); line-height: 1.55; }
-.kd-exzh { margin: 4px 0 0; font-size: 13px; color: var(--mut); }
+/* 例句四行（同一句的翻译）：EN / 日 / 韩 / 中 */
+.kd-exs { margin-top: 10px; text-align: left; max-width: 340px; margin-left: auto; margin-right: auto; }
+.kd-exs p { margin: 3px 0; font-size: 14px; color: var(--ink2); line-height: 1.55; }
+.kd-el {
+  display: inline-block; width: 22px;
+  font-family: Georgia, serif; font-size: 10px; letter-spacing: 0.08em;
+  color: var(--stone); font-weight: 400;
+}
 
 /* 对话气泡：A 左 B 右，点喇叭朗读 */
 .dlg-box { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }

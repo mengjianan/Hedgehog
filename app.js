@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-7.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-7.6'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1687,7 +1687,7 @@
         var e = m[String(x.w).toLowerCase()] || null;
         return {
           w: x.w, pron: x.pron, ja: x.ja, jaPron: x.jaPron, ko: x.ko, koPron: x.koPron,
-          zh: x.zh, ex: x.ex, exZh: x.exZh,
+          zh: x.zh, ex: x.ex, exZh: x.exZh, exJa: x.exJa, exKo: x.exKo,
           ref: e ? e.ref : 'kinder/en/' + catId + '/' + x.w, // 内置词假 ref：只计本轮，不进复习（due 要求 IDX 命中）
           e: e
         };
@@ -1853,8 +1853,12 @@
       '<span class="kd-p">' + esc(w.jaPron || '') + '</span>' + sayBtn('ja') + '</div>' +
       '<div class="kd-row"><span class="kd-lang">韩</span><span class="kd-t">' + esc(w.ko) + '</span>' +
       '<span class="kd-p">' + esc(w.koPron || '') + '</span>' + sayBtn('ko') + '</div>';
-    var exEn = w.e ? (w.e.x.ex || '') : (w.ex || '');
-    var exZh = w.e ? '' : (w.exZh || '');
+    // 例句四语对齐（同一句的翻译）：EN/日/韩/中 全用词表数据（词库 ex 不再上卡，防止四语不同句）
+    var exs = '<div class="kd-exs">' +
+      [['EN', w.ex], ['日', w.exJa], ['韩', w.exKo], ['中', w.exZh]]
+        .filter(function (p) { return p[1]; })
+        .map(function (p) { return '<p><b class="kd-el">' + p[0] + '</b>' + esc(p[1]) + '</p>'; })
+        .join('') + '</div>';
     return back +
       '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
       '<div class="study-meta"><span>第 ' + (kinder.idx + 1) + '/' + n + ' 件</span>' +
@@ -1866,8 +1870,7 @@
       'onerror="this.style.display=\'none\'" />' +
       '<div class="kd-rows">' + rows + '</div>' +
       '<div class="kd-zh">' + esc(w.zh) + knownBadge + '</div>' +
-      (exEn ? '<p class="kd-ex">' + esc(exEn) + '</p>' : '') +
-      (exZh ? '<p class="kd-exzh">' + esc(exZh) + '</p>' : '') +
+      exs +
       '<div class="study-actions">' +
       '<button class="btn ghost" data-act="kinder-say-all">' + ICON.sound + ' 听三语</button>' +
       '<button class="btn" data-act="kinder-judge" data-good="1">认识</button>' +
