@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·职场办公 静物：显示器 + 马克杯 + 便签（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 显示器 -->
+    <rect x="44" y="20" width="72" height="46" rx="3"/>
+    <path d="M54 32 h34 M54 40 h48 M54 48 h40" stroke="#A8B5A2"/>
+    <path d="M80 66 v8 M66 78 h28"/>
+    <!-- 马克杯 -->
+    <rect x="124" y="58" width="18" height="22" rx="3"/>
+    <path d="M142 63 a6 6 0 0 1 0 12"/>
+    <path d="M129 52 c0-4 4-4 4-8 M137 52 c0-4 4-4 4-8" stroke="#A8B5A2"/>
+    <!-- 便签 -->
+    <path d="M22 44 l16-4 4 16 -16 4 z" stroke="#A8B5A2"/>
+    <path d="M26 48 l8-2 M27 53 l10-2" stroke="#A8B5A2"/>
+  </g>
+</svg>

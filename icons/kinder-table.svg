@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·餐桌餐具 静物：餐刀 + 盘子 + 叉子（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 餐刀 -->
+    <path d="M28 36 v30 c8-6 8-22 0-30 z"/>
+    <path d="M28 66 v16" stroke-width="2.4"/>
+    <!-- 盘子 -->
+    <circle cx="72" cy="58" r="26"/>
+    <circle cx="72" cy="58" r="17" stroke="#A8B5A2"/>
+    <!-- 叉子 -->
+    <path d="M118 30 v12 M124 30 v12 M130 30 v12"/>
+    <path d="M116 42 h18 v5 c0 5-4 8-9 8 s-9-3-9-8 z"/>
+    <path d="M125 55 v27" stroke-width="2.2"/>
+  </g>
+</svg>

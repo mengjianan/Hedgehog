@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-7.3'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-7.4'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1451,6 +1451,18 @@
         '<a class="entry-card" href="#/quiz"><b>小测验</b><small>混合出题</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b><small>写写贴贴</small></a>' +
         '</div>';
+      // 日用角入口（#7）：物件闪卡 + 地道对话，数据没到先显示读取中
+      var dailyRow =
+        '<p class="picker-h">日用角 · 日用物件与地道对话</p>' +
+        '<div class="entry-row two">' +
+        '<a class="entry-card" href="#/daily/obj"><b>物件</b><small>' +
+        (KINDER ? KINDER.cats.length + '类 ' +
+          KINDER.cats.reduce(function (n, c) { return n + c.words.length; }, 0) + '词'
+          : '读取中…') + '</small></a>' +
+        '<a class="entry-card" href="#/daily/dlg"><b>对话</b><small>' +
+        (DIALOGUES ? DIALOGUES.dialogues.length + '段 · 职场+日常' : '读取中…') +
+        '</small></a>' +
+        '</div>';
       var scenes = sceneLists().filter(function (l) {
         return sceneLang === 'all' || l.lang === sceneLang;
       });
@@ -1494,7 +1506,7 @@
         '<p class="sub">先选模式，再选出发点 · 每轮 ' + sessionSize + ' 站 · 进度存在本机</p>' +
         weeklyHTML() +
         sizeRow +
-        modeSeg + cards + groups
+        modeSeg + cards + dailyRow + groups
       );
     }
     if (session.idx >= session.queue.length) {
@@ -1635,6 +1647,241 @@
       session.logged = true;
       logStamp();
     }
+  }
+
+  // ---------- 日用角（#7）：日用物件闪卡 + 地道对话 ----------
+  // 内容：data/kinder-en.json（10 类 146 词，原创整理）、data/dialogues.json（25 段原创对话）
+  // 词库命中的物件挂词条（有道发音+词感+真 ref 进间隔复习），未命中的内置释义+系统朗读
+  var KINDER = null; // {cats:[{id,title,img,words:[{w,zh,ex,exZh}]}]}
+  var DIALOGUES = null; // {dialogues:[{id,grp,title,en,lines:[{who,en,zh}]}]}
+  var kinder = null; // 进行中的物件闪卡 {catId,cat,words:[{w,zh,ex,exZh,ref,e}],idx,good,bad,judged,logged}
+  var KMAP = null; // 词库英文头词 → 词条（懒建一次）
+  fetch('data/kinder-en.json').then(function (r) { return r.json(); })
+    .then(function (d) { KINDER = d; route(); }).catch(function () {});
+  fetch('data/dialogues.json').then(function (r) { return r.json(); })
+    .then(function (d) { DIALOGUES = d; route(); }).catch(function () {});
+
+  function kmap() {
+    if (!KMAP) {
+      KMAP = {};
+      for (var i = 0; i < ALL.length; i++) {
+        var e = ALL[i];
+        if (!e.l || e.l.lang !== 'en') continue;
+        var key = String(e.x.w || '').toLowerCase();
+        if (key && !KMAP[key]) KMAP[key] = e;
+      }
+    }
+    return KMAP;
+  }
+
+  function startKinder(catId) {
+    if (!KINDER) return false;
+    var cat = null;
+    KINDER.cats.forEach(function (c) { if (c.id === catId) cat = c; });
+    if (!cat) return false;
+    var m = kmap();
+    kinder = {
+      catId: catId,
+      cat: cat,
+      words: cat.words.map(function (x) {
+        var e = m[String(x.w).toLowerCase()] || null;
+        return {
+          w: x.w, zh: x.zh, ex: x.ex, exZh: x.exZh,
+          ref: e ? e.ref : 'kinder/en/' + catId + '/' + x.w, // 内置词假 ref：只计本轮，不进复习（due 要求 IDX 命中）
+          e: e
+        };
+      }),
+      idx: 0, good: 0, bad: 0, judged: {}, logged: false
+    };
+    return true;
+  }
+
+  // 判分：上滑/按钮=认识，下滑=模糊；真 ref 进掌握+间隔复习，首轮只计一次对错
+  function kinderJudge(good) {
+    if (!kinder || kinder.idx >= kinder.words.length) return;
+    var w = kinder.words[kinder.idx];
+    var k = known();
+    if (good) k[w.ref] = 1; else delete k[w.ref];
+    lsSet('hedgehog:known', k);
+    if (!kinder.judged[kinder.idx]) {
+      kinder.judged[kinder.idx] = true;
+      if (good) kinder.good++; else kinder.bad++;
+    }
+    scheduleRef(w.ref, good);
+    kinder.idx++;
+    if (kinder.idx >= kinder.words.length && !kinder.logged) {
+      kinder.logged = true;
+      logStamp();
+    }
+  }
+
+  function kinderSay() {
+    if (!kinder || kinder.idx >= kinder.words.length) return;
+    var w = kinder.words[kinder.idx];
+    var e = w.e || { x: { w: w.w }, l: { speech: 'en-US', lang: 'en' } };
+    playAudio(w.w, 'en', w.w, e);
+  }
+
+  function ttsUtter(text) {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    var v = pickVoice('en-US');
+    if (v) u.voice = v;
+    u.rate = 0.9;
+    return u;
+  }
+
+  // 对话整段朗读：speechSynthesis 顺序排队（单句用有道，整段用系统连读）
+  function dlgSayAll(d) {
+    if (!window.speechSynthesis || !d) return;
+    window.speechSynthesis.cancel();
+    d.lines.forEach(function (ln) { window.speechSynthesis.speak(ttsUtter(ln.en)); });
+    toast('▶');
+    setTimeout(function () {
+      try { if (window.speechSynthesis.speaking) window.speechSynthesis.resume(); } catch (err) {}
+    }, 300);
+  }
+
+  function dlgReadMap() { return lsGet('hedgehog:kinder-dlg', {}); }
+
+  function curDlg() {
+    var m = /^#\/daily\/dlg\/([^/]+)$/.exec(location.hash);
+    if (!m || !DIALOGUES) return null;
+    var id = decodeURIComponent(m[1]);
+    var d = null;
+    DIALOGUES.dialogues.forEach(function (x) { if (x.id === id) d = x; });
+    return d;
+  }
+
+  function dlgDone(id) {
+    var m = dlgReadMap();
+    var first = !m[id];
+    if (first) {
+      m[id] = 1;
+      lsSet('hedgehog:kinder-dlg', m);
+      logStamp(); // 读完一段=打卡一轮（只记首次）
+    }
+    var list = (DIALOGUES && DIALOGUES.dialogues) || [];
+    var i = -1;
+    list.forEach(function (d, j) { if (d.id === id) i = j; });
+    if (i >= 0 && i + 1 < list.length) location.hash = '#/daily/dlg/' + list[i + 1].id;
+    else location.hash = '#/daily/dlg';
+    toast(first ? '✓ 已读 · 打卡 +1' : '✓ 已读');
+  }
+
+  // ---------- 视图：日用角·物件 ----------
+  function viewDailyObj(catId) {
+    var back0 = '<a class="back-link" href="#/study">← 巡游</a>';
+    if (!KINDER) return back0 + '<h2>日用角 · 物件</h2><p class="sub">词表读取中…</p>';
+    if (!catId) {
+      var k = known();
+      var m = kmap();
+      var cards = KINDER.cats.map(function (c) {
+        var done = 0;
+        c.words.forEach(function (x) {
+          var e = m[String(x.w).toLowerCase()];
+          if (e && k[e.ref]) done++;
+        });
+        return '<a class="kd-cat" href="#/daily/obj/' + c.id + '">' +
+          '<img src="' + c.img + '" alt="" />' +
+          '<b>' + esc(c.title) + '</b>' +
+          '<small>' + c.words.length + ' 词' + (done ? ' · 已认 ' + done : '') + '</small></a>';
+      }).join('');
+      return back0 +
+        '<h2>日用角 · 物件</h2>' +
+        '<p class="sub">母语者日常会撞见的东西 · ' + KINDER.cats.length + ' 类 ' +
+        KINDER.cats.reduce(function (n, c) { return n + c.words.length; }, 0) + ' 词</p>' +
+        '<div class="kd-cats">' + cards + '</div>';
+    }
+    var back = '<a class="back-link" href="#/daily/obj">← 物件</a>';
+    if (!kinder || kinder.catId !== catId) {
+      if (!startKinder(catId)) return back + '<h2>日用角</h2><p class="sub">没有这个类别</p>';
+    }
+    var cat = kinder.cat;
+    if (kinder.idx >= kinder.words.length) {
+      return back +
+        '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
+        '<div class="card study-done">' +
+        '<img class="sticker" src="icons/sticker-hog.svg" alt="" />' +
+        '<div class="stamp">完成</div>' +
+        '<p>本轮：认识 <b>' + kinder.good + '</b> · 模糊 <b>' + kinder.bad + '</b></p>' +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="kinder-restart" data-cat="' + cat.id + '">再来一轮</button>' +
+        '<a class="btn ghost" href="#/daily/obj">回物件</a>' +
+        '</div></div>';
+    }
+    var w = kinder.words[kinder.idx];
+    var n = kinder.words.length;
+    var pct = Math.round((kinder.idx / n) * 100);
+    var pron = w.e && w.e.x.pron ? '<div class="kd-pron">' + esc(w.e.x.pron) + '</div>' : '';
+    var exEn = w.e ? (w.e.x.ex || '') : (w.ex || '');
+    var exZh = w.e ? '' : (w.exZh || '');
+    var knownBadge = known()[w.ref] ? '<span class="kd-known">已认识</span>' : '';
+    return back +
+      '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
+      '<div class="study-meta"><span>第 ' + (kinder.idx + 1) + '/' + n + ' 件</span>' +
+      '<span>认识 ' + kinder.good + ' · 模糊 ' + kinder.bad + '</span></div>' +
+      '<p class="swipe-tip">' + ICON.up + ' 上滑=认识 · ' + ICON.down + ' 下滑=模糊</p>' +
+      '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="card study-card kinder-card">' +
+      '<div class="kd-word">' + esc(w.w) + knownBadge + '</div>' +
+      pron +
+      '<div class="kd-zh">' + esc(w.zh) + '</div>' +
+      (exEn ? '<p class="kd-ex">' + esc(exEn) + '</p>' : '') +
+      (exZh ? '<p class="kd-exzh">' + esc(exZh) + '</p>' : '') +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="kinder-say">' + ICON.sound + ' 听</button>' +
+      '<button class="btn" data-act="kinder-judge" data-good="1">认识</button>' +
+      '<button class="btn ghost" data-act="kinder-judge" data-good="0">模糊</button>' +
+      '</div></div>';
+  }
+
+  // ---------- 视图：日用角·对话 ----------
+  function viewDailyDlg(id) {
+    var back0 = '<a class="back-link" href="#/study">← 巡游</a>';
+    if (!DIALOGUES) return back0 + '<h2>日用角 · 对话</h2><p class="sub">对话读取中…</p>';
+    var list = DIALOGUES.dialogues;
+    if (!id) {
+      var read = dlgReadMap();
+      var card = function (d) {
+        return '<a class="mini-card dlg-card" href="#/daily/dlg/' + d.id + '">' +
+          '<span class="en">' + (d.grp === 'work' ? 'WORK' : 'DAILY') + '</span>' +
+          '<b>' + esc(d.title) + (read[d.id] ? ' ✓' : '') + '</b>' +
+          '<small>' + esc(d.en) + ' · ' + d.lines.length + ' 句</small></a>';
+      };
+      var work = list.filter(function (d) { return d.grp === 'work'; });
+      var life = list.filter(function (d) { return d.grp === 'life'; });
+      return back0 +
+        '<h2>日用角 · 对话</h2>' +
+        '<p class="sub">点句子朗读 · 读完打卡 · 共 ' + list.length + ' 段</p>' +
+        '<p class="picker-h">职场（重点）· ' + work.length + ' 段</p>' +
+        '<div class="wordlist">' + work.map(card).join('') + '</div>' +
+        '<p class="picker-h">日常 · ' + life.length + ' 段</p>' +
+        '<div class="wordlist">' + life.map(card).join('') + '</div>';
+    }
+    var d = null;
+    list.forEach(function (x) { if (x.id === id) d = x; });
+    if (!d) return back0 + '<h2>日用角 · 对话</h2><p class="sub">没有这段对话</p>';
+    var isRead = !!dlgReadMap()[d.id];
+    var lines = d.lines.map(function (ln, i) {
+      return '<div class="dlg-line ' + (ln.who === 'A' ? 'who-a' : 'who-b') + '">' +
+        '<div class="dlg-bub">' +
+        '<p class="dlg-en">' + esc(ln.en) + '</p>' +
+        '<p class="dlg-zh">' + esc(ln.zh) + '</p>' +
+        '</div>' +
+        '<button class="mini-btn" data-act="dlg-say" data-i="' + i + '" title="朗读这句">' +
+        ICON.sound + '</button>' +
+        '</div>';
+    }).join('');
+    return '<a class="back-link" href="#/daily/dlg">← 对话</a>' +
+      '<h2>' + esc(d.title) + '</h2>' +
+      '<p class="sub">' + esc(d.en) + ' · ' + d.lines.length + ' 句' + (isRead ? ' · ✓ 已读' : '') + '</p>' +
+      '<div class="dlg-box">' + lines + '</div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="dlg-say-all">' + ICON.sound + ' 听整段</button>' +
+      '<button class="btn" data-act="dlg-done" data-id="' + d.id + '">' +
+      (isRead ? '下一段 →' : '✓ 读完了') + '</button>' +
+      '</div>';
   }
 
   // ---------- 视图：收藏 ----------
@@ -3323,6 +3570,11 @@
       document.body.classList.toggle('exam-focus', !!(exam && exam.phase === 'run'));
     } else if (name === 'study') {
       view.innerHTML = studyScreen();
+    } else if (name === 'daily') {
+      nav = 'study'; // 日用角挂在背词标签下
+      view.innerHTML = parts[1] === 'dlg'
+        ? viewDailyDlg(parts[2] || '')
+        : viewDailyObj(parts[2] || '');
     } else if (name === 'quiz') {
       view.innerHTML = viewQuiz();
       nav = 'study';
@@ -3344,7 +3596,7 @@
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
     });
-    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7, exam: 4, quiz: 4 }[name] || 1;
+    var pnum = { home: 1, categories: 2, word: 2, tables: 3, study: 4, favorites: 5, grammar: 6, copybook: 7, exam: 4, quiz: 4, daily: 4 }[name] || 1;
     var pn = $('pageNum');
     if (pn) pn.textContent = '— ' + pnum + ' —';
     if (pageChanged) window.scrollTo(0, 0); // 只在真正换页时回顶；页内操作保持滚动位置
@@ -3466,6 +3718,8 @@
   var sw = { y0: 0, dy: 0, on: false, card: null };
   var SWIPE_TH = 80; // 阈值像素
   function swipeOK() {
+    // 日用角物件卡：任意站可判（不依赖巡游 session 的判分步状态）
+    if (kinder && kinder.idx < kinder.words.length && location.hash.indexOf('#/daily/') === 0) return true;
     return atJudgeStep() && session.idx < session.queue.length;
   }
   $('view').addEventListener('touchstart', function (e) {
@@ -3497,6 +3751,11 @@
     card.style.transform = '';
     if (Math.abs(dy) < SWIPE_TH) return; // 回弹，不判
     if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = null; }
+    if (card.classList.contains('kinder-card')) { // 日用角物件卡：同手势，独立计分
+      kinderJudge(dy < 0);
+      route();
+      return;
+    }
     recordStudy(dy < 0); // 上滑=认识，下滑=模糊（方向按用户定）
     advanceSession();
     route();
@@ -3759,6 +4018,24 @@
         mode: pickMode,
       });
       route();
+    } else if (act === 'kinder-restart') { // 日用角完成页：再来一轮
+      if (startKinder(el.getAttribute('data-cat'))) route();
+    } else if (act === 'kinder-judge') { // 日用角：桌面按钮判分（同上滑/下滑）
+      kinderJudge(el.getAttribute('data-good') === '1');
+      route();
+    } else if (act === 'kinder-say') {
+      kinderSay();
+    } else if (act === 'dlg-say') { // 对话：单句朗读（有道，失败转系统朗读）
+      var cd1 = curDlg();
+      if (cd1) {
+        var dli = parseInt(el.getAttribute('data-i'), 10) || 0;
+        var dln = cd1.lines[dli];
+        if (dln) playAudio(dln.en, 'en', dln.en, { x: { w: dln.en }, l: { speech: 'en-US', lang: 'en' } });
+      }
+    } else if (act === 'dlg-say-all') {
+      dlgSayAll(curDlg());
+    } else if (act === 'dlg-done') { // 读完打卡 + 下一段
+      dlgDone(el.getAttribute('data-id'));
     } else if (act === 'study-home') {
       session = null;
       route();

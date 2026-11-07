@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·家具居家 静物：沙发 + 落地灯（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 沙发 -->
+    <path d="M26 56 V40 c0-5 4-9 10-9 h44 c6 0 10 4 10 9 v16"/>
+    <rect x="18" y="56" width="80" height="22" rx="6"/>
+    <path d="M34 56 v22 M58 56 v22 M82 56 v22" stroke="#A8B5A2"/>
+    <path d="M26 78 v6 M90 78 v6"/>
+    <!-- 落地灯 -->
+    <path d="M130 84 V46"/>
+    <path d="M120 84 h20"/>
+    <path d="M118 46 l6-16 h12 l6 16 z"/>
+    <path d="M146 38 l7-4 M147 48 l7 3" stroke="#A8B5A2"/>
+  </g>
+</svg>

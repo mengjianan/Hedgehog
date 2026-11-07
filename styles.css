@@ -1747,3 +1747,64 @@ body.exam-focus .view { padding-top: 8px; }
   body.exam-focus .page { padding: 20px 28px 28px; }
   body.exam-focus .view { max-width: 1500px; }
 }
+
+/* ---------- 日用角（物件闪卡 + 地道对话，#7） ---------- */
+.entry-row.two { grid-template-columns: repeat(2, 1fr); }
+
+/* 类别卡：细线静物图 + 名称 + 词数 */
+.kd-cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.kd-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 0.15s;
+}
+.kd-cat:hover { border-color: var(--sage); }
+.kd-cat img { width: 100%; height: 64px; object-fit: contain; }
+.kd-cat b { font-size: 14px; letter-spacing: 0.04em; }
+.kd-cat small { color: var(--mut); font-size: 11.5px; }
+
+/* 物件闪卡（复用 .card.study-card 骨架） */
+.kd-word { font-size: 30px; font-weight: 650; letter-spacing: 0.02em; }
+.kd-known {
+  display: inline-block; vertical-align: 6px; margin-left: 8px;
+  font-size: 11px; color: var(--sage-d); border: 1px solid var(--sage);
+  border-radius: 999px; padding: 1px 8px; font-weight: 500;
+}
+.kd-pron { color: var(--mut); font-size: 14px; margin-top: 4px; font-family: Georgia, serif; }
+.kd-zh { font-size: 19px; margin-top: 8px; color: var(--ink2); }
+.kd-ex { margin: 10px 0 0; font-size: 14.5px; color: var(--ink2); line-height: 1.55; }
+.kd-exzh { margin: 4px 0 0; font-size: 13px; color: var(--mut); }
+
+/* 对话气泡：A 左 B 右，点喇叭朗读 */
+.dlg-box { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.dlg-line { display: flex; align-items: flex-start; gap: 8px; }
+.dlg-line.who-b { flex-direction: row-reverse; }
+.dlg-bub {
+  max-width: 80%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px 14px 14px 14px;
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+}
+.dlg-line.who-b .dlg-bub {
+  background: #f3f6f2;
+  border-radius: 14px 4px 14px 14px;
+}
+.dlg-en { margin: 0; font-size: 15px; line-height: 1.5; }
+.dlg-zh { margin: 3px 0 0; font-size: 12.5px; color: var(--mut); }
+.dlg-line .mini-btn { margin-top: 6px; flex: 0 0 auto; }

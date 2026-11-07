@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·卫浴洗漱 静物：挂杆毛巾 + 牙刷杯 + 香皂（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 挂杆与毛巾 -->
+    <path d="M18 30 h44"/>
+    <circle cx="18" cy="30" r="2.5"/>
+    <circle cx="62" cy="30" r="2.5"/>
+    <path d="M28 30 v38 c0 5 4 8 9 8 h8 c5 0 9-3 9-8 v-38"/>
+    <path d="M28 44 h26" stroke="#A8B5A2"/>
+    <!-- 牙刷杯 -->
+    <path d="M92 58 h26 l-3 24 h-20 z"/>
+    <path d="M93 66 h24" stroke="#A8B5A2"/>
+    <path d="M105 58 v-16"/>
+    <rect x="100" y="34" width="11" height="10" rx="3"/>
+    <path d="M102 36 h7" stroke="#A8B5A2"/>
+    <!-- 香皂与泡泡 -->
+    <rect x="128" y="70" width="20" height="12" rx="6"/>
+    <circle cx="134" cy="62" r="2" stroke="#A8B5A2"/>
+    <circle cx="142" cy="57" r="2.5" stroke="#A8B5A2"/>
+  </g>
+</svg>

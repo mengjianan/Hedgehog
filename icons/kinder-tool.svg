@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·工具五金 静物：锤子 + 扳手 + 螺丝（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 锤子 -->
+    <rect x="26" y="26" width="34" height="16" rx="4" transform="rotate(18 43 34)"/>
+    <path d="M52 44 L94 78" stroke-width="2.6"/>
+    <path d="M80 68 l9 7 M85 64 l9 7" stroke="#A8B5A2"/>
+    <!-- 扳手（套筒头） -->
+    <rect x="108" y="26" width="24" height="20" rx="6" transform="rotate(40 120 36)"/>
+    <circle cx="120" cy="36" r="6"/>
+    <path d="M114 48 L90 76" stroke-width="2.6"/>
+    <!-- 螺丝 -->
+    <path d="M118 66 v14" stroke-width="2.2"/>
+    <path d="M120 73 h20" stroke-width="2.2"/>
+    <path d="M126 69 l3 8 M133 69 l3 8" stroke="#A8B5A2"/>
+  </g>
+</svg>

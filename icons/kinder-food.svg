@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·食材杂货 静物：洋葱 + 胡萝卜 + 蘑菇（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 洋葱 -->
+    <path d="M40 84 c-13 0-21-9-21-21 0-11 9-19 21-19 s21 8 21 19 c0 12-8 21-21 21 z"/>
+    <path d="M40 44 v40 M31 48 c-4 8-4 18 0 26 M49 48 c4 8 4 18 0 26" stroke="#A8B5A2"/>
+    <path d="M40 44 v-10 M34 46 c-2-6-6-8-10-8 M46 46 c2-6 6-8 10-8"/>
+    <!-- 胡萝卜 -->
+    <path d="M80 50 h26 l-13 34 z"/>
+    <path d="M86 58 l10 4 M84 66 l10 5" stroke="#A8B5A2"/>
+    <path d="M86 50 l-4-10 M93 50 v-12 M100 50 l4-10" stroke="#A8B5A2"/>
+    <!-- 蘑菇 -->
+    <path d="M118 64 a20 16 0 0 1 40 0 z"/>
+    <path d="M130 64 v14 c0 4 3 6 8 6 s8-2 8-6 v-14"/>
+    <path d="M124 64 h28" stroke="#A8B5A2"/>
+    <circle cx="130" cy="54" r="2.5" stroke="#A8B5A2"/>
+    <circle cx="146" cy="57" r="2" stroke="#A8B5A2"/>
+  </g>
+</svg>

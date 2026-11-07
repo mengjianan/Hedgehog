@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·出行装备 静物：双肩包 + 雨伞（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 双肩包 -->
+    <rect x="26" y="44" width="52" height="40" rx="12"/>
+    <path d="M26 60 c0-12 12-20 26-20 s26 8 26 20"/>
+    <rect x="40" y="62" width="24" height="14" rx="5"/>
+    <path d="M52 60 v8" stroke="#A8B5A2"/>
+    <path d="M44 44 c3-9 17-9 20 0"/>
+    <!-- 雨伞 -->
+    <path d="M96 58 a24 20 0 0 1 48 0 z"/>
+    <path d="M120 38 v-6"/>
+    <path d="M120 58 v18 c0 6 9 6 9-1"/>
+    <path d="M108 54 c4-6 20-6 24 0" stroke="#A8B5A2"/>
+  </g>
+</svg>

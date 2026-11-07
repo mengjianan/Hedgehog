@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·电子数码 静物：手机 + 蓝牙耳机盒 + 充电头（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 手机 -->
+    <rect x="30" y="24" width="36" height="58" rx="7"/>
+    <path d="M42 32 h12"/>
+    <path d="M38 42 h20 M38 50 h20 M38 58 h14" stroke="#A8B5A2"/>
+    <path d="M42 74 h12"/>
+    <!-- 蓝牙耳机盒 + 耳机 -->
+    <rect x="84" y="54" width="34" height="26" rx="7"/>
+    <path d="M84 62 h34" stroke="#A8B5A2"/>
+    <circle cx="96" cy="36" r="5"/>
+    <path d="M96 41 v7"/>
+    <circle cx="110" cy="30" r="5"/>
+    <path d="M110 35 v7"/>
+    <!-- 充电头 -->
+    <rect x="132" y="62" width="16" height="18" rx="3"/>
+    <path d="M136 62 v-6 M144 62 v-6"/>
+    <path d="M140 80 c0 5-7 4-7 8" stroke="#A8B5A2"/>
+  </g>
+</svg>

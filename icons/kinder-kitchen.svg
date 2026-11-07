@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·厨房灶台 静物：锅铲 + 平底锅 + 水壶（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- 锅铲 -->
+    <path d="M20 38 v30"/>
+    <rect x="14" y="68" width="12" height="16" rx="3"/>
+    <path d="M17 73 h6 M17 78 h6" stroke="#A8B5A2"/>
+    <!-- 平底锅 -->
+    <ellipse cx="64" cy="74" rx="24" ry="10"/>
+    <ellipse cx="64" cy="72" rx="17" ry="6" stroke="#A8B5A2"/>
+    <path d="M88 74 h22" stroke-width="2.6"/>
+    <circle cx="112" cy="74" r="3"/>
+    <!-- 水壶 -->
+    <path d="M118 56 h26 v16 c0 7-6 12-13 12 s-13-5-13-12 z"/>
+    <path d="M124 56 v-4 h14 v4"/>
+    <circle cx="131" cy="48" r="2.5"/>
+    <path d="M144 60 c6 2 8 7 8 12"/>
+    <path d="M118 60 c-7 0-9 7-5 12" stroke="#A8B5A2"/>
+  </g>
+</svg>

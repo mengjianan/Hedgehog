@@ -1,0 +1,222 @@
+{
+  "lang": "en",
+  "note": "日用角·物件词表（原创整理）：母语者日常会撞见的日用物件，10 类约 146 词。运行时词库命中则挂词感/有道发音，未命中用本表白释义+例句+系统朗读。",
+  "cats": [
+    {
+      "id": "office",
+      "title": "职场办公",
+      "img": "icons/kinder-office.svg",
+      "words": [
+        { "w": "desk", "zh": "办公桌", "ex": "He works at a desk by the window.", "exZh": "他在窗边的办公桌工作。" },
+        { "w": "monitor", "zh": "显示器", "ex": "The monitor shows the report.", "exZh": "显示器上显示着报表。" },
+        { "w": "printer", "zh": "打印机", "ex": "The printer is out of paper.", "exZh": "打印机没纸了。" },
+        { "w": "whiteboard", "zh": "白板", "ex": "Let me write it on the whiteboard.", "exZh": "我写到白板上。" },
+        { "w": "sticky note", "zh": "便签", "ex": "I left you a sticky note.", "exZh": "我给你留了张便签。" },
+        { "w": "folder", "zh": "文件夹", "ex": "Put the file in this folder.", "exZh": "把文件放进这个文件夹。" },
+        { "w": "clipboard", "zh": "写字板", "ex": "Sign here on the clipboard.", "exZh": "在写字板上签个字。" },
+        { "w": "calculator", "zh": "计算器", "ex": "Check it with the calculator.", "exZh": "用计算器核一下。" },
+        { "w": "briefcase", "zh": "公文包", "ex": "He carries a black briefcase.", "exZh": "他提着黑色公文包。" },
+        { "w": "badge", "zh": "工牌", "ex": "Wear your badge at work.", "exZh": "上班要戴工牌。" },
+        { "w": "headset", "zh": "耳麦", "ex": "The call center uses headsets.", "exZh": "客服中心都用耳麦。" },
+        { "w": "calendar", "zh": "日历", "ex": "Circle the date on the calendar.", "exZh": "在日历上圈出那天。" },
+        { "w": "stapler", "zh": "订书机", "ex": "Pass me the stapler, please.", "exZh": "把订书机递给我。" },
+        { "w": "paperclip", "zh": "回形针", "ex": "Clip the pages with a paperclip.", "exZh": "用回形针把纸夹起来。" },
+        { "w": "highlighter", "zh": "荧光笔", "ex": "Mark key words with a highlighter.", "exZh": "用荧光笔标出关键词。" },
+        { "w": "marker", "zh": "马克笔", "ex": "The marker is running dry.", "exZh": "这支马克笔快没水了。" },
+        { "w": "tape", "zh": "胶带", "ex": "Tape the box shut.", "exZh": "用胶带把盒子封好。" },
+        { "w": "envelope", "zh": "信封", "ex": "Seal the envelope.", "exZh": "把信封封上。" },
+        { "w": "office chair", "zh": "办公转椅", "ex": "This chair is adjustable.", "exZh": "这把椅子能调高度。" },
+        { "w": "schedule", "zh": "日程安排", "ex": "Check your schedule first.", "exZh": "先看一下你的日程。" }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "title": "厨房灶台",
+      "img": "icons/kinder-kitchen.svg",
+      "words": [
+        { "w": "pan", "zh": "平底锅", "ex": "Fry the eggs in a pan.", "exZh": "用平底锅煎蛋。" },
+        { "w": "pot", "zh": "深锅", "ex": "Simmer the soup in a pot.", "exZh": "汤在深锅里小火炖着。" },
+        { "w": "lid", "zh": "锅盖", "ex": "Put the lid on.", "exZh": "盖上锅盖。" },
+        { "w": "kettle", "zh": "水壶", "ex": "The kettle is boiling.", "exZh": "水壶里的水开了。" },
+        { "w": "toaster", "zh": "烤面包机", "ex": "Toast bread in the toaster.", "exZh": "用烤面包机烤面包。" },
+        { "w": "blender", "zh": "搅拌机", "ex": "Blend fruit into juice.", "exZh": "用水果机打果汁。" },
+        { "w": "spatula", "zh": "锅铲", "ex": "Flip the pancake with a spatula.", "exZh": "用锅铲翻煎饼。" },
+        { "w": "whisk", "zh": "打蛋器", "ex": "Whisk the eggs well.", "exZh": "把蛋液打匀。" },
+        { "w": "cutting board", "zh": "砧板", "ex": "Chop vegetables on the cutting board.", "exZh": "在砧板上切菜。" },
+        { "w": "apron", "zh": "围裙", "ex": "Put on an apron before cooking.", "exZh": "做饭前系上围裙。" },
+        { "w": "ladle", "zh": "汤勺", "ex": "Ladle the soup into bowls.", "exZh": "用汤勺把汤盛到碗里。" },
+        { "w": "tongs", "zh": "食物夹", "ex": "Grab the salad with tongs.", "exZh": "用夹子夹沙拉。" },
+        { "w": "colander", "zh": "滤盆", "ex": "Drain the pasta in a colander.", "exZh": "用滤盆把意面沥干。" },
+        { "w": "oven", "zh": "烤箱", "ex": "Bake it in the oven for twenty minutes.", "exZh": "放烤箱里烤二十分钟。" },
+        { "w": "stove", "zh": "灶台", "ex": "Turn off the stove.", "exZh": "把灶火关掉。" },
+        { "w": "dish rack", "zh": "沥水架", "ex": "Put the dishes on the rack.", "exZh": "碗碟放到沥水架上。" }
+      ]
+    },
+    {
+      "id": "table",
+      "title": "餐桌餐具",
+      "img": "icons/kinder-table.svg",
+      "words": [
+        { "w": "bowl", "zh": "碗", "ex": "a bowl of rice", "exZh": "一碗米饭" },
+        { "w": "plate", "zh": "盘子", "ex": "Wash the plates.", "exZh": "把盘子洗了。" },
+        { "w": "fork", "zh": "叉子", "ex": "Eat pasta with a fork.", "exZh": "用叉子吃意面。" },
+        { "w": "knife", "zh": "刀", "ex": "Cut it with a knife.", "exZh": "用刀切开。" },
+        { "w": "chopsticks", "zh": "筷子", "ex": "Pick up the food with chopsticks.", "exZh": "用筷子夹菜。" },
+        { "w": "tray", "zh": "托盘", "ex": "Carry the tray carefully.", "exZh": "小心端着托盘。" },
+        { "w": "napkin", "zh": "餐巾纸", "ex": "Wipe your hands with a napkin.", "exZh": "用餐巾纸擦手。" },
+        { "w": "straw", "zh": "吸管", "ex": "I need a straw for my drink.", "exZh": "我的饮料要根吸管。" },
+        { "w": "teapot", "zh": "茶壶", "ex": "Pour tea from the teapot.", "exZh": "从茶壶里倒茶。" },
+        { "w": "coaster", "zh": "杯垫", "ex": "Put the glass on a coaster.", "exZh": "杯子放杯垫上。" },
+        { "w": "mug", "zh": "马克杯", "ex": "a coffee mug on the desk", "exZh": "桌上一个咖啡杯" },
+        { "w": "tablecloth", "zh": "桌布", "ex": "Spread the tablecloth.", "exZh": "把桌布铺开。" }
+      ]
+    },
+    {
+      "id": "bath",
+      "title": "卫浴洗漱",
+      "img": "icons/kinder-bath.svg",
+      "words": [
+        { "w": "towel", "zh": "毛巾", "ex": "Dry your hands with a towel.", "exZh": "用毛巾擦干手。" },
+        { "w": "soap", "zh": "肥皂", "ex": "Wash your hands with soap.", "exZh": "用肥皂洗手。" },
+        { "w": "shampoo", "zh": "洗发水", "ex": "The shampoo is empty.", "exZh": "洗发水用完了。" },
+        { "w": "toothbrush", "zh": "牙刷", "ex": "Brush your teeth twice a day.", "exZh": "一天刷两次牙。" },
+        { "w": "toothpaste", "zh": "牙膏", "ex": "Squeeze the toothpaste onto the brush.", "exZh": "把牙膏挤到牙刷上。" },
+        { "w": "razor", "zh": "剃须刀", "ex": "He uses an electric razor.", "exZh": "他用电动剃须刀。" },
+        { "w": "comb", "zh": "梳子", "ex": "Comb your hair.", "exZh": "把头发梳一下。" },
+        { "w": "faucet", "zh": "水龙头", "ex": "Turn off the faucet.", "exZh": "把水龙头关掉。" },
+        { "w": "drain", "zh": "排水口", "ex": "The drain is clogged.", "exZh": "排水口堵了。" },
+        { "w": "hanger", "zh": "衣架", "ex": "Hang your coat on a hanger.", "exZh": "大衣挂到衣架上。" },
+        { "w": "shower", "zh": "淋浴", "ex": "Take a shower before work.", "exZh": "上班前冲个澡。" },
+        { "w": "bathtub", "zh": "浴缸", "ex": "Soak in the bathtub.", "exZh": "在浴缸里泡一泡。" },
+        { "w": "laundry basket", "zh": "脏衣篮", "ex": "Throw it in the laundry basket.", "exZh": "把它扔进脏衣篮。" },
+        { "w": "dryer", "zh": "烘干机", "ex": "Dry it in the dryer.", "exZh": "用烘干机烘干。" }
+      ]
+    },
+    {
+      "id": "cloth",
+      "title": "穿衣戴帽",
+      "img": "icons/kinder-cloth.svg",
+      "words": [
+        { "w": "jacket", "zh": "夹克", "ex": "Wear a jacket, it's windy.", "exZh": "风大，穿件夹克。" },
+        { "w": "sweater", "zh": "毛衣", "ex": "Take a sweater with you.", "exZh": "带件毛衣。" },
+        { "w": "jeans", "zh": "牛仔裤", "ex": "a pair of blue jeans", "exZh": "一条蓝色牛仔裤" },
+        { "w": "socks", "zh": "袜子", "ex": "Change your socks.", "exZh": "换双袜子。" },
+        { "w": "boots", "zh": "靴子", "ex": "Wear boots in the rain.", "exZh": "下雨穿靴子。" },
+        { "w": "zipper", "zh": "拉链", "ex": "The zipper is stuck.", "exZh": "拉链卡住了。" },
+        { "w": "collar", "zh": "领子", "ex": "Fold the collar down.", "exZh": "把领子翻好。" },
+        { "w": "sleeve", "zh": "袖子", "ex": "The sleeves are too long.", "exZh": "袖子太长了。" },
+        { "w": "pocket", "zh": "口袋", "ex": "Put it in your pocket.", "exZh": "把它放进口袋。" },
+        { "w": "belt", "zh": "腰带", "ex": "Fasten your belt.", "exZh": "把腰带扣好。" },
+        { "w": "scarf", "zh": "围巾", "ex": "Wrap a scarf around your neck.", "exZh": "脖子上围条围巾。" },
+        { "w": "gloves", "zh": "手套", "ex": "Put on your gloves.", "exZh": "把手套戴上。" },
+        { "w": "cap", "zh": "鸭舌帽", "ex": "Wear a cap in the sun.", "exZh": "太阳大，戴个帽子。" },
+        { "w": "pajamas", "zh": "睡衣", "ex": "Change into pajamas.", "exZh": "换上睡衣。" },
+        { "w": "slippers", "zh": "拖鞋", "ex": "Take off your shoes and wear slippers.", "exZh": "换拖鞋。" },
+        { "w": "button", "zh": "纽扣", "ex": "A button fell off my shirt.", "exZh": "我衬衫掉了颗扣子。" }
+      ]
+    },
+    {
+      "id": "home",
+      "title": "家具居家",
+      "img": "icons/kinder-home.svg",
+      "words": [
+        { "w": "sofa", "zh": "沙发", "ex": "Sit on the sofa.", "exZh": "坐沙发上。" },
+        { "w": "cushion", "zh": "靠垫", "ex": "Fluff the cushion.", "exZh": "把靠垫拍松。" },
+        { "w": "curtain", "zh": "窗帘", "ex": "Draw the curtains.", "exZh": "把窗帘拉上。" },
+        { "w": "carpet", "zh": "地毯", "ex": "The carpet is soft.", "exZh": "地毯很软。" },
+        { "w": "shelf", "zh": "架子", "ex": "Put it on the shelf.", "exZh": "把它放到架子上。" },
+        { "w": "drawer", "zh": "抽屉", "ex": "Open the drawer.", "exZh": "拉开抽屉。" },
+        { "w": "blanket", "zh": "毯子", "ex": "Pull up the blanket.", "exZh": "把毯子盖好。" },
+        { "w": "pillow", "zh": "枕头", "ex": "Punch the pillow flat.", "exZh": "把枕头拍平。" },
+        { "w": "mattress", "zh": "床垫", "ex": "The mattress is firm.", "exZh": "这张床垫偏硬。" },
+        { "w": "wardrobe", "zh": "衣柜", "ex": "Hang it in the wardrobe.", "exZh": "把它挂进衣柜。" },
+        { "w": "stool", "zh": "凳子", "ex": "Sit on the stool.", "exZh": "坐凳子上。" },
+        { "w": "lamp", "zh": "台灯", "ex": "Turn on the lamp.", "exZh": "把台灯打开。" },
+        { "w": "mirror", "zh": "镜子", "ex": "Look in the mirror.", "exZh": "照照镜子。" },
+        { "w": "vase", "zh": "花瓶", "ex": "a vase of flowers on the table", "exZh": "桌上一瓶花" },
+        { "w": "broom", "zh": "扫帚", "ex": "Sweep the floor with a broom.", "exZh": "用扫帚扫地。" },
+        { "w": "mop", "zh": "拖把", "ex": "Mop the kitchen floor.", "exZh": "把厨房地拖了。" }
+      ]
+    },
+    {
+      "id": "tech",
+      "title": "电子数码",
+      "img": "icons/kinder-tech.svg",
+      "words": [
+        { "w": "charger", "zh": "充电器", "ex": "Where's my charger?", "exZh": "我的充电器在哪？" },
+        { "w": "cable", "zh": "数据线", "ex": "This cable is broken.", "exZh": "这根线坏了。" },
+        { "w": "adapter", "zh": "转接头", "ex": "Bring an adapter abroad.", "exZh": "出国要带转接头。" },
+        { "w": "screen", "zh": "屏幕", "ex": "The screen is cracked.", "exZh": "屏幕裂了。" },
+        { "w": "keyboard", "zh": "键盘", "ex": "Type on the keyboard.", "exZh": "用键盘打字。" },
+        { "w": "mouse", "zh": "鼠标", "ex": "Click with the mouse.", "exZh": "用鼠标点。" },
+        { "w": "speaker", "zh": "蓝牙音箱", "ex": "Pair the speaker with your phone.", "exZh": "把音箱和手机配对。" },
+        { "w": "remote", "zh": "遥控器", "ex": "Where's the remote?", "exZh": "遥控器在哪？" },
+        { "w": "battery", "zh": "电池", "ex": "The battery is low.", "exZh": "电量快没了。" },
+        { "w": "router", "zh": "路由器", "ex": "Restart the router.", "exZh": "把路由器重启一下。" },
+        { "w": "earbuds", "zh": "蓝牙耳机", "ex": "I lost one of my earbuds.", "exZh": "我丢了一只耳机。" },
+        { "w": "power bank", "zh": "充电宝", "ex": "I need a power bank.", "exZh": "我需要一个充电宝。" },
+        { "w": "flash drive", "zh": "U盘", "ex": "Save it to the flash drive.", "exZh": "存到U盘里。" },
+        { "w": "webcam", "zh": "摄像头", "ex": "Your webcam is still on.", "exZh": "你的摄像头还开着。" }
+      ]
+    },
+    {
+      "id": "food",
+      "title": "食材杂货",
+      "img": "icons/kinder-food.svg",
+      "words": [
+        { "w": "onion", "zh": "洋葱", "ex": "Chop an onion.", "exZh": "切个洋葱。" },
+        { "w": "garlic", "zh": "大蒜", "ex": "Crush the garlic first.", "exZh": "先把蒜拍碎。" },
+        { "w": "ginger", "zh": "姜", "ex": "Slice the ginger.", "exZh": "把姜切成片。" },
+        { "w": "flour", "zh": "面粉", "ex": "Mix the flour with water.", "exZh": "面粉加水和匀。" },
+        { "w": "vinegar", "zh": "醋", "ex": "Add a dash of vinegar.", "exZh": "加一点醋。" },
+        { "w": "sauce", "zh": "酱汁", "ex": "Stir in the sauce.", "exZh": "把酱汁倒进去搅匀。" },
+        { "w": "sugar", "zh": "糖", "ex": "a spoon of sugar", "exZh": "一勺糖" },
+        { "w": "shrimp", "zh": "虾", "ex": "Peel the shrimp.", "exZh": "把虾剥了。" },
+        { "w": "beef", "zh": "牛肉", "ex": "Slice the beef thinly.", "exZh": "把牛肉切薄片。" },
+        { "w": "pork", "zh": "猪肉", "ex": "Minced pork for the filling.", "exZh": "馅料用猪肉末。" },
+        { "w": "mushroom", "zh": "蘑菇", "ex": "Slice the mushrooms.", "exZh": "把蘑菇切片。" },
+        { "w": "leftovers", "zh": "剩菜", "ex": "Heat the leftovers.", "exZh": "把剩菜热一下。" },
+        { "w": "dough", "zh": "面团", "ex": "Roll the dough flat.", "exZh": "把面团擀平。" },
+        { "w": "cereal", "zh": "麦片", "ex": "a bowl of cereal with milk", "exZh": "一碗泡了牛奶的麦片" },
+        { "w": "butter", "zh": "黄油", "ex": "Spread butter on the toast.", "exZh": "在吐司上抹黄油。" },
+        { "w": "oil", "zh": "食用油", "ex": "Pour some oil into the pan.", "exZh": "往锅里倒点油。" }
+      ]
+    },
+    {
+      "id": "out",
+      "title": "出行装备",
+      "img": "icons/kinder-out.svg",
+      "words": [
+        { "w": "luggage", "zh": "行李", "ex": "Check your luggage at the counter.", "exZh": "在柜台托运行李。" },
+        { "w": "umbrella", "zh": "雨伞", "ex": "Grab an umbrella before you go.", "exZh": "出门带把伞。" },
+        { "w": "backpack", "zh": "双肩包", "ex": "Pack your backpack light.", "exZh": "背包轻一点背。" },
+        { "w": "wallet", "zh": "钱包", "ex": "My wallet is at home.", "exZh": "我钱包落家里了。" },
+        { "w": "passport", "zh": "护照", "ex": "Keep your passport safe.", "exZh": "护照收好。" },
+        { "w": "ticket", "zh": "票", "ex": "Show your ticket, please.", "exZh": "请出示车票。" },
+        { "w": "sunscreen", "zh": "防晒霜", "ex": "Put on sunscreen.", "exZh": "涂点防晒。" },
+        { "w": "flashlight", "zh": "手电筒", "ex": "Shine the flashlight ahead.", "exZh": "用手电照前面。" },
+        { "w": "map", "zh": "地图", "ex": "Fold the map back up.", "exZh": "把地图折回去。" },
+        { "w": "suitcase", "zh": "拉杆箱", "ex": "Wheel the suitcase to the gate.", "exZh": "把箱子推到登机口。" },
+        { "w": "boarding pass", "zh": "登机牌", "ex": "Show your boarding pass.", "exZh": "出示登机牌。" },
+        { "w": "thermos", "zh": "保温杯", "ex": "Fill the thermos with tea.", "exZh": "保温杯里装上茶。" }
+      ]
+    },
+    {
+      "id": "tool",
+      "title": "工具五金",
+      "img": "icons/kinder-tool.svg",
+      "words": [
+        { "w": "hammer", "zh": "锤子", "ex": "Nail it with a hammer.", "exZh": "用锤子钉进去。" },
+        { "w": "nail", "zh": "钉子", "ex": "A bent nail.", "exZh": "一枚弯了的钉子。" },
+        { "w": "screw", "zh": "螺丝", "ex": "Tighten the screw.", "exZh": "把螺丝拧紧。" },
+        { "w": "wrench", "zh": "扳手", "ex": "Loosen it with a wrench.", "exZh": "用扳手松开。" },
+        { "w": "drill", "zh": "电钻", "ex": "Drill a hole here.", "exZh": "在这钻个孔。" },
+        { "w": "ladder", "zh": "梯子", "ex": "Climb the ladder carefully.", "exZh": "爬梯子小心点。" },
+        { "w": "tape measure", "zh": "卷尺", "ex": "Measure it with a tape.", "exZh": "用卷尺量一下。" },
+        { "w": "toolbox", "zh": "工具箱", "ex": "Keep the tools in the toolbox.", "exZh": "工具放进工具箱。" },
+        { "w": "screwdriver", "zh": "螺丝刀", "ex": "Turn the screwdriver.", "exZh": "拧动螺丝刀。" },
+        { "w": "pliers", "zh": "钳子", "ex": "Grip it with pliers.", "exZh": "用钳子夹住。" }
+      ]
+    }
+  ]
+}

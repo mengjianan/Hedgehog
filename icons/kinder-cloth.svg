@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角·穿衣戴帽 静物：T恤 + 鸭舌帽 + 袜子（韩系细线） -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <!-- T恤 -->
+    <path d="M48 32 L28 44 L36 58 L44 52 L44 84 L92 84 L92 52 L100 58 L108 44 L88 32 C84 38 76 40 68 40 C60 40 52 38 48 32 Z"/>
+    <path d="M44 60 h48" stroke="#A8B5A2"/>
+    <!-- 鸭舌帽 -->
+    <path d="M116 64 a16 13 0 0 1 32 0"/>
+    <path d="M116 64 h32"/>
+    <path d="M148 64 c9 0 9 10 1 11"/>
+    <circle cx="132" cy="51" r="2"/>
+    <!-- 袜子 -->
+    <path d="M104 84 v-16 c0-4 4-6 8-6 h6" stroke="#A8B5A2"/>
+  </g>
+</svg>

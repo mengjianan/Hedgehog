@@ -1,0 +1,184 @@
+{
+  "lang": "en",
+  "note": "日用角·对话（原创）：职场 10 段（重点）+ 日常 15 段，每段 4~6 句带中文对照。点句子系统朗读。",
+  "dialogues": [
+    { "id": "w1", "grp": "work", "title": "入职第一天", "en": "First day at work", "lines": [
+      { "who": "A", "en": "Hi, I'm Maya. I just joined the team.", "zh": "你好，我是玛雅，刚加入团队。" },
+      { "who": "B", "en": "Welcome! I'm Tom. I sit over there.", "zh": "欢迎！我是汤姆，我坐那边。" },
+      { "who": "A", "en": "Nice to meet you. Where should I put my bag?", "zh": "很高兴认识你。我的包放哪？" },
+      { "who": "B", "en": "Just put it under your desk.", "zh": "放你桌子下面就行。" },
+      { "who": "A", "en": "Got it. Is the meeting at ten?", "zh": "明白了。会议十点开吗？" },
+      { "who": "B", "en": "Yes, in Conference Room B.", "zh": "对，在B会议室。" }
+    ]},
+    { "id": "w2", "grp": "work", "title": "咖啡间同事寒暄", "en": "Coffee break", "lines": [
+      { "who": "A", "en": "Morning! Grabbing a coffee?", "zh": "早！来杯咖啡？" },
+      { "who": "B", "en": "Yeah, that meeting was long.", "zh": "是啊，会开太久了。" },
+      { "who": "A", "en": "How was your weekend?", "zh": "周末过得怎么样？" },
+      { "who": "B", "en": "Pretty good. I went hiking.", "zh": "挺好的，去爬山了。" },
+      { "who": "A", "en": "Nice! We should go sometime.", "zh": "不错！改天一起。" },
+      { "who": "B", "en": "Sure, I'll send you the trail.", "zh": "好啊，我把路线发你。" }
+    ]},
+    { "id": "w3", "grp": "work", "title": "开会·表达意见", "en": "In a meeting", "lines": [
+      { "who": "A", "en": "So, what do you think of the plan?", "zh": "那么，这个方案你怎么看？" },
+      { "who": "B", "en": "I think the timeline is too tight.", "zh": "我觉得时间排得太紧了。" },
+      { "who": "A", "en": "Fair point. Can we push it a week?", "zh": "有道理。能往后推一周吗？" },
+      { "who": "B", "en": "That would help a lot.", "zh": "那样就轻松多了。" },
+      { "who": "A", "en": "Okay, let's adjust it today.", "zh": "好，那我们今天就调整。" }
+    ]},
+    { "id": "w4", "grp": "work", "title": "向上汇报进度", "en": "Reporting progress", "lines": [
+      { "who": "A", "en": "Do you have a minute?", "zh": "有时间吗？" },
+      { "who": "B", "en": "Sure, what's up?", "zh": "当然，什么事？" },
+      { "who": "A", "en": "The report is half done. I need two more days.", "zh": "报告做了一半，还需要两天。" },
+      { "who": "B", "en": "That's fine. Just keep me posted.", "zh": "没问题，随时跟我同步。" },
+      { "who": "A", "en": "Will do.", "zh": "会的。" }
+    ]},
+    { "id": "w5", "grp": "work", "title": "请教同事·求助", "en": "Asking a coworker", "lines": [
+      { "who": "A", "en": "Sorry to bother you. Could you help me with this?", "zh": "不好意思打扰一下，能帮我看下这个吗？" },
+      { "who": "B", "en": "No problem. What's wrong?", "zh": "没问题，怎么了？" },
+      { "who": "A", "en": "I can't open this file.", "zh": "我打不开这个文件。" },
+      { "who": "B", "en": "Ah, you need the new version.", "zh": "啊，你要用新版本。" },
+      { "who": "A", "en": "That explains it. Thanks!", "zh": "难怪呢，谢谢！" }
+    ]},
+    { "id": "w6", "grp": "work", "title": "工作电话·转接留言", "en": "Office phone", "lines": [
+      { "who": "A", "en": "Hello, this is Maya at North Co.", "zh": "你好，我是北岸公司的玛雅。" },
+      { "who": "B", "en": "Hi Maya, is John available?", "zh": "你好玛雅，约翰在吗？" },
+      { "who": "A", "en": "He's in a meeting. Can I take a message?", "zh": "他正在开会，要留言吗？" },
+      { "who": "B", "en": "Yes, ask him to call back about the contract.", "zh": "好，请他回电谈合同的事。" },
+      { "who": "A", "en": "I'll pass it on.", "zh": "我会转告的。" }
+    ]},
+    { "id": "w7", "grp": "work", "title": "面试问答", "en": "Interview", "lines": [
+      { "who": "A", "en": "Tell me about yourself.", "zh": "介绍一下你自己吧。" },
+      { "who": "B", "en": "I have three years of marketing experience.", "zh": "我有三年市场营销经验。" },
+      { "who": "A", "en": "Why do you want to join us?", "zh": "为什么想加入我们？" },
+      { "who": "B", "en": "I like your product and team culture.", "zh": "我喜欢你们的产品和团队文化。" },
+      { "who": "A", "en": "Great. We'll be in touch.", "zh": "很好，我们会联系你。" }
+    ]},
+    { "id": "w8", "grp": "work", "title": "请假·调休", "en": "Asking for leave", "lines": [
+      { "who": "A", "en": "Could I take Friday off?", "zh": "我周五能请个假吗？" },
+      { "who": "B", "en": "Anything special?", "zh": "有什么事吗？" },
+      { "who": "A", "en": "I have a doctor's appointment.", "zh": "我预约了看医生。" },
+      { "who": "B", "en": "Sure, feel free to take it.", "zh": "好，尽管去。" },
+      { "who": "A", "en": "Thanks! I'll finish my tasks today.", "zh": "谢谢！我今天会把任务做完。" }
+    ]},
+    { "id": "w9", "grp": "work", "title": "客户沟通·确认需求", "en": "With a client", "lines": [
+      { "who": "A", "en": "Thanks for meeting with us.", "zh": "感谢您来见面。" },
+      { "who": "B", "en": "Of course. What do you have in mind?", "zh": "不客气，你们有什么想法？" },
+      { "who": "A", "en": "We'd like a redesign of the website.", "zh": "我们想重新设计网站。" },
+      { "who": "B", "en": "Could you send a brief by Friday?", "zh": "能周五前发个需求简报吗？" },
+      { "who": "A", "en": "Absolutely.", "zh": "马上安排。" }
+    ]},
+    { "id": "w10", "grp": "work", "title": "午餐邀约", "en": "Lunch invite", "lines": [
+      { "who": "A", "en": "A few of us are getting lunch. Want to come?", "zh": "我们几个要去吃午饭，一起来吗？" },
+      { "who": "B", "en": "Sure, where are you going?", "zh": "好啊，去哪？" },
+      { "who": "A", "en": "That noodle place downstairs.", "zh": "楼下那家面馆。" },
+      { "who": "B", "en": "Perfect, I'll join.", "zh": "太好了，一起。" },
+      { "who": "A", "en": "See you at noon.", "zh": "中午见。" }
+    ]},
+
+    { "id": "d1", "grp": "life", "title": "打招呼·自我介绍", "en": "Greetings", "lines": [
+      { "who": "A", "en": "Hi, I'm Lily.", "zh": "你好，我是莉莉。" },
+      { "who": "B", "en": "I'm Jake. Nice to meet you.", "zh": "我是杰克，很高兴认识你。" },
+      { "who": "A", "en": "Nice to meet you too.", "zh": "我也是。" },
+      { "who": "B", "en": "What do you do?", "zh": "你是做什么的？" },
+      { "who": "A", "en": "I'm a teacher.", "zh": "我是老师。" }
+    ]},
+    { "id": "d2", "grp": "life", "title": "日常寒暄", "en": "Small talk", "lines": [
+      { "who": "A", "en": "How's it going?", "zh": "最近怎么样？" },
+      { "who": "B", "en": "Not bad, and you?", "zh": "还行，你呢？" },
+      { "who": "A", "en": "Can't complain.", "zh": "就那样吧。" },
+      { "who": "B", "en": "Are you free this weekend?", "zh": "这周末有空吗？" },
+      { "who": "A", "en": "Yeah, let's hang out.", "zh": "有，出来玩啊。" }
+    ]},
+    { "id": "d3", "grp": "life", "title": "点餐·咖啡店", "en": "At the cafe", "lines": [
+      { "who": "A", "en": "Hi, what would you like?", "zh": "你好，想喝点什么？" },
+      { "who": "B", "en": "A latte, please.", "zh": "一杯拿铁。" },
+      { "who": "A", "en": "Anything to eat?", "zh": "要吃点什么吗？" },
+      { "who": "B", "en": "Just a croissant.", "zh": "一个可颂就好。" },
+      { "who": "A", "en": "That's twelve dollars.", "zh": "一共12美元。" },
+      { "who": "B", "en": "Here you go.", "zh": "给你。" }
+    ]},
+    { "id": "d4", "grp": "life", "title": "购物·问价", "en": "Shopping", "lines": [
+      { "who": "A", "en": "Excuse me, how much is this?", "zh": "打扰一下，这个多少钱？" },
+      { "who": "B", "en": "It's on sale for nine.", "zh": "打折，9块。" },
+      { "who": "A", "en": "Can I try it on?", "zh": "我能试穿一下吗？" },
+      { "who": "B", "en": "The fitting room is over there.", "zh": "试衣间在那边。" },
+      { "who": "A", "en": "I'll take it.", "zh": "我买了。" }
+    ]},
+    { "id": "d5", "grp": "life", "title": "问路", "en": "Directions", "lines": [
+      { "who": "A", "en": "Excuse me, how do I get to the station?", "zh": "打扰一下，车站在怎么走？" },
+      { "who": "B", "en": "Go straight and turn left.", "zh": "直走再左转。" },
+      { "who": "A", "en": "Is it far from here?", "zh": "离这远吗？" },
+      { "who": "B", "en": "About ten minutes on foot.", "zh": "走路大概十分钟。" },
+      { "who": "A", "en": "Thank you!", "zh": "谢谢！" }
+    ]},
+    { "id": "d6", "grp": "life", "title": "坐公交", "en": "By bus", "lines": [
+      { "who": "A", "en": "Which bus goes downtown?", "zh": "哪路车到市中心？" },
+      { "who": "B", "en": "The number five.", "zh": "5路。" },
+      { "who": "A", "en": "Does it stop at the museum?", "zh": "在博物馆停吗？" },
+      { "who": "B", "en": "Yes, three stops from here.", "zh": "停，离这三站。" },
+      { "who": "A", "en": "Great, thanks.", "zh": "好的，谢谢。" }
+    ]},
+    { "id": "d7", "grp": "life", "title": "看病", "en": "At the doctor", "lines": [
+      { "who": "A", "en": "What seems to be the problem?", "zh": "哪里不舒服？" },
+      { "who": "B", "en": "I have a sore throat and a fever.", "zh": "我嗓子疼，还发烧。" },
+      { "who": "A", "en": "How long has it been?", "zh": "这样多久了？" },
+      { "who": "B", "en": "Since yesterday.", "zh": "从昨天开始的。" },
+      { "who": "A", "en": "Take this medicine and rest.", "zh": "吃这个药，多休息。" }
+    ]},
+    { "id": "d8", "grp": "life", "title": "打电话", "en": "On the phone", "lines": [
+      { "who": "A", "en": "Hello, is Tom there?", "zh": "你好，汤姆在吗？" },
+      { "who": "B", "en": "This is Tom speaking.", "zh": "我就是。" },
+      { "who": "A", "en": "It's Maya. Are you free tonight?", "zh": "我是玛雅，今晚有空吗？" },
+      { "who": "B", "en": "Yes, what's up?", "zh": "有空，什么事？" },
+      { "who": "A", "en": "Let's grab dinner.", "zh": "一起吃晚饭吧。" }
+    ]},
+    { "id": "d9", "grp": "life", "title": "约饭", "en": "Dinner plans", "lines": [
+      { "who": "A", "en": "Are you free for dinner on Friday?", "zh": "周五有空吃晚饭吗？" },
+      { "who": "B", "en": "Sure, what time?", "zh": "有空，几点？" },
+      { "who": "A", "en": "Seven, at the usual place.", "zh": "7点，老地方。" },
+      { "who": "B", "en": "Sounds good. I'll be there.", "zh": "听起来不错，我会到。" },
+      { "who": "A", "en": "See you then.", "zh": "到时见。" }
+    ]},
+    { "id": "d10", "grp": "life", "title": "道歉·道别", "en": "Sorry and goodbye", "lines": [
+      { "who": "A", "en": "Sorry I'm late.", "zh": "抱歉我迟到了。" },
+      { "who": "B", "en": "No worries.", "zh": "没关系。" },
+      { "who": "A", "en": "The traffic was terrible.", "zh": "路上太堵了。" },
+      { "who": "B", "en": "Let's go then.", "zh": "那我们走吧。" },
+      { "who": "A", "en": "See you tomorrow.", "zh": "明天见。" }
+    ]},
+    { "id": "d11", "grp": "life", "title": "天气闲聊", "en": "Weather chat", "lines": [
+      { "who": "A", "en": "Nice weather today.", "zh": "今天天气不错。" },
+      { "who": "B", "en": "Yeah, sunny but cool.", "zh": "是啊，晴朗又凉爽。" },
+      { "who": "A", "en": "Rain is coming tomorrow.", "zh": "明天要下雨。" },
+      { "who": "B", "en": "Bring an umbrella then.", "zh": "那记得带伞。" }
+    ]},
+    { "id": "d12", "grp": "life", "title": "酒店入住", "en": "Hotel check-in", "lines": [
+      { "who": "A", "en": "Welcome. Do you have a reservation?", "zh": "欢迎，有预订吗？" },
+      { "who": "B", "en": "Yes, under the name Chen.", "zh": "有，陈先生的。" },
+      { "who": "A", "en": "Here's your key, room five-oh-two.", "zh": "这是您的钥匙，502房。" },
+      { "who": "B", "en": "What time is breakfast?", "zh": "早餐几点？" },
+      { "who": "A", "en": "From seven to ten.", "zh": "7点到10点。" }
+    ]},
+    { "id": "d13", "grp": "life", "title": "求助", "en": "A favor", "lines": [
+      { "who": "A", "en": "Could you do me a favor?", "zh": "能帮我个忙吗？" },
+      { "who": "B", "en": "Sure, what is it?", "zh": "当然，什么事？" },
+      { "who": "A", "en": "Could you watch my bag for a minute?", "zh": "能帮我看下包吗？" },
+      { "who": "B", "en": "No problem.", "zh": "没问题。" },
+      { "who": "A", "en": "Thanks, I'll be right back.", "zh": "谢谢，马上回来。" }
+    ]},
+    { "id": "d14", "grp": "life", "title": "看电影", "en": "Movie night", "lines": [
+      { "who": "A", "en": "Want to see a movie tonight?", "zh": "今晚看电影吗？" },
+      { "who": "B", "en": "Sure, what's on?", "zh": "好啊，演什么？" },
+      { "who": "A", "en": "That new action film.", "zh": "那部新动作片。" },
+      { "who": "B", "en": "Cool, let's book tickets.", "zh": "好，订票吧。" },
+      { "who": "A", "en": "I'll get the popcorn.", "zh": "我去买爆米花。" }
+    ]},
+    { "id": "d15", "grp": "life", "title": "学校·作业", "en": "Homework", "lines": [
+      { "who": "A", "en": "Did you finish the homework?", "zh": "作业写完了吗？" },
+      { "who": "B", "en": "Almost. I'm stuck on question five.", "zh": "快了，第五题卡住了。" },
+      { "who": "A", "en": "Let me see.", "zh": "给我看看。" },
+      { "who": "B", "en": "Ah, I get it now.", "zh": "啊，我懂了。" },
+      { "who": "A", "en": "Class starts in ten.", "zh": "还有十分钟上课。" }
+    ]}
+  ]
+}
