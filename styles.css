@@ -1777,14 +1777,25 @@ body.exam-focus .view { padding-top: 8px; }
 .kd-cat b { font-size: 14px; letter-spacing: 0.04em; }
 .kd-cat small { color: var(--mut); font-size: 11.5px; }
 
-/* 物件闪卡（复用 .card.study-card 骨架） */
-.kd-word { font-size: 30px; font-weight: 650; letter-spacing: 0.02em; }
+/* 物件闪卡（复用 .card.study-card 骨架）：词图 + 三语行 + 中文 + 例句 */
+.kd-img { display: block; width: 110px; height: 110px; object-fit: contain; margin: 0 auto 4px; }
+.kd-rows { display: flex; flex-direction: column; gap: 6px; max-width: 340px; margin: 10px auto 0; }
+.kd-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: #fcfbf7;
+  border: 1px solid var(--line); border-radius: 8px; text-align: left;
+}
+.kd-lang {
+  flex: 0 0 auto; width: 20px;
+  font-family: Georgia, serif; font-size: 10px; letter-spacing: 0.1em; color: var(--stone);
+}
+.kd-t { font-size: 17px; font-weight: 650; letter-spacing: 0.02em; }
+.kd-p { flex: 1; color: var(--mut); font-size: 13px; }
 .kd-known {
   display: inline-block; vertical-align: 6px; margin-left: 8px;
   font-size: 11px; color: var(--sage-d); border: 1px solid var(--sage);
   border-radius: 999px; padding: 1px 8px; font-weight: 500;
 }
-.kd-pron { color: var(--mut); font-size: 14px; margin-top: 4px; font-family: Georgia, serif; }
 .kd-zh { font-size: 19px; margin-top: 8px; color: var(--ink2); }
 .kd-ex { margin: 10px 0 0; font-size: 14.5px; color: var(--ink2); line-height: 1.55; }
 .kd-exzh { margin: 4px 0 0; font-size: 13px; color: var(--mut); }

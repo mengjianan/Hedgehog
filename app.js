@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-7.4'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-7.5'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1650,13 +1650,13 @@
   }
 
   // ---------- 日用角（#7）：日用物件闪卡 + 地道对话 ----------
-  // 内容：data/kinder-en.json（10 类 146 词，原创整理）、data/dialogues.json（25 段原创对话）
+  // 内容：data/kinder.json（10 类 146 词三语版：英+IPA/日+假名/韩+罗马音，原创整理）、data/dialogues.json（25 段原创对话）
   // 词库命中的物件挂词条（有道发音+词感+真 ref 进间隔复习），未命中的内置释义+系统朗读
   var KINDER = null; // {cats:[{id,title,img,words:[{w,zh,ex,exZh}]}]}
   var DIALOGUES = null; // {dialogues:[{id,grp,title,en,lines:[{who,en,zh}]}]}
   var kinder = null; // 进行中的物件闪卡 {catId,cat,words:[{w,zh,ex,exZh,ref,e}],idx,good,bad,judged,logged}
   var KMAP = null; // 词库英文头词 → 词条（懒建一次）
-  fetch('data/kinder-en.json').then(function (r) { return r.json(); })
+  fetch('data/kinder.json').then(function (r) { return r.json(); })
     .then(function (d) { KINDER = d; route(); }).catch(function () {});
   fetch('data/dialogues.json').then(function (r) { return r.json(); })
     .then(function (d) { DIALOGUES = d; route(); }).catch(function () {});
@@ -1686,7 +1686,8 @@
       words: cat.words.map(function (x) {
         var e = m[String(x.w).toLowerCase()] || null;
         return {
-          w: x.w, zh: x.zh, ex: x.ex, exZh: x.exZh,
+          w: x.w, pron: x.pron, ja: x.ja, jaPron: x.jaPron, ko: x.ko, koPron: x.koPron,
+          zh: x.zh, ex: x.ex, exZh: x.exZh,
           ref: e ? e.ref : 'kinder/en/' + catId + '/' + x.w, // 内置词假 ref：只计本轮，不进复习（due 要求 IDX 命中）
           e: e
         };
@@ -1715,11 +1716,36 @@
     }
   }
 
-  function kinderSay() {
+  // 单语朗读：行尾喇叭按 data-lang 读英/日/韩（有道失败自动转系统 TTS）
+  function kinderSay(lang) {
     if (!kinder || kinder.idx >= kinder.words.length) return;
     var w = kinder.words[kinder.idx];
-    var e = w.e || { x: { w: w.w }, l: { speech: 'en-US', lang: 'en' } };
-    playAudio(w.w, 'en', w.w, e);
+    if (lang === 'ja') {
+      playAudio(w.ja, 'jap', w.ja, { x: { w: w.ja }, l: { speech: 'ja-JP', lang: 'ja' } });
+    } else if (lang === 'ko') {
+      playAudio(w.ko, 'ko', w.ko, { x: { w: w.ko }, l: { speech: 'ko-KR', lang: 'ko' } });
+    } else {
+      playAudio(w.w, 'en', w.w, w.e || { x: { w: w.w }, l: { speech: 'en-US', lang: 'en' } });
+    }
+  }
+
+  // 三语连播：英→日→韩，有道顺序接龙，单条失败跳下一条
+  function kinderSayAll() {
+    if (!kinder || kinder.idx >= kinder.words.length) return;
+    var w = kinder.words[kinder.idx];
+    var steps = [{ t: w.w, le: 'en' }, { t: w.ja, le: 'jap' }, { t: w.ko, le: 'ko' }];
+    var i = 0;
+    function next() {
+      if (i >= steps.length) return;
+      var s = steps[i++];
+      var a = new Audio('https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(s.t) + '&le=' + s.le);
+      a.addEventListener('ended', next);
+      a.addEventListener('error', next);
+      var p = a.play();
+      if (p && p.catch) p.catch(next);
+    }
+    toast('▶');
+    next();
   }
 
   function ttsUtter(text) {
@@ -1813,10 +1839,22 @@
     var w = kinder.words[kinder.idx];
     var n = kinder.words.length;
     var pct = Math.round((kinder.idx / n) * 100);
-    var pron = w.e && w.e.x.pron ? '<div class="kd-pron">' + esc(w.e.x.pron) + '</div>' : '';
+    var slug = w.w.toLowerCase().replace(/\s+/g, '-');
+    var knownBadge = known()[w.ref] ? '<span class="kd-known">已认识</span>' : '';
+    var sayBtn = function (lang) {
+      return '<button class="mini-btn" data-act="kinder-say" data-lang="' + lang +
+        '" title="朗读">' + ICON.sound + '</button>';
+    };
+    // 三语同卡：英+IPA / 日+假名读音 / 韩+罗马音，行尾各带喇叭
+    var rows =
+      '<div class="kd-row"><span class="kd-lang">EN</span><span class="kd-t">' + esc(w.w) + '</span>' +
+      '<span class="kd-p">' + esc(w.pron || '') + '</span>' + sayBtn('en') + '</div>' +
+      '<div class="kd-row"><span class="kd-lang">日</span><span class="kd-t">' + esc(w.ja) + '</span>' +
+      '<span class="kd-p">' + esc(w.jaPron || '') + '</span>' + sayBtn('ja') + '</div>' +
+      '<div class="kd-row"><span class="kd-lang">韩</span><span class="kd-t">' + esc(w.ko) + '</span>' +
+      '<span class="kd-p">' + esc(w.koPron || '') + '</span>' + sayBtn('ko') + '</div>';
     var exEn = w.e ? (w.e.x.ex || '') : (w.ex || '');
     var exZh = w.e ? '' : (w.exZh || '');
-    var knownBadge = known()[w.ref] ? '<span class="kd-known">已认识</span>' : '';
     return back +
       '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
       '<div class="study-meta"><span>第 ' + (kinder.idx + 1) + '/' + n + ' 件</span>' +
@@ -1824,13 +1862,14 @@
       '<p class="swipe-tip">' + ICON.up + ' 上滑=认识 · ' + ICON.down + ' 下滑=模糊</p>' +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
       '<div class="card study-card kinder-card">' +
-      '<div class="kd-word">' + esc(w.w) + knownBadge + '</div>' +
-      pron +
-      '<div class="kd-zh">' + esc(w.zh) + '</div>' +
+      '<img class="kd-img" src="icons/kw/' + slug + '.svg" alt="" ' +
+      'onerror="this.style.display=\'none\'" />' +
+      '<div class="kd-rows">' + rows + '</div>' +
+      '<div class="kd-zh">' + esc(w.zh) + knownBadge + '</div>' +
       (exEn ? '<p class="kd-ex">' + esc(exEn) + '</p>' : '') +
       (exZh ? '<p class="kd-exzh">' + esc(exZh) + '</p>' : '') +
       '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="kinder-say">' + ICON.sound + ' 听</button>' +
+      '<button class="btn ghost" data-act="kinder-say-all">' + ICON.sound + ' 听三语</button>' +
       '<button class="btn" data-act="kinder-judge" data-good="1">认识</button>' +
       '<button class="btn ghost" data-act="kinder-judge" data-good="0">模糊</button>' +
       '</div></div>';
@@ -4024,7 +4063,9 @@
       kinderJudge(el.getAttribute('data-good') === '1');
       route();
     } else if (act === 'kinder-say') {
-      kinderSay();
+      kinderSay(el.getAttribute('data-lang') || 'en');
+    } else if (act === 'kinder-say-all') { // 英→日→韩连播
+      kinderSayAll();
     } else if (act === 'dlg-say') { // 对话：单句朗读（有道，失败转系统朗读）
       var cd1 = curDlg();
       if (cd1) {

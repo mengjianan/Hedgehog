@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- 日用角词卡细线图 -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 80 H80" stroke="#C9BFAE"/>
+    <rect x="16" y="20" width="64" height="44" rx="3"/><path d="M24 32 h24 M24 40 h38 M24 48 h30" stroke="#A8B5A2"/><path d="M16 64 h64"/><path d="M48 64 v8 M36 78 h24"/>
+  </g>
+</svg>
