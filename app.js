@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-5.3'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-7.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -3184,7 +3184,7 @@
         '<div class="study-actions">' +
         '<button class="btn" data-act="exam-again">再战一场</button>' +
         '<button class="btn ghost" data-act="exam-reset">换一份卷</button>' +
-        '<a class="btn ghost" href="#/study">回巡游</a>' +
+        '<button class="btn ghost" data-act="exam-reset">回考场</button>' +
         '</div></div>'
       );
     }
@@ -3639,7 +3639,7 @@
       }
       exam = buildPaper(exam.typeKey || examType, examSels[exam.typeKey || examType]);
       if (exam) { examPersist(); route(); window.scrollTo(0, 0); }
-    } else if (act === 'exam-reset') { // 成绩单 → 回选卷页重选试卷/板块
+    } else if (act === 'exam-reset') { // 成绩单 [换一份卷]/[回考场] → 考场选卷页（考场已单分独立，退出不再回巡游）
       exam = null;
       try { localStorage.removeItem('hedgehog:exam'); } catch (er) {}
       if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
