@@ -121,15 +121,6 @@ img { max-width: 100%; }
   background: var(--card);
 }
 
-.spiral {
-  flex: 0 0 36px;
-  width: 36px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='38' viewBox='0 0 28 38'%3E%3Cellipse cx='14' cy='19' rx='9' ry='15' fill='none' stroke='%239A9384' stroke-width='2.6'/%3E%3Cpath d='M14 4 v5' stroke='%239A9384' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: repeat-y;
-  background-position: center top;
-  border-right: 1px dashed var(--line-d);
-}
-
 .page {
   position: relative;
   flex: 1;
@@ -1551,7 +1542,6 @@ a.entry-card { text-decoration: none; color: var(--ink); }
 /* ---------- 移动端（本子简化版） ---------- */
 @media (max-width: 780px) {
   .notebook { margin: 0; border-radius: 0; min-height: 100vh; }
-  .spiral { display: none; }
   .page { padding: 14px 14px 60px 14px; border-radius: 0; }
   .holes { display: none; }
   .page::before { display: none; }
@@ -1748,7 +1738,6 @@ a.entry-card { text-decoration: none; color: var(--ink); }
 }
 
 /* ---------- 考场专注模式（考试进行中隐藏本子装饰，沉浸答题） ---------- */
-body.exam-focus .spiral,
 body.exam-focus .holes,
 body.exam-focus .page-head,
 body.exam-focus .page-foot { display: none; }
