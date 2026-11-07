@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- 日用角词卡细线图 -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 80 H80" stroke="#C9BFAE"/>
+    <path d="M18 60 h60" stroke-width="4"/><circle cx="32" cy="60" r="2" fill="#857E70"/><circle cx="44" cy="60" r="2" fill="#857E70"/><circle cx="56" cy="60" r="2" fill="#857E70"/><circle cx="68" cy="60" r="2" fill="#857E70"/><path d="M78 56 l6 4-6 4" stroke="#A8B5A2"/>
+  </g>
+</svg>
