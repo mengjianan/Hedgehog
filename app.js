@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-7.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-7.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -3098,7 +3098,6 @@
       var tq = onKeys.reduce(function (n, s) { return n + s.qn; }, 0);
       var tm = onKeys.reduce(function (n, s) { return n + s.minutes; }, 0);
       return (
-        '<a class="back-link" href="#/study">← 巡游</a>' +
         '<h2>考场</h2>' +
         '<p class="sub">仿真卷为原创题（按真题题型结构） · 成绩按各考试标尺换算</p>' +
         '<p class="picker-h">仿真卷（原创题 · 按真题题型）</p>' + typeCards +
@@ -3184,7 +3183,6 @@
         '<div class="study-actions">' +
         '<button class="btn" data-act="exam-again">再战一场</button>' +
         '<button class="btn ghost" data-act="exam-reset">换一份卷</button>' +
-        '<button class="btn ghost" data-act="exam-reset">回考场</button>' +
         '</div></div>'
       );
     }
@@ -3639,7 +3637,7 @@
       }
       exam = buildPaper(exam.typeKey || examType, examSels[exam.typeKey || examType]);
       if (exam) { examPersist(); route(); window.scrollTo(0, 0); }
-    } else if (act === 'exam-reset') { // 成绩单 [换一份卷]/[回考场] → 考场选卷页（考场已单分独立，退出不再回巡游）
+    } else if (act === 'exam-reset') { // 成绩单 [换一份卷] → 考场选卷页
       exam = null;
       try { localStorage.removeItem('hedgehog:exam'); } catch (er) {}
       if (examTimerId) { clearInterval(examTimerId); examTimerId = null; }
