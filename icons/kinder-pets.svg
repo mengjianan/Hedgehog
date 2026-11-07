@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <!-- 日用角类别静物图 -->
+  <g stroke="#857E70" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 84 H146" stroke="#C9BFAE"/>
+    <path d="M14 58 h44 c-2 13-11 22-22 22 s-20-9-22-22 z"/><path d="M10 58 h52" stroke="#A8B5A2"/><path d="M72 80 v-24 l20-16 20 16 v24 z"/><path d="M86 80 v-12 a6 6 0 0 1 12 0 v12" stroke="#A8B5A2"/><path d="M128 34 a8 8 0 1 1 0 16 c-6 0-9-4-9-8" stroke="#A8B5A2"/><path d="M128 50 c0 12 8 18 16 22" stroke-width="2.4"/><rect x="140" y="70" width="12" height="10" rx="3"/>
+  </g>
+</svg>
