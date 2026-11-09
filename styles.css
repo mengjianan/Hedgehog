@@ -1539,6 +1539,34 @@ a.entry-card { text-decoration: none; color: var(--ink); }
   .paper-btn { padding: 7px 15px; }
 }
 
+/* ---------- 首页一屏（全端通用）：压缩纵向占满视口、消灭滚动条；手机端 780px 内再覆盖更小号 ---------- */
+body.home-view .page {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 24px; /* 页码隐藏后收回 56px 底距 */
+}
+body.home-view .view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* 各块纵向均匀分布，一屏占满不挤顶 */
+  padding: 8px 4px 10px;
+}
+body.home-view .page-foot { display: none; } /* 首页去掉底部「— 1 —」页码 */
+body.home-view .hero { padding: 8px 10px 0; }
+body.home-view .hero-sticker { width: 132px; padding: 9px 9px 16px; margin-bottom: 4px; }
+body.home-view .hero h2 { font-size: 18px; margin: 4px 0 2px; }
+body.home-view .search-row { margin-top: 8px; max-width: 460px; }
+body.home-view .search-row input { padding: 8px 12px; font-size: 14px; }
+body.home-view .home-prog { margin-top: 0; gap: 8px; }
+body.home-view .hp-cell { padding: 6px; }
+body.home-view .hp-cell b { font-size: 17px; }
+body.home-view .data-row { margin-top: 0; gap: 10px; }
+body.home-view .halls { grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 0; } /* 6 厅一行 */
+body.home-view .hall { padding: 9px 6px; }
+body.home-view .home-stat { margin-top: 0; }
+body.home-view .footnote { margin-top: 0; font-size: 11px; }
+
 /* ---------- 移动端（本子简化版） ---------- */
 @media (max-width: 780px) {
   .notebook { margin: 0; border-radius: 0; min-height: 100vh; }
