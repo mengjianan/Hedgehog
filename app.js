@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-9.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-9.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -779,7 +779,7 @@
       })
       .join('');
     return (
-      '<h2>词库</h2>' + wordCards +
+      '<h2>词库</h2>' + modeSegHTML() + wordCards +
       '<h2 class="group-h">场景厅</h2>' + sceneChips +
       '<div class="wordlist">' + sceneCards + '</div>'
     );
@@ -1426,18 +1426,22 @@
     return shadowCardHTML(e, ref);
   }
 
+  // 三复合模式切换（公共）：背词页选厅处 / 巡游进行中 / 词库页 / 日用角闪卡 共用，改 pickMode 全局同步
+  function modeSegHTML() {
+    return '<div class="seg-ctl">' +
+      '<button type="button" class="seg' + (pickMode === 'lr' ? ' on' : '') +
+      '" data-act="set-mode" data-mode="lr">听认</button>' +
+      '<button type="button" class="seg' + (pickMode === 'ls' ? ' on' : '') +
+      '" data-act="set-mode" data-mode="ls">跟读</button>' +
+      '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
+      '" data-act="set-mode" data-mode="rw">读写</button>' +
+      '</div>';
+  }
+
   function studyScreen() {
     if (!session || session.kind === 'kinder') { // 日用角进行中：回背词页显示选厅（防 kinder 队列当巡游词渲染）
       var dueN = dueRefsNow().length;
-      var modeSeg =
-        '<div class="seg-ctl">' +
-        '<button type="button" class="seg' + (pickMode === 'lr' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="lr">听认</button>' +
-        '<button type="button" class="seg' + (pickMode === 'ls' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="ls">跟读</button>' +
-        '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
-        '" data-act="set-mode" data-mode="rw">读写</button>' +
-        '</div>';
+      var modeSeg = modeSegHTML();
       // 入口卡一行 4 个小框（紧凑，不带描述行）
       var cards = '<div class="entry-row">';
       if (dueN) {
@@ -1545,6 +1549,7 @@
       ' · 第 ' + (session.idx + 1) + '/' + session.queue.length + ' 站</span>' +
       '<span><button class="mini-btn" data-act="study-home">✕ 退出重选</button>' +
       ' 认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
+      modeSegHTML() + // 学习中可切听认/跟读/读写（当前站回第0步）
       '<p class="swipe-tip">' + ICON.up + ' 判分页上滑=认识 · ' + ICON.down + ' 下滑=模糊 · 点小地图方块回看单词</p>' +
       minimapHTML() +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>';
@@ -1831,20 +1836,11 @@
     var n = session.kinderWords.length;
     var pct = Math.round((session.idx / n) * 100);
     // 模式切换（与背词页共用 pickMode）：进行中切换 → 同步本 session 并回第0步
-    var modeSeg =
-      '<div class="seg-ctl">' +
-      '<button type="button" class="seg' + (pickMode === 'lr' ? ' on' : '') +
-      '" data-act="set-mode" data-mode="lr">听认</button>' +
-      '<button type="button" class="seg' + (pickMode === 'ls' ? ' on' : '') +
-      '" data-act="set-mode" data-mode="ls">跟读</button>' +
-      '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
-      '" data-act="set-mode" data-mode="rw">读写</button>' +
-      '</div>';
     return back +
       '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
       '<div class="study-meta"><span>第 ' + (session.idx + 1) + '/' + n + ' 件</span>' +
       '<span>认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
-      modeSeg +
+      modeSegHTML() +
       (atJudgeStep() ? '<p class="swipe-tip">' + ICON.up + ' 上滑=认识 · ' + ICON.down + ' 下滑=模糊</p>' : '') +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
       kinderCardHTML();
@@ -4188,9 +4184,11 @@
         idbSet('exam-papers', examPapers).then(function () { route(); });
       }
     } else if (act === 'set-mode') {
-      pickMode = el.getAttribute('data-mode');
-      if (kinderOn()) { // 日用角进行中切换：同步本 session 并回第0步重来当前站
-        session.mode = pickMode;
+      var pmNew = el.getAttribute('data-mode');
+      pickMode = pmNew;
+      // 学习中切换（巡游或日用角）：同步当前 session 并回第0步重来当前站（进度分不动；点相同模式不重置）
+      if (session && session.mode !== pmNew) {
+        session.mode = pmNew;
         session.cpStep = 0;
         session.cpListened = null;
         session.shState = 'idle';
