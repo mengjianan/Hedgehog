@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-9.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-9.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1427,7 +1427,7 @@
   }
 
   function studyScreen() {
-    if (!session) {
+    if (!session || session.kind === 'kinder') { // 日用角进行中：回背词页显示选厅（防 kinder 队列当巡游词渲染）
       var dueN = dueRefsNow().length;
       var modeSeg =
         '<div class="seg-ctl">' +
@@ -1652,9 +1652,8 @@
   // ---------- 日用角（#7）：日用物件闪卡 + 地道对话 ----------
   // 内容：data/kinder.json（10 类 146 词三语版：英+IPA/日+假名/韩+罗马音，原创整理）、data/dialogues.json（25 段原创对话）
   // 词库命中的物件挂词条（有道发音+词感+真 ref 进间隔复习），未命中的内置释义+系统朗读
-  var KINDER = null; // {cats:[{id,title,img,words:[{w,zh,ex,exZh}]}]}
-  var DIALOGUES = null; // {dialogues:[{id,grp,title,en,lines:[{who,en,zh}]}]}
-  var kinder = null; // 进行中的物件闪卡 {catId,cat,words:[{w,zh,ex,exZh,ref,e}],idx,good,bad,judged,logged}
+  var KINDER = null; // {cats:[{id,title,img,words:[...]}]}
+  var DIALOGUES = null; // {dialogues:[{id,grp,title,en,lines:[{who,en,zh,ja,ko}]}]}
   var KMAP = null; // 词库英文头词 → 词条（懒建一次）
   fetch('data/kinder.json').then(function (r) { return r.json(); })
     .then(function (d) { KINDER = d; route(); }).catch(function () {});
@@ -1674,52 +1673,45 @@
     return KMAP;
   }
 
+  // 日用角并轨巡游 session（kind='kinder'）：三复合模式步骤/判分门槛/自动下一题/
+  // 录音 sh-*/手写板/打卡全部复用巡游机制，不再单独维护一套状态
+  function kinderOn() { return !!(session && session.kind === 'kinder'); }
+  function kw() { return kinderOn() ? session.kinderWords[session.idx] : null; }
+
   function startKinder(catId) {
     if (!KINDER) return false;
     var cat = null;
     KINDER.cats.forEach(function (c) { if (c.id === catId) cat = c; });
     if (!cat) return false;
     var m = kmap();
-    kinder = {
-      catId: catId,
-      cat: cat,
-      words: cat.words.map(function (x) {
-        var e = m[String(x.w).toLowerCase()] || null;
-        return {
-          w: x.w, pron: x.pron, ja: x.ja, jaPron: x.jaPron, ko: x.ko, koPron: x.koPron,
-          zh: x.zh, ex: x.ex, exZh: x.exZh, exJa: x.exJa, exKo: x.exKo,
-          ref: e ? e.ref : 'kinder/en/' + catId + '/' + x.w, // 内置词假 ref：只计本轮，不进复习（due 要求 IDX 命中）
-          e: e
-        };
-      }),
-      idx: 0, good: 0, bad: 0, judged: {}, logged: false
+    var words = cat.words.map(function (x) {
+      var e = m[String(x.w).toLowerCase()] || null;
+      return {
+        w: x.w, pron: x.pron, ja: x.ja, jaPron: x.jaPron, ko: x.ko, koPron: x.koPron,
+        zh: x.zh, ex: x.ex, exZh: x.exZh, exJa: x.exJa, exKo: x.exKo,
+        ref: e ? e.ref : 'kinder/en/' + catId + '/' + x.w, // 内置词假 ref：只计本轮，不进复习（due 要求 IDX 命中）
+        e: e
+      };
+    });
+    session = {
+      kind: 'kinder',
+      queue: words.map(function (w) { return w.ref; }), // recordStudy 走队列 ref
+      kinderWords: words, // 三语数据与 queue 同步下标
+      catId: catId, cat: cat,
+      idx: 0, good: 0, bad: 0, judged: {}, logged: false,
+      mode: pickMode, // 与背词页共用听认/跟读/读写
+      // 步骤字段与巡游同名 → advanceSession/小地图清理逻辑统一复用
+      spellChecked: false, spellOk: false, wmCompare: false, wmShot: null,
+      rwPad: lsGet('hedgehog:rw-pad', 'kb'),
+      cpStep: 0, cpListened: null, shState: 'idle'
     };
     return true;
   }
 
-  // 判分：上滑/按钮=认识，下滑=模糊；真 ref 进掌握+间隔复习，首轮只计一次对错
-  function kinderJudge(good) {
-    if (!kinder || kinder.idx >= kinder.words.length) return;
-    var w = kinder.words[kinder.idx];
-    var k = known();
-    if (good) k[w.ref] = 1; else delete k[w.ref];
-    lsSet('hedgehog:known', k);
-    if (!kinder.judged[kinder.idx]) {
-      kinder.judged[kinder.idx] = true;
-      if (good) kinder.good++; else kinder.bad++;
-    }
-    scheduleRef(w.ref, good);
-    kinder.idx++;
-    if (kinder.idx >= kinder.words.length && !kinder.logged) {
-      kinder.logged = true;
-      logStamp();
-    }
-  }
-
   // 单语朗读：行尾喇叭按 data-lang 读英/日/韩（有道失败自动转系统 TTS）
   function kinderSay(lang) {
-    if (!kinder || kinder.idx >= kinder.words.length) return;
-    var w = kinder.words[kinder.idx];
+    var w = kw();
+    if (!w) return;
     if (lang === 'ja') {
       playAudio(w.ja, 'jap', w.ja, { x: { w: w.ja }, l: { speech: 'ja-JP', lang: 'ja' } });
     } else if (lang === 'ko') {
@@ -1731,8 +1723,8 @@
 
   // 三语连播：英→日→韩，有道顺序接龙，单条失败跳下一条
   function kinderSayAll() {
-    if (!kinder || kinder.idx >= kinder.words.length) return;
-    var w = kinder.words[kinder.idx];
+    var w = kw();
+    if (!w) return;
     var steps = [{ t: w.w, le: 'en' }, { t: w.ja, le: 'jap' }, { t: w.ko, le: 'ko' }];
     var i = 0;
     function next() {
@@ -1820,26 +1812,53 @@
         '<div class="kd-cats">' + cards + '</div>';
     }
     var back = '<a class="back-link" href="#/daily/obj">← 物件</a>';
-    if (!kinder || kinder.catId !== catId) {
+    if (!kinderOn() || session.catId !== catId) {
       if (!startKinder(catId)) return back + '<h2>日用角</h2><p class="sub">没有这个类别</p>';
     }
-    var cat = kinder.cat;
-    if (kinder.idx >= kinder.words.length) {
+    var cat = session.cat;
+    if (session.idx >= session.queue.length) {
       return back +
         '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
         '<div class="card study-done">' +
         '<img class="sticker" src="icons/sticker-hog.svg" alt="" />' +
         '<div class="stamp">完成</div>' +
-        '<p>本轮：认识 <b>' + kinder.good + '</b> · 模糊 <b>' + kinder.bad + '</b></p>' +
+        '<p>本轮：认识 <b>' + session.good + '</b> · 模糊 <b>' + session.bad + '</b></p>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="kinder-restart" data-cat="' + cat.id + '">再来一轮</button>' +
         '<a class="btn ghost" href="#/daily/obj">回物件</a>' +
         '</div></div>';
     }
-    var w = kinder.words[kinder.idx];
-    var n = kinder.words.length;
-    var pct = Math.round((kinder.idx / n) * 100);
+    var n = session.kinderWords.length;
+    var pct = Math.round((session.idx / n) * 100);
+    // 模式切换（与背词页共用 pickMode）：进行中切换 → 同步本 session 并回第0步
+    var modeSeg =
+      '<div class="seg-ctl">' +
+      '<button type="button" class="seg' + (pickMode === 'lr' ? ' on' : '') +
+      '" data-act="set-mode" data-mode="lr">听认</button>' +
+      '<button type="button" class="seg' + (pickMode === 'ls' ? ' on' : '') +
+      '" data-act="set-mode" data-mode="ls">跟读</button>' +
+      '<button type="button" class="seg' + (pickMode === 'rw' ? ' on' : '') +
+      '" data-act="set-mode" data-mode="rw">读写</button>' +
+      '</div>';
+    return back +
+      '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
+      '<div class="study-meta"><span>第 ' + (session.idx + 1) + '/' + n + ' 件</span>' +
+      '<span>认识 ' + session.good + ' · 模糊 ' + session.bad + '</span></div>' +
+      modeSeg +
+      (atJudgeStep() ? '<p class="swipe-tip">' + ICON.up + ' 上滑=认识 · ' + ICON.down + ' 下滑=模糊</p>' : '') +
+      '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
+      kinderCardHTML();
+  }
+
+  // 日用角闪卡：按 mode 走三复合流程（步骤字段挂 session，与巡游共用判分/自动下一题/手势）
+  function kinderCardHTML() {
+    var w = kw();
+    if (!w) return '';
+    var m = session.mode || 'lr';
+    var step = session.cpStep || 0;
     var slug = w.w.toLowerCase().replace(/\s+/g, '-');
+    var img = '<img class="kd-img" src="icons/kw/' + slug + '.svg" alt="" ' +
+      'onerror="this.style.display=\'none\'" />';
     var knownBadge = known()[w.ref] ? '<span class="kd-known">已认识</span>' : '';
     var sayBtn = function (lang) {
       return '<button class="mini-btn" data-act="kinder-say" data-lang="' + lang +
@@ -1853,29 +1872,151 @@
       '<span class="kd-p">' + esc(w.jaPron || '') + '</span>' + sayBtn('ja') + '</div>' +
       '<div class="kd-row"><span class="kd-lang">韩</span><span class="kd-t">' + esc(w.ko) + '</span>' +
       '<span class="kd-p">' + esc(w.koPron || '') + '</span>' + sayBtn('ko') + '</div>';
-    // 例句四语对齐（同一句的翻译）：EN/日/韩/中 全用词表数据（词库 ex 不再上卡，防止四语不同句）
+    // 例句四语对齐（同一句的翻译）：EN/日/韩/中 全用词表数据
     var exs = '<div class="kd-exs">' +
       [['EN', w.ex], ['日', w.exJa], ['韩', w.exKo], ['中', w.exZh]]
         .filter(function (p) { return p[1]; })
         .map(function (p) { return '<p><b class="kd-el">' + p[0] + '</b>' + esc(p[1]) + '</p>'; })
         .join('') + '</div>';
-    return back +
-      '<h2>日用角 · ' + esc(cat.title) + '</h2>' +
-      '<div class="study-meta"><span>第 ' + (kinder.idx + 1) + '/' + n + ' 件</span>' +
-      '<span>认识 ' + kinder.good + ' · 模糊 ' + kinder.bad + '</span></div>' +
-      '<p class="swipe-tip">' + ICON.up + ' 上滑=认识 · ' + ICON.down + ' 下滑=模糊</p>' +
-      '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
-      '<div class="card study-card kinder-card">' +
-      '<img class="kd-img" src="icons/kw/' + slug + '.svg" alt="" ' +
-      'onerror="this.style.display=\'none\'" />' +
-      '<div class="kd-rows">' + rows + '</div>' +
-      '<div class="kd-zh">' + esc(w.zh) + knownBadge + '</div>' +
-      exs +
+    var core = img + '<div class="kd-rows">' + rows + '</div>' +
+      '<div class="kd-zh">' + esc(w.zh) + knownBadge + '</div>';
+    var full = core + exs;
+    var judgeBtns =
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+      '<button class="btn" data-act="good">✓ 认识</button>' +
+      '</div>';
+    var sayAllBtn =
       '<div class="study-actions">' +
       '<button class="btn ghost" data-act="kinder-say-all">' + ICON.sound + ' 听三语</button>' +
-      '<button class="btn" data-act="kinder-judge" data-good="1">认识</button>' +
-      '<button class="btn ghost" data-act="kinder-judge" data-good="0">模糊</button>' +
-      '</div></div>';
+      '</div>';
+
+    // ---------- 读写：先写（图+中文提示默写英文）后读 → 判 ----------
+    if (m === 'rw') {
+      if (step >= 1) { // 读页：完整卡 → 判
+        return '<div class="card study-card kinder-card">' + full + sayAllBtn + judgeBtns + '</div>';
+      }
+      var pad = session.rwPad || 'kb';
+      var padSeg =
+        '<div class="seg-ctl">' +
+        '<button type="button" class="seg tiny' + (pad === 'kb' ? ' on' : '') +
+        '" data-act="rw-pad" data-pad="kb">' + ICON.keyboard + ' 键盘</button>' +
+        '<button type="button" class="seg tiny' + (pad === 'hw' ? ' on' : '') +
+        '" data-act="rw-pad" data-pad="hw">' + ICON.pen + ' 手写板</button>' +
+        '</div>';
+      var prompt =
+        '<div class="spell-hint">先写：看中文和图，写出英文词</div>' +
+        img +
+        '<div class="spell-zh">' + esc(w.zh) + '</div>' +
+        '<div class="spell-tools">' + sayBtn('en') +
+        '<span class="tour-slot">可先听发音</span></div>' +
+        padSeg;
+      if (pad === 'hw') {
+        if (session.wmCompare) { // 手写完 → 与答案并排比对 → 去读
+          return '<div class="card study-card kinder-card write">' +
+            '<div class="wm-compare">' +
+            '<figure class="wm-ours"><figcaption>你写的</figcaption>' +
+            (session.wmShot ? '<img src="' + session.wmShot + '" alt="我的书写" />' : '') +
+            '</figure>' +
+            '<figure class="wm-model"><figcaption>正确答案</figcaption>' +
+            '<div class="write-model">' + esc(w.w) + '</div>' +
+            '<div class="sipa">' + esc(w.pron || '') + '</div>' +
+            '</figure></div>' +
+            '<div class="spell-zh">' + esc(w.zh) + '</div>' +
+            '<div class="study-actions">' +
+            '<button class="btn" data-act="cp-next">读一读 → 判</button>' +
+            '</div></div>';
+        }
+        return '<div class="card study-card kinder-card write">' + prompt +
+          '<canvas id="rwCanvas" width="720" height="300"></canvas>' +
+          '<div class="cb-tools">' +
+          '<button class="btn" data-act="rw-done">写好了 · 比对</button>' +
+          '<button class="btn ghost" data-act="rw-clear">清一下</button>' +
+          '</div></div>';
+      }
+      if (!session.spellChecked) { // 键盘默写：检查只判对错，答案在读页揭晓
+        return '<div class="card study-card kinder-card spell">' + prompt +
+          '<div class="spell-row">' +
+          '<input id="cpSpellInput" type="text" autocomplete="off" autocapitalize="none" ' +
+          'autocorrect="off" spellcheck="false" placeholder="输入英文单词" />' +
+          '<button class="btn" data-act="cp-check">检查</button>' +
+          '</div></div>';
+      }
+      return '<div class="card study-card kinder-card spell">' +
+        '<div class="spell-result ' + (session.spellOk ? 'ok' : 'err') + '">' +
+        (session.spellOk ? '✓ 写对了' : '✗ 不对') + '</div>' +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="cp-next">对答案 → 读</button>' +
+        '</div></div>';
+    }
+
+    // ---------- 第0步：听（听认/跟读共用）—— 图保留、只藏文字 ----------
+    if (step === 0) {
+      if (session.cpListened !== session.idx) {
+        session.cpListened = session.idx;
+        setTimeout(function () { kinderSay('en'); }, 150);
+      }
+      return '<div class="card study-card kinder-card">' + img +
+        '<div class="spell-hint">' +
+        (m === 'lr' ? '先听发音（只藏文字 · 看图猜词）' : '先听原声，准备跟读') + '</div>' +
+        '<div class="spell-tools">' + sayBtn('en') +
+        '<span class="tour-slot">听清了再继续 · 可重播</span></div>' +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="cp-next">' +
+        (m === 'lr' ? '听完了 → 看词' : '听完了 → 开始跟读') + '</button>' +
+        '</div></div>';
+    }
+
+    // ---------- 听认：看完整卡 → 判 ----------
+    if (m === 'lr') {
+      return '<div class="card study-card kinder-card">' + full + sayAllBtn + judgeBtns + '</div>';
+    }
+
+    // ---------- 跟读：日用角样式（图+三语+录音控件），动作复用 sh-* ----------
+    return kinderShadowHTML(w, core);
+  }
+
+  // 跟读卡（日用角样式）：录音三态 idle/rec/done，动作与巡游共用
+  function kinderShadowHTML(w, core) {
+    var st = session.shState || 'idle';
+    var head = '<div class="card study-card kinder-card shadow">' +
+      '<div class="spell-hint">听发音 → 按住跟读 → 回放对比</div>' + core;
+    if (st === 'idle') {
+      return head +
+        '<div class="study-actions">' +
+        '<button class="btn" data-act="sh-record">' + ICON.mic + ' 开始录音跟读</button>' +
+        '</div>' +
+        '<button class="btn ghost" data-act="blur" style="width:100%;margin-top:8px">先跳过（模糊）</button>' +
+        '</div>';
+    }
+    if (st === 'rec') {
+      return head +
+        '<div class="study-actions"><span class="tour-slot">● 录音中… 说这个词</span></div>' +
+        '<button class="btn" data-act="sh-stop" style="width:100%;margin-top:10px">⏹ 停止并回放</button>' +
+        '</div>';
+    }
+    // done：回放对比 + 自评
+    var pronHtml = '';
+    if (pronOn() && pronAvailable() && session.pronText != null) {
+      var said = session.pronText;
+      var hit = pronMatch(w.w, said);
+      pronHtml =
+        '<div class="pron-line' + (hit ? ' ok' : '') + '">' +
+        '🗣 识别：<b>' + (said ? esc(said) : '（没听清）') + '</b>' +
+        (hit ? ' ✓ 接近原词' : ' · 再试一次？') + '</div>';
+    }
+    return head + pronHtml +
+      '<div class="spell-tools"><span class="tour-slot">' + ICON.sound + ' 回放你的跟读，和原声对比</span></div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="sh-play">' + ICON.play + ' 再听我的</button>' +
+      '<button class="btn ghost" data-act="sh-again">重录</button>' +
+      '</div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="blur">✗ 模糊</button>' +
+      '<button class="btn" data-act="good">✓ 对了</button>' +
+      '</div>' +
+      pronToggleHTML() +
+      '</div>';
   }
 
   // ---------- 视图：日用角·对话 ----------
@@ -3762,8 +3903,7 @@
   var sw = { y0: 0, dy: 0, on: false, card: null };
   var SWIPE_TH = 80; // 阈值像素
   function swipeOK() {
-    // 日用角物件卡：任意站可判（不依赖巡游 session 的判分步状态）
-    if (kinder && kinder.idx < kinder.words.length && location.hash.indexOf('#/daily/') === 0) return true;
+    // 巡游与日用角并轨：只有模式的判分步能滑（听认/读写=第二步，跟读=录音完成）
     return atJudgeStep() && session.idx < session.queue.length;
   }
   $('view').addEventListener('touchstart', function (e) {
@@ -3795,12 +3935,7 @@
     card.style.transform = '';
     if (Math.abs(dy) < SWIPE_TH) return; // 回弹，不判
     if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = null; }
-    if (card.classList.contains('kinder-card')) { // 日用角物件卡：同手势，独立计分
-      kinderJudge(dy < 0);
-      route();
-      return;
-    }
-    recordStudy(dy < 0); // 上滑=认识，下滑=模糊（方向按用户定）
+    recordStudy(dy < 0); // 上滑=认识，下滑=模糊（方向按用户定）——日用角 kinder session 同路
     advanceSession();
     route();
   });
@@ -4054,6 +4189,17 @@
       }
     } else if (act === 'set-mode') {
       pickMode = el.getAttribute('data-mode');
+      if (kinderOn()) { // 日用角进行中切换：同步本 session 并回第0步重来当前站
+        session.mode = pickMode;
+        session.cpStep = 0;
+        session.cpListened = null;
+        session.shState = 'idle';
+        session.spellChecked = false;
+        session.spellOk = false;
+        session.wmCompare = false;
+        session.wmShot = null;
+        shDispose();
+      }
       route();
     } else if (act === 'start-study') {
       startSession({
@@ -4064,9 +4210,6 @@
       route();
     } else if (act === 'kinder-restart') { // 日用角完成页：再来一轮
       if (startKinder(el.getAttribute('data-cat'))) route();
-    } else if (act === 'kinder-judge') { // 日用角：桌面按钮判分（同上滑/下滑）
-      kinderJudge(el.getAttribute('data-good') === '1');
-      route();
     } else if (act === 'kinder-say') {
       kinderSay(el.getAttribute('data-lang') || 'en');
     } else if (act === 'kinder-say-all') { // 英→日→韩连播
@@ -4113,7 +4256,9 @@
       if (!session || session.spellChecked) return;
       var cpi = $('cpSpellInput');
       var cpx = IDX[session.queue[session.idx]];
-      session.spellOk = checkSpelling(cpi ? cpi.value : '', cpx.x);
+      // 日用角内置词无词库词条：用词表数据（checkSpelling 只读 w/pron）
+      var cw = cpx ? cpx.x : kw();
+      session.spellOk = cw ? checkSpelling(cpi ? cpi.value : '', cw) : false;
       session.spellChecked = true;
       route();
     } else if (act === 'rw-pad') { // 复合模式·读写：切换键盘/手写板
