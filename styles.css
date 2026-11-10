@@ -581,7 +581,10 @@ img { max-width: 100%; }
 .matrix-table tbody tr:last-child th,
 .matrix-table tbody tr:last-child td { border-bottom: 0; }
 
-.matrix-table { text-align: center; min-width: 620px; }
+/* 桌面端定宽布局：列宽均分（与移动端一致），否则内容长的列会被撑宽——
+   五十音「を」格带注释「（只作助词，读 o）」在 auto 布局下把最后一列（お段）撑得特别宽 */
+.matrix-table { text-align: center; min-width: 620px; table-layout: fixed; }
+.matrix-table thead th.corner { width: 88px; } /* 行名列（か行/わ行）固定宽，其余列均分 */
 .matrix-table thead th.corner,
 .matrix-table tbody th { text-align: center; }
 .matrix-table td { text-align: center; }
