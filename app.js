@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-10.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-10.3'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2380,10 +2380,46 @@
     );
   }
 
+  // 三张基础表页首「文字构成」导览：先讲清当前语言的文字怎么拼出来（原创，卡片复用 rule-card 样式）
+  var TABLE_INTRO = {
+    'en-roots': {
+      title: '英语文字怎么构成',
+      cards: [
+        { name: '26 个字母', desc: '英语是拼音文字：字母本身只表音、不表义，26 个字母（大小写两种写法）就是全部书写材料。', ex: 'a b c … z ／ A B C … Z' },
+        { name: '字母拼成单词', desc: '字母按读音依次拼成单词，辅音元音交替出现——基本做到看到就会读、听到就会写。', ex: 'cat = c + a + t ／ sun = s + u + n' },
+        { name: '词根 = 核心义', desc: '词根是一族词共用的意义块，多来自拉丁语、希腊语；换掉前后缀就生出一串新词。', ex: 'port 搬运 → transport 运输 / export 出口 / import 进口' },
+        { name: '词缀 = 方向与词性', desc: '前缀加在词根前，管方向与肯定否定（re-、un-、trans-）；后缀加在词根后，管词性（-tion 名词、-able 形容词、-ize 动词）。', ex: 're- 再/回 · un- 不 · -tion（名词）· -able（能…的）' }
+      ]
+    },
+    'ko-letters': {
+      title: '韩文（한글）怎么构成',
+      cards: [
+        { name: '子音 + 母音', desc: '韩文是表音文字：14 个基本子音、10 个基本母音，加上派生形式就是本表的辅音 19、元音 21。', ex: '辅音 19 · 元音 21（本表所列）' },
+        { name: '拼成方块字', desc: '一个韩字 = 一个音节块：先写初声（子音），再写中声（母音），拼进同一个方格，顺序从左到右、从上到下。', ex: '한 = ㅎ + ㅏ + ㄴ' },
+        { name: '收音（받침）', desc: '音节末尾可以再挂一个子音当收音：27 种写法只发 7 个代表音（ㄱ·ㄷ·ㅂ·ㅁ·ㄴ·ㄹ·ㅇ）。', ex: '책（书）· 읽다（读）' },
+        { name: '音变规则', desc: '收音碰到后面的子音会连读变化——同一个字单念和在词里念听起来不同，8 条规则全是高频。', ex: '좋다 → [조타]' }
+      ]
+    },
+    'ja-letters': {
+      title: '日语文字怎么构成',
+      cards: [
+        { name: '三种文字并用', desc: '汉字表意（词干多用它），平假名表音（和语词、词尾、助词），片假名表音（外来语、拟声词、强调）。', ex: '山（漢字）· やま（仮名）· コーヒー（カタカナ）' },
+        { name: '假名 = 音节字', desc: '一个假名念一个音节；平假名与片假名一一对应，只是写法一圆一方。', ex: 'あ = ア ／ か = カ' },
+        { name: '五十音 = 清音表', desc: '假名按「行 × 段」排表：行是辅音（か行…），段是元音（あ段…お段），交叉出清音 46 个。', ex: 'か行 = か き く け こ' },
+        { name: '再生浊音拗音', desc: '在清音上加符号或拼小假名：浊音（か→が）、半浊音（は→ぱ）、拗音（き+ゃ=きゃ）、拨音（ん），拼出全部假名。', ex: 'が · ぱ · きゃ · ん' }
+      ]
+    }
+  };
+
   // ---------- 视图：基础表 ----------
   function viewTable(id) {
     var t = TBY[id];
     if (!t) return viewTablesHub();
+    // 页首先讲「本语言文字怎么构成」，再进表格
+    var intro = TABLE_INTRO[id];
+    var introHtml = intro
+      ? renderSection({ type: 'rules', title: intro.title, cards: intro.cards }, t.lang)
+      : '';
     var body = (t.sections || []).map(function (sec) { return renderSection(sec, t.lang); }).join('');
     return (
       '<a class="back-link" href="#/tables">← 基础表</a>' +
@@ -2395,7 +2431,7 @@
       '<a class="btn" href="#/tables/' + esc(id) + '/practice">开始练习</a>' +
       '<button class="btn ghost" data-act="fpad-toggle">' + ICON.pen + ' 抄写</button>' +
       '</div>' +
-      '</div>' + body +
+      '</div>' + introHtml + body +
       '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
     );
   }
