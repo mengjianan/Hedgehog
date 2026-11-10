@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-10.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-10.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1917,6 +1917,13 @@
             '<figure class="wm-model"><figcaption>正确答案</figcaption>' +
             '<div class="write-model">' + esc(w.w) + '</div>' +
             '<div class="sipa">' + esc(w.pron || '') + '</div>' +
+            // 三语对齐：正确答案补日/韩（EN 已是大字范字）
+            '<div class="kd-rows">' +
+            '<div class="kd-row"><span class="kd-lang">日</span><span class="kd-t">' + esc(w.ja) + '</span>' +
+            '<span class="kd-p">' + esc(w.jaPron || '') + '</span>' + sayBtn('ja') + '</div>' +
+            '<div class="kd-row"><span class="kd-lang">韩</span><span class="kd-t">' + esc(w.ko) + '</span>' +
+            '<span class="kd-p">' + esc(w.koPron || '') + '</span>' + sayBtn('ko') + '</div>' +
+            '</div>' +
             '</figure></div>' +
             '<div class="spell-zh">' + esc(w.zh) + '</div>' +
             '<div class="study-actions">' +
