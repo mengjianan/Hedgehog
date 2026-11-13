@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-10.5'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-13.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2289,6 +2289,8 @@
     el.hidden = false;
     var fh = lsGet('hedgehog:boxh-fpad', 0); // 恢复记住的板高
     el.style.height = fh ? Math.min(fh, window.innerHeight - 100) + 'px' : '';
+    var fw = lsGet('hedgehog:boxw-fpad', 0); // 恢复记住的板宽
+    el.style.width = fw ? Math.max(180, Math.min(fw, window.innerWidth - 16)) + 'px' : '';
     fpadApplyPos(); // 有存的位置用存的；没有则保持 CSS 默认右下
     bindDraw($('fpadCanvas'));
   }
@@ -2344,6 +2346,42 @@
       h._bound = true;
       var box = $(h.getAttribute('data-box'));
       if (!box) return;
+      // 水平把手（data-axis=x，悬浮板画布左右两缘）：对侧边缘为锚改宽度
+      if (h.getAttribute('data-axis') === 'x') {
+        var side = h.getAttribute('data-side') === 'left' ? 'left' : 'right';
+        var keyW = 'hedgehog:boxw-' + h.getAttribute('data-box');
+        h.addEventListener('pointerdown', function (ev) {
+          ev.preventDefault();
+          var sx = ev.clientX;
+          var r0 = box.getBoundingClientRect();
+          var w0 = r0.width;
+          var maxW = side === 'left'
+            ? r0.right - 8 // 右缘固定：左缘最多拖到视口左边 8px
+            : window.innerWidth - r0.left - 8; // 左缘固定：右缘最多到视口右边
+          function clampW(v) { return Math.max(180, Math.min(v, maxW)); }
+          function mv(e2) {
+            var w = side === 'left'
+              ? clampW(w0 - (e2.clientX - sx)) // 向左拖 = 加宽
+              : clampW(w0 + (e2.clientX - sx)); // 向右拖 = 加宽
+            box.style.width = w + 'px';
+            box.style.right = 'auto';
+            box.style.left = Math.round(side === 'left' ? r0.right - w : r0.left) + 'px';
+          }
+          function up() {
+            h.removeEventListener('pointermove', mv);
+            h.removeEventListener('pointerup', up);
+            lsSet(keyW, Math.round(box.getBoundingClientRect().width));
+            if (box.id === 'fpad') { // 宽度拖动可能归一化了定位，位置一并记住
+              var r = box.getBoundingClientRect();
+              lsSet('hedgehog:fpad-pos', { x: Math.round(r.left), y: Math.round(r.top) });
+            }
+          }
+          h.setPointerCapture(ev.pointerId);
+          h.addEventListener('pointermove', mv);
+          h.addEventListener('pointerup', up);
+        });
+        return;
+      }
       var key = 'hedgehog:boxh-' + h.getAttribute('data-box');
       h.addEventListener('pointerdown', function (ev) {
         ev.preventDefault();

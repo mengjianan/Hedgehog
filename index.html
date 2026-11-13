@@ -12,7 +12,7 @@
     <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
     <link rel="icon" href="icons/hedgehog.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=34" />
+    <link rel="stylesheet" href="styles.css?v=35" />
   </head>
   <!-- body.booting：启动比对缓存期间密码门不可见（防刷新时一闪而过，见 styles.css） -->
   <body class="booting">
@@ -64,10 +64,14 @@
           <button type="button" id="fpadClose">收起</button>
         </span>
       </div>
-      <div class="fpad-body"><canvas id="fpadCanvas" width="720" height="540"></canvas></div>
+      <div class="fpad-body">
+        <canvas id="fpadCanvas" width="720" height="540"></canvas>
+        <div class="pad-resize pad-resize-x left" data-box="fpad" data-axis="x" data-side="left" title="左右拖动调节宽度（拖左缘）"></div>
+        <div class="pad-resize pad-resize-x right" data-box="fpad" data-axis="x" data-side="right" title="左右拖动调节宽度（拖右缘）"></div>
+      </div>
       <div class="pad-resize" data-box="fpad" title="上下拖动调节手写板高度"></div>
     </div>
 
-    <script src="app.js?v=34"></script>
+    <script src="app.js?v=35"></script>
   </body>
 </html>

@@ -837,6 +837,26 @@ button.word-chip { cursor: pointer; font: inherit; text-align: center; color: va
   border-radius: 2px;
   opacity: 0.7;
 }
+/* 悬浮板宽度调节把手（画布左右两缘）：水平拖动改宽度，位置与宽度都记住 */
+.pad-resize-x {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  height: auto; /* 覆盖基础把手的 14px 定高（absolute + top/bottom 撑满） */
+  flex: none;
+  cursor: ew-resize;
+}
+.pad-resize-x.left { left: 0; }
+.pad-resize-x.right { right: 0; }
+.pad-resize-x::before {
+  width: 4px;
+  height: 42px;
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 2px solid var(--mut, #999);
+  border-right: 2px solid var(--mut, #999);
+}
 /* 默写内嵌手写板（背词读写同款固定区） */
 .tw-box {
   margin-top: 8px;
