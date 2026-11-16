@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-13.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-16.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -44,6 +44,8 @@
       '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18.5V21"/></svg>',
     play:
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+    pause:
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>',
     up:
       '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
     down:
@@ -2483,6 +2485,83 @@
     ]
   };
 
+  // ---------- 基础表顺序播放：按页内格子顺序连播，一个音读两遍、音间隔2秒；
+  // 再点=暂停、再点=继续（离开本表自动停；有道源失败转系统 TTS，不刷屏） ----------
+  var tblPlay = null; // {tid, items:[{t,le}], i, rep, timer, cur, paused}
+
+  function tblPlayBtnHTML() {
+    if (tblPlay && tblPlay.paused) return ICON.play + ' 继续';
+    if (tblPlay) return ICON.pause + ' 暂停';
+    return ICON.play + ' 播放';
+  }
+  function tblPlaySyncBtn() {
+    var b = document.querySelector('[data-act="tbl-play"]');
+    if (b) b.innerHTML = tblPlayBtnHTML();
+  }
+  function tblPlayTTS(t, le) {
+    if (!window.speechSynthesis) return;
+    var ja = le === 'jap';
+    var ko = le === 'ko';
+    speakTTS({
+      x: { w: t },
+      l: { speech: ja ? 'ja-JP' : ko ? 'ko-KR' : 'en-US', lang: ja ? 'ja' : ko ? 'ko' : 'en' }
+    });
+  }
+  function tblPlayStep() {
+    if (!tblPlay || tblPlay.paused) return;
+    var it = tblPlay.items[tblPlay.i];
+    var a = new Audio();
+    var done = false;
+    function settle(fail) { // ended/error/play拒绝 三路互斥收口
+      if (done) return;
+      done = true;
+      if (fail) tblPlayTTS(it.t, it.le);
+      if (!tblPlay || tblPlay.paused) return;
+      tblPlay.rep++;
+      if (tblPlay.rep >= 2) { tblPlay.rep = 0; tblPlay.i++; } // 一个读两遍
+      tblPlay.timer = setTimeout(tblPlayStep, 2000); // 音与音间隔2秒
+    }
+    a.addEventListener('ended', function () { settle(false); });
+    a.addEventListener('error', function () { settle(true); });
+    tblPlay.cur = a;
+    a.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(it.t) + '&le=' + it.le;
+    var pr = a.play();
+    if (pr && pr.catch) pr.catch(function () { settle(true); });
+  }
+  function tblPlayStop() {
+    if (!tblPlay) return;
+    if (tblPlay.timer) clearTimeout(tblPlay.timer);
+    if (tblPlay.cur) { try { tblPlay.cur.pause(); } catch (e) {} }
+    tblPlay = null;
+    tblPlaySyncBtn();
+  }
+  function tblPlayStart() {
+    var items = [];
+    document.querySelectorAll('.table-section [data-say]').forEach(function (el) {
+      var t = el.getAttribute('data-say');
+      if (t) items.push({ t: t, le: el.getAttribute('data-le') || 'en' });
+    });
+    if (!items.length) { toast('这页没有可朗读的格子'); return; }
+    tblPlay = {
+      tid: location.hash.replace(/^#\/tables\//, ''),
+      items: items, i: 0, rep: 0, timer: null, cur: null, paused: false
+    };
+    tblPlayStep();
+    tblPlaySyncBtn();
+  }
+  function tblPlayToggle() {
+    if (!tblPlay) { tblPlayStart(); return; }
+    if (tblPlay.paused) { // 继续：从当前（第几遍/第几个）接着走
+      tblPlay.paused = false;
+      tblPlayStep();
+    } else { // 暂停：掐表 + 掐当前音
+      tblPlay.paused = true;
+      if (tblPlay.timer) { clearTimeout(tblPlay.timer); tblPlay.timer = null; }
+      if (tblPlay.cur) { try { tblPlay.cur.pause(); } catch (e) {} tblPlay.cur = null; }
+    }
+    tblPlaySyncBtn();
+  }
+
   // ---------- 视图：基础表 ----------
   function viewTable(id) {
     var t = TBY[id];
@@ -2501,6 +2580,7 @@
       '<div class="table-actions">' +
       '<a class="btn" href="#/tables/' + esc(id) + '/practice">开始练习</a>' +
       '<button class="btn ghost" data-act="fpad-toggle">' + ICON.pen + ' 抄写</button>' +
+      '<button class="btn ghost" data-act="tbl-play">' + tblPlayBtnHTML() + '</button>' +
       '</div>' +
       '</div>' + introHtml + body +
       '<p class="footnote">Hedgehog · 基础表 · 内容全部原创</p>'
@@ -2721,7 +2801,7 @@
         s.rows.map(function (r) {
           return (
             '<div class="card morph-row">' +
-            '<div class="morph-top"><b class="morph-form">' + esc(r.form) + '</b>' +
+            '<div class="morph-top"><b class="morph-form" data-say="' + esc(r.form) + '" data-le="en">' + esc(r.form) + '</b>' +
             '<span class="morph-mean">' + esc(r.meaning) + '</span></div>' +
             '<div class="morph-ex">' +
             (r.examples || []).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') +
@@ -3825,6 +3905,8 @@
   var lastRouteHash = null; // 区分「换页」与「页内重渲染」：后者不滚顶，防选卷/勾板块时页面颤动
   function route() {
     if (!DATA) return;
+    // 离开当前基础表（换页/换表/进练习）→ 顺序播放自动停
+    if (tblPlay && location.hash !== '#/tables/' + tblPlay.tid) tblPlayStop();
     wordNav = null; // 默认非词页；词页分支里重新赋值
     var h = location.hash.replace(/^#\/?/, '');
     var pageChanged = h !== lastRouteHash;
@@ -4320,6 +4402,8 @@
         mode: pickMode,
       });
       route();
+    } else if (act === 'tbl-play') { // 基础表顺序播放：播→暂停→继续 循环
+      tblPlayToggle();
     } else if (act === 'kinder-restart') { // 日用角完成页：再来一轮
       if (startKinder(el.getAttribute('data-cat'))) route();
     } else if (act === 'kinder-say') {
