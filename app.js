@@ -19,7 +19,7 @@
   var GBY = {}; // id -> grammar wing
   var session = null; // 当前巡游 {queue:[ref], idx, good, bad, mode, kind, ...}
   var pickMode = 'lr'; // 选厅模式：lr 听认 / ls 跟读 / rw 读写（旧单动作模式已删，并入三复合）
-  var wordNav = null; // 词页导航上下文：{ref, next}（词头区上滑/↓=下一个，Enter=标认识）
+  var wordNav = null; // 词页导航上下文：{ref, next, prev}（词头区上滑/↓=下一个，左滑=下一个/右滑=上一个，Enter=标认识）
   var sessionSize = lsGet('hedgehog:session-size', 10); // 每轮站数（#4 背词页可设）
   var autoNextSec = lsGet('hedgehog:auto-next', 0); // 自动下一题秒数：0=关（默认），5/10/15（批2 #1）
   var autoNextTimer = null;
@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-16.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-19.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -3921,12 +3921,18 @@
       var w = decodeURIComponent(parts.slice(2).join('/'));
       view.innerHTML = viewWord(listId, w);
       nav = 'categories';
-      // 词页导航上下文：词头区上滑/↓ 键=下一个词，Enter=标认识
+      // 词页导航上下文：词头区上滑/↓ 键=下一个词，左滑=下一个/右滑=上一个，Enter=标认识
       var curW = IDX[listId + '/' + w];
       if (curW) {
         var wi = curW.l.words.indexOf(curW.x);
-        var wnext = curW.l.words[(wi + 1) % curW.l.words.length];
-        wordNav = { ref: curW.ref, next: '#/word/' + curW.l.id + '/' + encodeURIComponent(wnext.w) };
+        var wlen = curW.l.words.length;
+        var wnext = curW.l.words[(wi + 1) % wlen];
+        var wprev = curW.l.words[(wi - 1 + wlen) % wlen];
+        wordNav = {
+          ref: curW.ref,
+          next: '#/word/' + curW.l.id + '/' + encodeURIComponent(wnext.w),
+          prev: '#/word/' + curW.l.id + '/' + encodeURIComponent(wprev.w)
+        };
       } else wordNav = null;
     } else if (name === 'categories') {
       view.innerHTML = parts[1] ? viewList(parts[1]) : viewCategories();
@@ -4155,6 +4161,37 @@
     wsw.on = false; wsw.el = null;
     if (dy > -SWIPE_TH || !wordNav) return; // 阈值内不跳
     location.hash = wordNav.next;
+  });
+  // ---------- 词页横向滑动（只绑一次）：左滑=下一个词，右滑=上一个词 ----------
+  var hsw = { x0: 0, y0: 0, dx: 0, dy: 0, on: false, claim: false };
+  $('view').addEventListener('touchstart', function (e) {
+    if (!wordNav || e.touches.length !== 1) { hsw.on = false; return; }
+    var t = e.target;
+    // 手写板里划横线是书写、输入框里是光标操作，不劫持
+    if (t && t.closest && t.closest('canvas, input, textarea')) { hsw.on = false; return; }
+    hsw.on = true;
+    hsw.claim = false;
+    hsw.x0 = e.touches[0].clientX;
+    hsw.y0 = e.touches[0].clientY;
+    hsw.dx = 0;
+    hsw.dy = 0;
+  }, { passive: true });
+  $('view').addEventListener('touchmove', function (e) {
+    if (!hsw.on) return;
+    hsw.dx = e.touches[0].clientX - hsw.x0;
+    hsw.dy = e.touches[0].clientY - hsw.y0;
+    if (!hsw.claim && Math.abs(hsw.dx) <= Math.abs(hsw.dy)) return; // 纵向占优→留给页面滚动
+    hsw.claim = true; // 横向占优→本手势认领（一旦认领到结束都锁默认行为）
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  $('view').addEventListener('touchend', function () {
+    if (!hsw.on) return;
+    var dx = hsw.dx, dy = hsw.dy, claim = hsw.claim;
+    hsw.on = false;
+    hsw.claim = false;
+    if (!claim || !wordNav) return;
+    if (Math.abs(dx) < SWIPE_TH || Math.abs(dx) <= Math.abs(dy)) return; // 阈值内不跳
+    location.hash = dx < 0 ? wordNav.next : wordNav.prev; // 左滑=下一个，右滑=上一个
   });
   document.addEventListener('keydown', function (ev) {
     if (!wordNav) return;
