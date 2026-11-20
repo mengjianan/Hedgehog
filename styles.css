@@ -593,6 +593,20 @@ img { max-width: 100%; }
 .matrix-table td small { display: block; font-size: 10.5px; color: var(--stone); letter-spacing: 0.05em; }
 .matrix-table td.blank { color: var(--line-d); font-size: 17px; }
 
+/* 顺序播放：正在读的格子高亮（环 + 呼吸），配合 scrollIntoView 自动跟随；暂停保留=停在哪 */
+.table-section .play-hl {
+  background: #edf2ea;
+  box-shadow: inset 0 0 0 2px var(--sage, #8fa088);
+  border-radius: 6px;
+  animation: play-hl-breathe 1.1s ease-in-out infinite;
+}
+@keyframes play-hl-breathe {
+  50% { box-shadow: inset 0 0 0 2px var(--sage, #8fa088), 0 0 0 4px rgba(143, 160, 136, 0.32); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-section .play-hl { animation: none; }
+}
+
 /* 词根词缀行 */
 .morph-list { display: flex; flex-direction: column; gap: 10px; }
 .morph-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

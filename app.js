@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-19.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-20.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2498,6 +2498,15 @@
     var b = document.querySelector('[data-act="tbl-play"]');
     if (b) b.innerHTML = tblPlayBtnHTML();
   }
+  // 正在读的格子高亮（环+呼吸）并滚进视野——解决「不知道读到哪了」；暂停保留高亮=停在哪
+  function tblPlayHL(el) {
+    var prev = document.querySelector('.play-hl');
+    if (prev) prev.classList.remove('play-hl');
+    if (el) {
+      el.classList.add('play-hl');
+      try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
+    }
+  }
   function tblPlayTTS(t, le) {
     if (!window.speechSynthesis) return;
     var ja = le === 'jap';
@@ -2510,6 +2519,7 @@
   function tblPlayStep() {
     if (!tblPlay || tblPlay.paused) return;
     var it = tblPlay.items[tblPlay.i];
+    tblPlayHL(it.el);
     var a = new Audio();
     var done = false;
     function settle(fail) { // ended/error/play拒绝 三路互斥收口
@@ -2532,6 +2542,7 @@
     if (!tblPlay) return;
     if (tblPlay.timer) clearTimeout(tblPlay.timer);
     if (tblPlay.cur) { try { tblPlay.cur.pause(); } catch (e) {} }
+    tblPlayHL(null); // 停止/播完/离开 → 清高亮
     tblPlay = null;
     tblPlaySyncBtn();
   }
@@ -2539,7 +2550,7 @@
     var items = [];
     document.querySelectorAll('.table-section [data-say]').forEach(function (el) {
       var t = el.getAttribute('data-say');
-      if (t) items.push({ t: t, le: el.getAttribute('data-le') || 'en' });
+      if (t) items.push({ t: t, le: el.getAttribute('data-le') || 'en', el: el });
     });
     if (!items.length) { toast('这页没有可朗读的格子'); return; }
     tblPlay = {
