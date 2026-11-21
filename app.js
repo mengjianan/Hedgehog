@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-20.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-21.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2701,6 +2701,11 @@
     var q = tableQuiz.qs[tableQuiz.qi];
     if (!q) return viewTablesHub();
     var mode = tableQuiz.mode || 'choice';
+    // 进题自动播发音：每题（含切模式重建后）自动播一次；喇叭按钮保留可手动重播
+    if (q.say && tableQuiz.spoken !== tableQuiz.qi + ':' + mode) {
+      tableQuiz.spoken = tableQuiz.qi + ':' + mode;
+      setTimeout(function () { playAudio(q.say, LE_FOR[q.le] || 'ko', q.say); }, 150);
+    }
     var modeSeg =
       '<div class="seg-ctl">' +
       '<button type="button" class="seg' + (mode === 'choice' ? ' on' : '') +
