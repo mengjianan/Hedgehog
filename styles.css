@@ -125,7 +125,7 @@ img { max-width: 100%; }
   position: relative;
   flex: 1;
   min-width: 0;
-  padding: 20px 30px 56px 78px;
+  padding: 20px 80px 56px 80px;
   background-color: var(--paper);
   border-radius: 0;
 }
@@ -133,7 +133,7 @@ img { max-width: 100%; }
 /* 活页孔 */
 .holes {
   position: absolute;
-  left: 18px;
+  left: 20px;
   top: 48px;
   bottom: 48px;
   width: 16px;
@@ -146,7 +146,7 @@ img { max-width: 100%; }
 .page::before {
   content: "";
   position: absolute;
-  left: 58px;
+  left: 56px;
   top: 18px;
   bottom: 18px;
   width: 1px;
@@ -364,6 +364,7 @@ img { max-width: 100%; }
 .word-chip small { color: var(--mut); font-size: 12.5px; }
 
 .results { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+.results:empty { display: none; } /* 无结果不占 margin，搜索结果紧贴输入框 */
 .result {
   display: flex;
   align-items: baseline;
@@ -1584,6 +1585,8 @@ body.home-view .page {
 }
 body.home-view .view {
   flex: 1;
+  width: 100%; /* page 是 flex-column，基类的 margin:0 auto 会取消交叉轴 stretch，必须显式给宽 */
+  max-width: 1040px;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly; /* 各块纵向均匀分布，一屏占满不挤顶 */
@@ -1598,11 +1601,16 @@ body.home-view .search-row input { padding: 8px 12px; font-size: 14px; }
 body.home-view .home-prog { margin-top: 0; gap: 8px; }
 body.home-view .hp-cell { padding: 6px; }
 body.home-view .hp-cell b { font-size: 17px; }
-body.home-view .data-row { margin-top: 0; gap: 10px; }
+body.home-view .data-row { margin-top: 16px; gap: 10px; }
 body.home-view .halls { grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 0; } /* 6 厅一行 */
 body.home-view .hall { padding: 9px 6px; }
-body.home-view .home-stat { margin-top: 0; }
+body.home-view .home-stat { margin-top: 8px; }
 body.home-view .footnote { margin-top: 0; font-size: 11px; }
+
+/* 首页六宫格：窄于 1024 时 6 列会把格压到 90–120px（「JLPT / TOPIK / IELTS 仿真卷」折三行），降为 3 列 */
+@media (min-width: 781px) and (max-width: 1023px) {
+  body.home-view .halls { grid-template-columns: repeat(3, 1fr); }
+}
 
 /* ---------- 移动端（本子简化版） ---------- */
 @media (max-width: 780px) {
@@ -1693,17 +1701,27 @@ body.home-view .footnote { margin-top: 0; font-size: 11px; }
   body.home-view .hp-cell { padding: 4px 4px; border-radius: 8px; }
   body.home-view .hp-cell b { font-size: 15px; }
   body.home-view .hp-cell span { font-size: 9.5px; }
-  body.home-view .data-row { margin-top: 0; gap: 8px; }
+  body.home-view .data-row { margin-top: 8px; gap: 8px; }
   body.home-view .data-row .mini-btn { padding: 3px 10px; font-size: 11px; }
-  body.home-view .results { margin-top: 0; } /* 空态搜索结果不吃高度（有结果时自然撑开） */
   body.home-view .halls { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 0; }
   body.home-view .hall { padding: 7px 4px; }
   body.home-view .hall .k { font-size: 9px; letter-spacing: 0.14em; }
   body.home-view .hall b { font-size: 13px; }
   body.home-view .hall small { font-size: 10px; }
-  body.home-view .home-stat { margin-top: 0; font-size: 12px; }
+  body.home-view .home-stat { margin-top: 4px; font-size: 12px; }
   body.home-view .footnote { margin-top: 0; font-size: 11px; }
 }
+
+/* 首页一屏在矮视口（横屏、小屏 + 浏览器工具栏）放不下时：不裁切，改为可滚。
+   必须排在移动端块之后——移动端把 .page 锁成 overflow:hidden + space-evenly，会盖掉这两条 */
+@media (max-height: 720px) {
+  body.home-view .page { overflow-y: auto; }
+  body.home-view .view { justify-content: flex-start; }
+}
+
+/* 搜索出结果时同样解除一屏约束（body.has-results 由 renderResults 切换） */
+body.home-view.has-results .page { overflow-y: auto; }
+body.home-view.has-results .view { justify-content: flex-start; }
 
 /* ---------- 考场（仿真卷 + 本机真题卷） ---------- */
 .exam-type.on, .exam-sec.on { outline: 2px solid var(--accent, #4a7); outline-offset: -2px; }

@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-21.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-22.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -689,15 +689,15 @@
       '<p class="sub">学习走宫殿 · 查询走门厅</p>' +
       '<div class="search-row"><input id="q" type="search" placeholder="门厅搜索：abolish / 마음 / 環境" autocomplete="off" /></div>' +
       '</div>' +
+      '<div class="results" id="results"></div>' +
       homeProgressHTML() +
+      halls +
       '<div class="data-row">' +
       '<button class="mini-btn" data-act="export-data">导出进度</button>' +
       '<button class="mini-btn" data-act="import-data">导入进度</button>' +
       '<button class="mini-btn" data-act="refresh-words">刷新词库</button>' +
       '<input type="file" id="importFile" accept=".json,application/json" hidden />' +
       '</div>' +
-      '<div class="results" id="results"></div>' +
-      halls +
       '<div class="home-stat">场景厅 <b>' + litCount + '/' + scenes.length + '</b> 已点亮' +
       (dueAll ? ' · ↻ <b>' + dueAll + '</b> 待复习' : '') + '</div>' +
       '<p class="footnote">Hedgehog · 语感宫殿 · ' + APP_VER + '</p>'
@@ -708,6 +708,8 @@
     var box = $('results');
     if (!box) return;
     q = q.trim().toLowerCase();
+    // 搜索出结果时首页让出「一屏」约束，改回可滚，避免结果被 overflow:hidden 裁掉
+    document.body.classList.toggle('has-results', !!q);
     if (!q) { box.innerHTML = ''; return; }
     var hits = ALL.filter(function (e) {
       return (
@@ -3991,6 +3993,7 @@
     if (name !== 'exam') document.body.classList.remove('exam-focus');
     // 首页标记（手机端固定一屏压缩的 CSS 作用域）
     document.body.classList.toggle('home-view', name === 'home');
+    if (name !== 'home') document.body.classList.remove('has-results');
 
     document.querySelectorAll('#nav a').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === nav);
