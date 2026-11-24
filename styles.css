@@ -1908,4 +1908,11 @@ body.exam-focus .view { padding-top: 8px; }
 .dlg-en { margin: 0; font-size: 15px; line-height: 1.5; }
 /* 三语译文行（日/韩/中，语言标复用 .kd-el） */
 .dlg-tr { margin: 3px 0 0; font-size: 12.5px; color: var(--mut); line-height: 1.5; }
-.dlg-line .mini-btn { margin-top: 6px; flex: 0 0 auto; }
+/* 每句右侧竖排三语朗读键：英 / 日 / 韩 */
+.dlg-says { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; margin-top: 6px; }
+.dlg-says .mini-btn { padding: 3px 9px; font-size: 11px; line-height: 1.3; }
+/* 整段朗读：英 / 日 / 韩 各一键 */
+.dlg-playall {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; font-size: 12px; color: var(--mut);
+}

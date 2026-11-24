@@ -1,0 +1,229 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>dlg test</title>
+<style>
+  pre { position: absolute; top: 0; right: 0; width: 300px; margin: 0; padding: 4px;
+        font: 10px/1.35 monospace; background: #ffffffe8; z-index: 9; max-height: 100%; overflow: auto; }
+  iframe { margin: 0; }
+</style>
+<pre id="out">boot…</pre>
+<script>
+var LOG = [];
+function say(s) { LOG.push(s); document.getElementById('out').textContent = LOG.join('\n'); }
+function slp(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+// 用 localStorage 旧缓存通道注入假词库：bootFromCache 会把它搬进 IDB 并直进应用
+function seed() {
+  return fetch('data/words.enc.gz', { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+    var t = r.headers.get('ETag') || r.headers.get('Last-Modified') || '';
+    if (t) { try { localStorage.setItem('hedgehog:etag', t); } catch (e) {} }
+    say('etag: ' + t);
+    var fake = { version: 7, tables: [{ id: 't0', rows: [] }], lists: [], tags: {} };
+    try { localStorage.setItem('hedgehog:data', JSON.stringify(fake)); } catch (e) { say('seed fail ' + e); }
+  });
+}
+
+function waitFor(fn, ms) {
+  var t0 = Date.now();
+  return new Promise(function (res, rej) {
+    (function loop() {
+      var v = null;
+      try { v = fn(); } catch (e) {}
+      if (v) return res(v);
+      if (Date.now() - t0 > (ms || 10000)) return rej(new Error('timeout'));
+      setTimeout(loop, 60);
+    })();
+  });
+}
+
+function stubAudio(w, mode) {
+  var rec = [];
+  function FakeAudio(src) { this._h = {}; this._src = src || ''; this._mode = mode; rec.push(this); }
+  Object.defineProperty(FakeAudio.prototype, 'src', {
+    set: function (v) { this._src = v; },
+    get: function () { return this._src; },
+  });
+  FakeAudio.prototype.addEventListener = function (t, f) { (this._h[t] = this._h[t] || []).push(f); };
+  FakeAudio.prototype.play = function () {
+    var self = this;
+    setTimeout(function () {
+      var t = self._mode === 'error' ? 'error' : 'ended';
+      (self._h[t] || []).forEach(function (f) { f({}); });
+    }, 0);
+    return Promise.resolve();
+  };
+  w.Audio = FakeAudio;
+  return rec;
+}
+
+function stubTTS(w) {
+  var rec = [];
+  function U(text) { this.text = text; this._h = {}; rec.push(this); }
+  Object.defineProperty(U.prototype, 'onend', { set: function (f) { this._e = f; } });
+  Object.defineProperty(U.prototype, 'onerror', { set: function (f) { this._r = f; } });
+  w.SpeechSynthesisUtterance = U;
+  w.speechSynthesis = {
+    speaking: false,
+    cancel: function () {},
+    resume: function () {},
+    getVoices: function () { return []; },
+    speak: function (u) {
+      setTimeout(function () { if (u._e) u._e({}); }, 0);
+    },
+  };
+  return rec;
+}
+
+function dec(src) {
+  var m = /[?&]audio=([^&]*)/.exec(src || '');
+  var le = /[?&]le=([^&]*)/.exec(src || '');
+  return { text: m ? decodeURIComponent(m[1]) : null, le: le ? le[1] : null };
+}
+
+(async function () {
+  try {
+    // 虚拟时钟会在网络空闲时狂飙，把 IDB 回调甩在后面：持续挂一个慢请求让时钟保持暂停
+    var keep = setInterval(function () { fetch('/__hold?ms=150').catch(function () {}); }, 20);
+    fetch('/__hold?ms=150').catch(function () {});
+    await slp(30);
+    await seed();
+    var dj = await (await fetch('data/dialogues.json')).json();
+    var d0 = dj.dialogues[0];
+    say('dialogues: ' + dj.dialogues.length + ' · first: ' + d0.id + ' · ' + d0.lines.length + ' 句');
+
+    var fr = document.createElement('iframe');
+    fr.style.cssText = 'width:390px;height:844px;border:0;display:block';
+    fr.src = 'index.html#/daily/dlg/' + d0.id;
+    document.body.appendChild(fr);
+
+    var doc = null;
+    try {
+      doc = await waitFor(function () {
+        var dd = fr.contentDocument;
+        return dd && dd.querySelector('.dlg-line .dlg-says');
+      }, 15000);
+    } catch (e0) {
+      var dd0 = fr.contentDocument;
+      say('iframe 未就绪: src=' + fr.src + ' ready=' + (dd0 && dd0.readyState));
+      if (dd0) {
+        say('body.class=' + dd0.body.className + ' app.hidden=' + dd0.getElementById('app').hidden +
+          ' gate.hidden=' + dd0.getElementById('gate').hidden);
+        say('view=' + (dd0.getElementById('view').textContent || '').slice(0, 200));
+        say('hash=' + (fr.contentWindow.location.hash));
+        say('ls-etag=' + localStorage.getItem('hedgehog:etag'));
+      }
+      throw e0;
+    }
+    await slp(300);
+    var w = fr.contentWindow;
+    var D = fr.contentDocument;
+
+    // ---- 结构 ----
+    var lines = D.querySelectorAll('.dlg-line');
+    var perLine = [].map.call(lines, function (ln) {
+      return '[' + [].map.call(ln.querySelectorAll('.dlg-says .mini-btn'), function (b) {
+        return b.getAttribute('data-lang');
+      }).join(',') + ']';
+    });
+    say('lines: ' + lines.length + ' · 每句按钮: ' + perLine.slice(0, 3).join(' ') + (perLine.length > 3 ? ' …' : ''));
+    var allBtns = D.querySelectorAll('.dlg-playall .mini-btn');
+    say('整段按钮: ' + [].map.call(allBtns, function (b) {
+      return b.textContent + '/' + b.getAttribute('data-lang');
+    }).join(' '));
+
+    // ---- 布局（390 宽）----
+    function layout(tag) {
+      var ln0 = D.querySelector('.dlg-line');
+      var lnB = D.querySelector('.dlg-line.who-b');
+      function geo(ln) {
+        var b = ln.querySelector('.dlg-bub').getBoundingClientRect();
+        var s = ln.querySelector('.dlg-says').getBoundingClientRect();
+        return 'bub ' + Math.round(b.width) + 'w [' + Math.round(b.left) + ',' + Math.round(b.right) + '] says [' +
+          Math.round(s.left) + ',' + Math.round(s.right) + '] ' + (s.left >= b.right - 1 ? '在右' : s.right <= b.left + 1 ? '在左' : '重叠!');
+      }
+      say(tag + ' A句 ' + geo(ln0) + ' | B句 ' + (lnB ? geo(lnB) : 'n/a'));
+      var de = D.documentElement;
+      say(tag + ' 横向溢出: ' + (de.scrollWidth > de.clientWidth ? 'YES ' + de.scrollWidth + '>' + de.clientWidth : 'no'));
+      var pa = D.querySelector('.dlg-playall');
+      say(tag + ' 整段行可见: ' + (pa ? Math.round(pa.getBoundingClientRect().height) + 'px' : 'none'));
+    }
+    layout('390w');
+
+    // ---- 单句三语 ----
+    var rec = stubAudio(w, 'ok');
+    for (var lang of ['en', 'ja', 'ko']) {
+      rec.length = 0;
+      var btn = D.querySelector('.mini-btn[data-act="dlg-say"][data-i="0"][data-lang="' + lang + '"]');
+      btn.click();
+      await slp(120);
+      var p = dec(rec[0] && rec[0]._src);
+      var want = d0.lines[0][lang];
+      say('单句 ' + lang + ': le=' + p.le + ' 文本' + (p.text === want ? '✔' : '✘ 得到[' + p.text + '] 期望[' + want + ']') + ' 次数' + rec.length);
+    }
+
+    // ---- 整段连播（有道路径）----
+    rec.length = 0;
+    D.querySelector('.dlg-playall .mini-btn[data-lang="ja"]').click();
+    await slp(600);
+    var seq = rec.map(function (a) { return dec(a._src); });
+    var allJa = seq.every(function (x, i) { return x.le === 'jap' && x.text === d0.lines[i].ja; });
+    say('整段 ja: 共请求 ' + seq.length + ' / ' + d0.lines.length + ' 句 · 全部日语文本与 le=jap ' + (allJa ? '✔' : '✘'));
+    if (!allJa) {
+      seq.forEach(function (x, i) {
+        var want = d0.lines[i] && d0.lines[i].ja;
+        if (x.le !== 'jap' || x.text !== want) say('  line' + i + ' le=' + x.le + ' 得[' + x.text + '] 期[' + want + ']');
+      });
+    }
+
+    // ---- TTS 兜底 ----
+    stubTTS(w);
+    var tts = [];
+    var origPush = Array.prototype.push;
+    rec = stubAudio(w, 'error');
+    var U = w.SpeechSynthesisUtterance;
+    var _speak = w.speechSynthesis.speak;
+    w.speechSynthesis.speak = function (u) { tts.push(u); setTimeout(function () { if (u._e) u._e({}); }, 0); };
+    D.querySelector('.mini-btn[data-act="dlg-say"][data-i="1"][data-lang="ko"]').click();
+    await slp(150);
+    say('兜底 单句 ko: TTS ' + (tts[0] ? 'lang=' + tts[0].lang + ' 文本' + (tts[0].text === d0.lines[1].ko ? '✔' : '✘') : '未触发 ✘'));
+
+    tts.length = 0;
+    D.querySelector('.dlg-playall .mini-btn[data-lang="ko"]').click();
+    await slp(800);
+    var ttOk = tts.length === d0.lines.length && tts.every(function (u, i) {
+      return u.lang === 'ko-KR' && u.text === d0.lines[i].ko;
+    });
+    say('兜底 整段 ko: TTS 条数 ' + tts.length + ' / ' + d0.lines.length + ' · lang/text 全对 ' + (ttOk ? '✔' : '✘'));
+
+    // ---- 1440 宽（?shot 时留在 390 供截图）----
+    if (/shot/.test(location.search)) {
+      fr.style.width = '390px';
+      fr.style.height = '844px';
+      window.scrollTo(0, 0);
+      doc.parentElement.scrollTop = 0;
+      fr.contentWindow.scrollTo(0, 0);
+    } else {
+      fr.style.width = '1200px';
+      fr.style.height = '900px';
+      await slp(300);
+      layout('1200w');
+    }
+
+    say('DONE');
+    clearInterval(keep);
+    // 收尾：清掉注入的假词库，让真实页面下次打开回到密码门
+    try {
+      localStorage.removeItem('hedgehog:data');
+      localStorage.removeItem('hedgehog:etag');
+      var rq2 = indexedDB.open('hedgehog', 1);
+      rq2.onsuccess = function () {
+        var tx2 = rq2.result.transaction('kv', 'readwrite');
+        tx2.objectStore('kv').delete('data');
+      };
+    } catch (e) {}
+  } catch (e) {
+    say('ERROR: ' + (e && e.stack || e));
+    clearInterval(keep);
+  }
+})();
+</script>

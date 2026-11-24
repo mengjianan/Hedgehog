@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-22.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-23.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1749,24 +1749,50 @@
     next();
   }
 
-  function ttsUtter(text) {
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    var v = pickVoice('en-US');
-    if (v) u.voice = v;
-    u.rate = 0.9;
-    return u;
+  // 对话单句朗读：按语种取译文（en / ja / ko），有道优先，失败转系统 TTS
+  function dlgLineSay(ln, lang) {
+    if (!ln) return;
+    var l = lang === 'ja' || lang === 'ko' ? lang : 'en';
+    var text = ln[l] || ln.en;
+    if (!text) return;
+    var sp = l === 'ja' ? 'ja-JP' : l === 'ko' ? 'ko-KR' : 'en-US';
+    playAudio(text, YOUDAO_LE[l], text, { x: { w: text }, l: { speech: sp, lang: l } });
   }
 
-  // 对话整段朗读：speechSynthesis 顺序排队（单句用有道，整段用系统连读）
-  function dlgSayAll(d) {
-    if (!window.speechSynthesis || !d) return;
-    window.speechSynthesis.cancel();
-    d.lines.forEach(function (ln) { window.speechSynthesis.speak(ttsUtter(ln.en)); });
+  // 对话整段朗读：按语种顺序连播（有道），单条失败转系统 TTS 念完再走下一句
+  function dlgSayAll(d, lang) {
+    if (!d || !d.lines || !d.lines.length) return;
+    var l = lang === 'ja' || lang === 'ko' ? lang : 'en';
+    var le = YOUDAO_LE[l] || 'en';
+    var sp = l === 'ja' ? 'ja-JP' : l === 'ko' ? 'ko-KR' : 'en-US';
+    var i = 0;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     toast('▶');
-    setTimeout(function () {
-      try { if (window.speechSynthesis.speaking) window.speechSynthesis.resume(); } catch (err) {}
-    }, 300);
+    function next() {
+      if (i >= d.lines.length) return;
+      var ln = d.lines[i++];
+      var text = ln[l] || ln.en;
+      var fell = false;
+      var fallback = function () {
+        if (fell) return;
+        fell = true;
+        if (!window.speechSynthesis) { next(); return; }
+        var u = new SpeechSynthesisUtterance(text);
+        u.lang = sp;
+        var v = pickVoice(sp);
+        if (v) u.voice = v;
+        u.rate = 0.9;
+        u.onend = next;
+        u.onerror = next;
+        window.speechSynthesis.speak(u);
+      };
+      var a = new Audio('https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&le=' + le);
+      a.addEventListener('ended', next);
+      a.addEventListener('error', fallback);
+      var p = a.play();
+      if (p && p.catch) p.catch(fallback);
+    }
+    next();
   }
 
   function dlgReadMap() { return lsGet('hedgehog:kinder-dlg', {}); }
@@ -2054,6 +2080,10 @@
     if (!d) return back0 + '<h2>日用角 · 对话</h2><p class="sub">没有这段对话</p>';
     var isRead = !!dlgReadMap()[d.id];
     var lines = d.lines.map(function (ln, i) {
+      var say = function (lang, label) {
+        return '<button class="mini-btn" data-act="dlg-say" data-i="' + i + '" data-lang="' + lang +
+          '" title="朗读' + label + '">' + label + '</button>';
+      };
       return '<div class="dlg-line ' + (ln.who === 'A' ? 'who-a' : 'who-b') + '">' +
         '<div class="dlg-bub">' +
         '<p class="dlg-en">' + esc(ln.en) + '</p>' +
@@ -2061,16 +2091,19 @@
         '<p class="dlg-tr"><b class="kd-el">韩</b>' + esc(ln.ko || '') + '</p>' +
         '<p class="dlg-tr"><b class="kd-el">中</b>' + esc(ln.zh) + '</p>' +
         '</div>' +
-        '<button class="mini-btn" data-act="dlg-say" data-i="' + i + '" title="朗读这句">' +
-        ICON.sound + '</button>' +
+        '<div class="dlg-says">' + say('en', '英') + say('ja', '日') + say('ko', '韩') + '</div>' +
         '</div>';
     }).join('');
     return '<a class="back-link" href="#/daily/dlg">← 对话</a>' +
       '<h2>' + esc(d.title) + '</h2>' +
       '<p class="sub">' + esc(d.en) + ' · ' + d.lines.length + ' 句' + (isRead ? ' · ✓ 已读' : '') + '</p>' +
       '<div class="dlg-box">' + lines + '</div>' +
+      '<div class="dlg-playall">听整段' +
+      '<button class="mini-btn" data-act="dlg-say-all" data-lang="en" title="整段朗读英语">英</button>' +
+      '<button class="mini-btn" data-act="dlg-say-all" data-lang="ja" title="整段朗读日语">日</button>' +
+      '<button class="mini-btn" data-act="dlg-say-all" data-lang="ko" title="整段朗读韩语">韩</button>' +
+      '</div>' +
       '<div class="study-actions">' +
-      '<button class="btn ghost" data-act="dlg-say-all">' + ICON.sound + ' 听整段</button>' +
       '<button class="btn" data-act="dlg-done" data-id="' + d.id + '">' +
       (isRead ? '下一段 →' : '✓ 读完了') + '</button>' +
       '</div>';
@@ -4466,15 +4499,14 @@
       kinderSay(el.getAttribute('data-lang') || 'en');
     } else if (act === 'kinder-say-all') { // 英→日→韩连播
       kinderSayAll();
-    } else if (act === 'dlg-say') { // 对话：单句朗读（有道，失败转系统朗读）
+    } else if (act === 'dlg-say') { // 对话：单句朗读（有道，失败转系统朗读），data-lang 决定语种
       var cd1 = curDlg();
       if (cd1) {
         var dli = parseInt(el.getAttribute('data-i'), 10) || 0;
-        var dln = cd1.lines[dli];
-        if (dln) playAudio(dln.en, 'en', dln.en, { x: { w: dln.en }, l: { speech: 'en-US', lang: 'en' } });
+        dlgLineSay(cd1.lines[dli], el.getAttribute('data-lang'));
       }
     } else if (act === 'dlg-say-all') {
-      dlgSayAll(curDlg());
+      dlgSayAll(curDlg(), el.getAttribute('data-lang'));
     } else if (act === 'dlg-done') { // 读完打卡 + 下一段
       dlgDone(el.getAttribute('data-id'));
     } else if (act === 'study-home') {
