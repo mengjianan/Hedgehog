@@ -89,11 +89,12 @@ function waitFor(fn, ms) {
     var btn = D.querySelector('.table-actions button[data-act="fpad-toggle"]');
     say('按钮: ' + (btn ? '「' + btn.textContent.trim() + '」' : '缺失 ✘'));
     if (btn && btn.textContent.indexOf('手写板') < 0) say('  按钮文字不对 ✘');
-    var firstSec = D.querySelector('.entry-section');
+    var card = D.querySelector('.card.lang-card');
+    say('按钮在卡内: ' + (card && btn && card.contains(btn) ? '是 ✘' : '否 ✔'));
     var br = btn && btn.getBoundingClientRect();
-    var sr = firstSec && firstSec.getBoundingClientRect();
-    say('位置: 按钮 top=' + Math.round(br ? br.top : -1) + ' · 首个分区 top=' + Math.round(sr ? sr.top : -1) +
-      ' → ' + (br && sr && br.top < sr.top ? '在上边 ✔' : '不在上边 ✘'));
+    var cr = card && card.getBoundingClientRect();
+    say('位置: 按钮 top=' + Math.round(br ? br.top : -1) + ' · 卡片 top=' + Math.round(cr ? cr.top : -1) +
+      ' → ' + (br && cr && br.top < cr.top ? '在卡片上方 ✔' : '不在上方 ✘'));
 
     var fpad = D.getElementById('fpad');
     say('点击前 #fpad hidden: ' + fpad.hidden);

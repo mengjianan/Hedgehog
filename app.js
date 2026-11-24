@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-24.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-24.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -948,6 +948,9 @@
       '下一个：' + esc(nextX.w) + ' →</a></div>';
     return (
       '<a class="back-link" href="#/categories/' + l.id + '">← ' + esc(l.title) + '</a>' +
+      '<div class="table-actions above-card">' +
+      '<button class="btn ghost" data-act="fpad-toggle">' + ICON.pen + ' 手写板</button>' +
+      '</div>' +
       '<div class="card lang-card lang-' + l.lang + '">' +
       '<div class="word-head">' +
       '<h2>' + esc(x.w) + '</h2>' +
@@ -958,9 +961,6 @@
       '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">' + ICON.star + '</button>' +
       '</div>' +
       '<p class="zh-line">' + esc(x.zh) + '</p>' + addr +
-      '<div class="table-actions">' +
-      '<button class="btn ghost" data-act="fpad-toggle">' + ICON.pen + ' 手写板</button>' +
-      '</div>' +
       '<div class="entry-section"><span class="entry-label">词感</span><p>' + esc(x.sense) + '</p></div>' +
       '<div class="entry-section"><span class="entry-label">中式误区</span><p class="trap">' + esc(x.trap) + '</p></div>' +
       hookSec +

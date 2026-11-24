@@ -506,6 +506,7 @@ img { max-width: 100%; }
 .table-head { position: relative; padding: 20px 8px 4px; }
 .table-head h2 { display: inline; margin-right: 4px; }
 .table-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+.table-actions.above-card { margin-top: 0; margin-bottom: 10px; }
 .table-section { margin-top: 28px; }
 .table-section h3 {
   font-size: 15.5px;
