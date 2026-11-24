@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-23.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-24.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -937,13 +937,6 @@
       '<button class="btn ghost" data-act="save-sent" data-ref="' + esc(e.ref) + '">保存</button>' +
       '<span class="sent-hint" id="sentHint"></span>' +
       '</div></div>';
-    var writeSec =
-      '<div class="entry-section"><span class="entry-label">书写练习</span>' +
-      '<canvas id="wmCanvas" width="720" height="280"></canvas>' +
-      '<div class="cb-tools">' +
-      '<button class="btn ghost" data-act="wm-clear">清一下</button>' +
-      '<span class="tour-slot">在这块板上写写这个词</span>' +
-      '</div></div>';
     var idxW = l.words.indexOf(x);
     var nextX = l.words[(idxW + 1) % l.words.length];
     var prevX = l.words[(idxW - 1 + l.words.length) % l.words.length];
@@ -965,6 +958,9 @@
       '<button class="icon-btn star' + (fav ? ' on' : '') + '" data-act="star" data-ref="' + esc(e.ref) + '" title="收藏">' + ICON.star + '</button>' +
       '</div>' +
       '<p class="zh-line">' + esc(x.zh) + '</p>' + addr +
+      '<div class="table-actions">' +
+      '<button class="btn ghost" data-act="fpad-toggle">' + ICON.pen + ' 手写板</button>' +
+      '</div>' +
       '<div class="entry-section"><span class="entry-label">词感</span><p>' + esc(x.sense) + '</p></div>' +
       '<div class="entry-section"><span class="entry-label">中式误区</span><p class="trap">' + esc(x.trap) + '</p></div>' +
       hookSec +
@@ -972,7 +968,6 @@
       morphSec +
       '<div class="entry-section"><span class="entry-label">例句</span><div class="ex-list">' + ex + '</div></div>' +
       sentSec +
-      writeSec +
       '</div>' + nextBtn
     );
   }
@@ -2302,7 +2297,7 @@
     });
   }
   function initCanvas() {
-    bindDraw($('cbCanvas') || $('wmCanvas') || $('rwCanvas') || $('twCanvas'));
+    bindDraw($('cbCanvas') || $('rwCanvas') || $('twCanvas'));
     bindDraw($('fpadCanvas')); // 悬浮手写板常驻 body，_bound 保证只绑一次
     bindPadResize(); // 画板调高把手（每次渲染新把手要重绑，_bound 挡重复）
   }
@@ -4583,8 +4578,6 @@
       lsSet('hedgehog:sentences', sentMap);
       var sh = $('sentHint');
       if (sh) sh.textContent = ta && ta.value.trim() ? '已保存到本机 ✓' : '已清空';
-    } else if (act === 'wm-clear') { // 词页书写练习板清空（读写模式手写板用 rw-clear）
-      clearPad('wmCanvas');
     } else if (act === 'export-data') {
       var dump = {};
       Object.keys(localStorage).forEach(function (k) {
