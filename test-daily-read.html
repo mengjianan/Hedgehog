@@ -145,6 +145,55 @@ function waitFor(fn, ms) {
     say('韩语中文行: ' + (D.querySelectorAll('.read-zh').length >= 6 ? '齐 ✔' : '缺 ✘'));
     say('横向溢出(韩): ' + (de.scrollWidth > de.clientWidth ? 'YES ' + de.scrollWidth + '>' + de.clientWidth : 'no'));
 
+    // 续一章：无 key 先出输入框；空 key 报错；填 key 后打桩接口，章节要落盘并渲染
+    localStorage.removeItem('hedgehog:relay');
+    localStorage.removeItem('hedgehog:kinder-read-gen');
+    w.location.hash = '#/daily/read/en-last-train';
+    await waitFor(function () { return D.querySelector('.read-ch'); }, 8000);
+    await slp(120);
+    var nextBtn = D.querySelector('[data-act="read-next"]');
+    say('续一章按钮: ' + (nextBtn ? '「' + nextBtn.textContent.trim() + '」✔' : '缺失 ✘'));
+    nextBtn.click();
+    await waitFor(function () { return D.getElementById('readKeyInput'); }, 5000);
+    say('无 key 出输入框: 有 ✔ · 提示「' + D.querySelector('.read-gen-tip').textContent + '」');
+    D.querySelector('[data-act="read-key-save"]').click();
+    await slp(200);
+    say('空 key 报错: 「' + (D.querySelector('.read-gen-err') || {}).textContent + '」');
+
+    var realFetch = w.fetch.bind(w);
+    w.fetch = function (u, o) {
+      if (String(u).indexOf('eazydata.org') >= 0) {
+        say('  接口收到: ' + (o && o.method) + ' key=' +
+          ((o && o.headers && (o.headers['x-api-key'] || '无')) || '无'));
+        var body = JSON.parse(o.body);
+        say('  请求体: model=' + body.model + ' · 提示 ' + body.messages[0].content.length + ' 字');
+        say('  提示含书名: ' + (/After the Last Train/.test(body.messages[0].content) ? '是 ✔' : '否 ✘'));
+        return Promise.resolve(new Response(JSON.stringify({
+          content: [{ type: 'text', text: '```json\n' + JSON.stringify({
+            title: 'The Third Platform',
+            passages: [{ text: 'The wind came up the stairs first.', zh: '风先一步涌上楼梯。' }]
+          }) + '\n```' }]
+        }), { status: 200, headers: { 'content-type': 'application/json' } }));
+      }
+      return realFetch(u, o);
+    };
+
+    D.getElementById('readKeyInput').value = 'sk-test-123';
+    D.querySelector('[data-act="read-key-save"]').click();
+    await waitFor(function () { return D.getElementById('readCh3'); }, 10000);
+    await slp(250);
+    say('保存的 key: ' + localStorage.getItem('hedgehog:relay'));
+    say('章数变为: ' + D.querySelectorAll('.read-ch').length + (D.querySelectorAll('.read-ch').length === 3 ? ' ✔' : ' ✘'));
+    var c3 = D.getElementById('readCh3');
+    say('第3章标题: ' + c3.querySelector('h3').textContent.trim());
+    say('第3章正文: ' + c3.querySelector('.read-p').textContent);
+    say('第3章中文: ' + c3.querySelector('.read-zh').textContent);
+    var gm = JSON.parse(localStorage.getItem('hedgehog:kinder-read-gen') || '{}');
+    say('续章记录: ' + JSON.stringify(gm).slice(0, 80) +
+      (gm['en-last-train'] && gm['en-last-train'][0].n === 3 ? ' ✔' : ' ✘'));
+    say('续章重绘后输入框已收: ' + (D.getElementById('readKeyInput') ? '还在 ✘' : '收起 ✔'));
+    w.fetch = realFetch;
+
     // 听认第0步：三语自动读（回到背词页 → 进第一类）
     w.location.hash = '#/study';
     await slp(300);

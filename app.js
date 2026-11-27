@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-27.1'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-27.2'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -2224,7 +2224,124 @@
       ' · ' + chs.length + ' 章 · 已读 ' + readN + '/' + chs.length + '</p>' +
       (b.blurb ? '<p class="read-lead">' + esc(b.blurb) + '</p>' : '') +
       (cast ? '<div class="read-casts">' + cast + '</div>' : '') +
-      '<div class="read-box">' + chHtml + '</div>';
+      '<div class="read-box">' + chHtml + '</div>' +
+      '<div class="study-actions">' +
+      '<button class="btn ghost" data-act="read-next" data-id="' + b.id + '">✎ 续一章</button>' +
+      '</div>' +
+      readGenHTML(b);
+  }
+
+  // ---------- 阅读续章：浏览器直连中转站生成，只存本机 ----------
+  var READ_GEN = { book: '', busy: false, err: '' };
+  var READ_LANG_NAME = { en: '英语', ja: '日语', ko: '韩语' };
+
+  function relayKey() { return lsGet('hedgehog:relay', ''); }
+
+  function readGenHTML(b) {
+    if (READ_GEN.book !== b.id) return '';
+    var h = '<div class="read-gen">';
+    if (READ_GEN.busy) {
+      h += '<p class="read-gen-tip">生成中… 约 20 秒，先别离开这一页</p>';
+    } else if (!relayKey()) {
+      h += '<p class="read-gen-tip">填一次中转站 key（存本机，只用于续写）</p>' +
+        '<div class="spell-row"><input id="readKeyInput" type="password" autocomplete="off" ' +
+        'placeholder="ANTHROPIC_AUTH_TOKEN" />' +
+        '<button class="btn" data-act="read-key-save" data-id="' + b.id + '">保存并生成</button></div>';
+    }
+    if (READ_GEN.err) h += '<p class="read-gen-err">' + esc(READ_GEN.err) + '</p>';
+    return h + '</div>';
+  }
+
+  function readGenPrompt(b) {
+    var chs = bookChapters(b);
+    var last = chs[chs.length - 1];
+    var tail = last ? last.passages.map(function (p) { return p.text; }).join(' ') : '';
+    var cast = (b.cast || []).map(function (p) {
+      return p.name + '（' + p.zh + (p.age ? '，' + p.age + '岁' : '') + '）' + (p.role ? '：' + p.role : '');
+    }).join('\n');
+    var ln = READ_LANG_NAME[b.lang] || '';
+    var unit = b.lang === 'ja' ? '日文字' : b.lang === 'ko' ? '韩文字' : '英文单词';
+    return '给一部' + ln + '原创双男主短篇续写下一章。\n' +
+      '书名：' + b.title + ' / ' + (b.titleZh || '') + '\n' +
+      '人物：\n' + cast + '\n' +
+      '全书情感线：' + (b.beats || []).join('；') + '\n' +
+      '上一章内容（截尾）：' + tail.slice(-1200) + '\n' +
+      '要求：写第 ' + (chs.length + 1) + ' 章，3 段，每段 90–130 个' + unit + '；' +
+      '两个人都在场，情绪克制、酸涩，亲密动作多但尺度止于暗示；延续同一叙述腔调，不要总结前情。\n' +
+      '只输出 JSON，不要解释、不要代码块：' +
+      '{"title":"章节标题（用' + ln + '）","passages":[{"text":"本章原文","zh":"对应中文"}]}';
+  }
+
+  function readParseChapter(txt) {
+    var s = String(txt || '').replace(/```[a-z]*/gi, '');
+    var a = s.indexOf('{'), z = s.lastIndexOf('}');
+    if (a < 0 || z <= a) throw new Error('返回不是 JSON');
+    var j = JSON.parse(s.slice(a, z + 1));
+    var ps = (j.passages || []).filter(function (p) { return p && p.text && p.zh; })
+      .map(function (p) { return { text: String(p.text).trim(), zh: String(p.zh).trim() }; });
+    if (!ps.length) throw new Error('返回里没有段落');
+    return { title: String(j.title || '续章').trim().slice(0, 40), passages: ps.slice(0, 4) };
+  }
+
+  function readNext(id) {
+    if (READ_GEN.busy) return;
+    var b = findBook(id);
+    if (!b) return;
+    if (!relayKey()) { // 首次：先要 key
+      READ_GEN.book = id;
+      READ_GEN.err = '';
+      route();
+      var inp = $('readKeyInput');
+      if (inp) inp.focus();
+      return;
+    }
+    genChapter(b);
+  }
+
+  function genChapter(b) {
+    READ_GEN.book = b.id;
+    READ_GEN.busy = true;
+    READ_GEN.err = '';
+    route();
+    fetch('https://eazydata.org/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': relayKey(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'glm-5',
+        max_tokens: 2500,
+        messages: [{ role: 'user', content: readGenPrompt(b) }]
+      })
+    }).then(function (r) {
+      return r.text().then(function (t) {
+        if (!r.ok) throw new Error('接口 ' + r.status + ' · ' + t.replace(/\s+/g, ' ').slice(0, 100));
+        return t;
+      });
+    }).then(function (t) {
+      var j = JSON.parse(t);
+      var txt = (j.content || []).map(function (c) { return c.text || ''; }).join('');
+      var ch = readParseChapter(txt);
+      var gen = readGenMap();
+      var list = gen[b.id] || [];
+      ch.n = bookChapters(b).length + 1;
+      list.push(ch);
+      gen[b.id] = list;
+      lsSet('hedgehog:kinder-read-gen', gen);
+      READ_GEN.busy = false;
+      READ_GEN.book = '';
+      route();
+      var el = $('readCh' + ch.n);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('✓ 第 ' + ch.n + ' 章已续上 · 只存本机');
+    }).catch(function (e) {
+      READ_GEN.busy = false;
+      READ_GEN.err = '续写失败：' + ((e && e.message) || e);
+      route();
+    });
   }
 
   // ---------- 视图：收藏 ----------
@@ -4631,6 +4748,14 @@
       readSay(el.textContent, el.getAttribute('data-lang'));
     } else if (act === 'read-done') { // 阅读：读完一章打卡
       readDone(el.getAttribute('data-id'), parseInt(el.getAttribute('data-ch'), 10) || 1);
+    } else if (act === 'read-next') { // 阅读：续一章（首次先要中转站 key）
+      readNext(el.getAttribute('data-id'));
+    } else if (act === 'read-key-save') {
+      var rk = (($('readKeyInput') || {}).value || '').trim();
+      if (!rk) { READ_GEN.err = 'key 不能为空'; route(); return; }
+      lsSet('hedgehog:relay', rk);
+      var rbk = findBook(el.getAttribute('data-id'));
+      if (rbk) genChapter(rbk);
     } else if (act === 'study-home') {
       session = null;
       route();

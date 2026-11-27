@@ -1954,3 +1954,8 @@ body.exam-focus .view { padding-top: 8px; }
 }
 .read-p:active { opacity: 0.6; }
 .read-zh { margin: 0 0 14px; font-size: 12.5px; color: var(--mut); line-height: 1.6; }
+
+/* 续一章：key 输入与生成状态 */
+.read-gen { margin-top: 10px; }
+.read-gen-tip { margin: 0 0 8px; font-size: 12px; color: var(--mut); }
+.read-gen-err { margin: 8px 0 0; font-size: 12px; color: #a05a52; line-height: 1.5; }
