@@ -1,0 +1,155 @@
+{
+  "note": "日用角·阅读（原创双男主短篇，酸涩向）：一门语言一本，每章 3 段，外语原文+中文对照。章节可在应用内「续一章」继续写，生成结果只存本机，不入库。",
+  "books": [
+    {
+      "id": "en-last-train",
+      "lang": "en",
+      "title": "After the Last Train",
+      "titleZh": "末班车之后",
+      "blurb": "四年后，在同一座车站等同一班末班车。",
+      "cast": [
+        { "name": "Shen Yi", "zh": "沈亦", "age": 30, "role": "architect; left one morning without a word" },
+        { "name": "Lu Chuan", "zh": "陆川", "age": 29, "role": "translator; moved back to the city in October" }
+      ],
+      "beats": ["station reunion", "the scarf", "what happened on the train", "why he left", "the first night back", "learning to stay"],
+      "chapters": [
+        {
+          "n": 1,
+          "title": "The 2:07 to Nowhere",
+          "passages": [
+            {
+              "text": "The station clock said 1:58, and the last train had been delayed for the third time. Shen Yi stood under the broken heater with his collar up and his hands deep in his coat, watching snow pile on the platform edge. Four years had passed since he last stood here, and he had spent most of them telling himself that coincidence was a city of nine million people and one bad habit. Then a man in a grey coat walked past him, stopped, and turned around slowly, as if he had forgotten something and only now remembered where he had left it.",
+              "zh": "车站的钟指着 1:58，末班车第三次延误。沈亦站在坏掉的暖风机下面，竖起衣领，手插进大衣口袋，看雪一点点堆在站台边缘。他已经四年没站在这里了，这四年里他大多数时候都在告诉自己：所谓巧合，是一座九百万人的城市，加一个坏习惯。然后一个穿灰大衣的男人从他身边走过，停下，慢慢地转过身来——像忘了什么东西，此刻才想起来放在了哪里。"
+            },
+            {
+              "text": "“Shen Yi.” Lu Chuan said his name the way people say a word in a language they no longer speak. “You still take this line.”\n“Only when it's the last one.” His voice came out steadier than he felt. “You?”\n“I moved back in October.” Lu Chuan looked at the snow, not at him. “My mother's knees. Someone has to carry the groceries.”\nThey stood a metre apart, and the gap felt exactly the width of four years. The announcement crackled: the train would be another twenty minutes. Neither of them moved.",
+              "zh": "“沈亦。”陆川叫他的名字，像用一门已经不再说的语言念一个词。“你还坐这条线。”\n“只在末班车的时候。”他的声音比自己预想的稳。“你呢？”\n“十月搬回来的。”陆川看着雪，不看他。“我妈膝盖不行了，总得有人拎菜。”\n他们隔着一米站着，那一米刚好是四年的宽度。广播噼啪响了一声：列车还要再等二十分钟。两个人都没动。"
+            },
+            {
+              "text": "The wind cut along the platform and Lu Chuan's scarf came loose. Shen Yi reached out before he could stop himself — one end of the wool, grey, familiar, still smelling faintly of cedar — and wrapped it back around Lu Chuan's throat, slowly, the way he used to. Lu Chuan's breath caught. For a moment neither of them breathed at all. Then Lu Chuan said, very quietly, “You always did that,” and Shen Yi's hand stayed exactly where it was, palm against the scarf, feeling the pulse underneath.",
+              "zh": "风沿着站台刮过来，陆川的围巾松了。沈亦没来得及拦住自己，伸手接住那截羊毛——灰色，熟悉，还带着一点雪松味——慢慢绕回陆川脖子上，和从前一样。陆川的呼吸停了一下，有那么一瞬间两个人谁都没喘气。然后陆川很轻地说：“你以前总这样。”沈亦的手就停在那里没动，掌心贴着围巾，能觉到下面的脉搏。"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "title": "Snow, Then Nothing",
+          "passages": [
+            {
+              "text": "The carriage was almost empty. They sat on the same bench because there was no reason not to, the heater humming under the seat, their shoulders not quite touching. Lu Chuan took off his gloves and flexed his fingers, and Shen Yi noticed — as he had noticed at twenty-three — that winter made his knuckles crack. Four years ago he had held those hands in his own every night for a whole winter, and then one morning he had packed a bag while Lu Chuan was asleep.",
+              "zh": "车厢几乎是空的。他们坐在同一条长椅上，因为没有理由不坐，座位下的暖风嗡嗡响，肩膀差一点碰到一起。陆川摘了手套，活动了一下手指，沈亦注意到——像二十三岁时就注意到的那样——冬天会让他的指节裂开。四年前，他整整一个冬天每晚都握着这双手；然后某个早上，趁陆川睡觉，他收拾了一个包。"
+            },
+            {
+              "text": "“You could have woken me,” Lu Chuan said, to the dark window. They had been silent for two stops.\n“I know.”\n“I've thought about it for four years, and the only thing I've ever wanted to ask is whether it was something I did.”\nShen Yi turned. “Nothing. It was never you.” His throat hurt. “I got scared of how much I wanted it. I thought if I said it out loud in the same room as you, it would become true, and then one day you'd wake up and regret me.”\nLu Chuan looked at him for a long time. “I never woke up regretting you,” he said. “I woke up alone.”",
+              "zh": "“你本可以叫醒我。”陆川对着漆黑的窗说。他们已经沉默了两站。\n“我知道。”\n“我想了四年，唯一想问你的只有一句：是不是我做错了什么。”\n沈亦转过头。“没有。从来不是你。”喉咙有点疼。“我只是害怕自己想要得太多。我怕在同一个房间里把这话说出口，它就变成真的，然后有一天你醒来会后悔认识我。”\n陆川看了他很久。“我醒来从没后悔过你，”他说，“我只是醒来的时候是一个人。”"
+            },
+            {
+              "text": "The train came out of the tunnel into the snowfield, and the light changed, white and quiet. Lu Chuan leaned over and rested his forehead against Shen Yi's shoulder — just that, nothing more, like a man setting down something heavy he had been carrying for a long time. Shen Yi sat very still, afraid to move and afraid not to. Then he lifted one hand and pressed it flat against the middle of Lu Chuan's back, feeling him breathe. The announcement said the next stop was his. He didn't get up.",
+              "zh": "列车驶出隧道，进入雪野，光变了，白而安静。陆川探过身，把额头抵在沈亦肩上——仅此而已，再没有别的，像一个背了太久重物的人把东西放下了。沈亦一动不动，怕动了，也怕不动。然后他抬起一只手，掌心贴在陆川后背正中间，觉到他在呼吸。广播说下一站就是他家。他没有起身。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ja-haru-made",
+      "lang": "ja",
+      "title": "春まで待てない",
+      "titleZh": "等不到春天",
+      "blurb": "毕业那天没说出口的话，三年后在会议室里坐到了对面。",
+      "cast": [
+        { "name": "佐伯 悠", "zh": "佐伯悠", "age": 29, "role": "卒業式の日に何も言えなかった。今は東京の会社員" },
+        { "name": "藤井 玲", "zh": "藤井玲", "age": 28, "role": "取引先の新しい担当。三年前まで同じ大学だった" }
+      ],
+      "beats": ["卒業式の記憶", "再会", "エレベーター", "傘", "本当の理由", "キス", "春"],
+      "chapters": [
+        {
+          "n": 1,
+          "title": "卒業式の日の沈黙",
+          "passages": [
+            {
+              "text": "卒業式の日、校門の桜は散りかけていた。佐伯悠は藤井玲の二つ後ろを歩いて、言おうと決めていた言葉を、結局一度も口にしなかった。「卒業したら、俺と——」その先は三年間ずっと胸の奥にあって、今も同じ場所で詰まっている。手紙を書いた。七枚。全部出さなかった。封筒は実家の机の引き出しの中で、今も同じ向きに並んでいる。",
+              "zh": "毕业典礼那天，校门口的樱花快要落尽了。佐伯悠走在藤井玲身后两步，那句早就决定要说的话，最后一次也没能说出口。“毕业以后，和我——”后面的话在心里放了三年，如今还卡在同一个地方。他写过信，七页，一封都没寄出去。信封还摆在老家书桌抽屉里，朝同一个方向排着。"
+            },
+            {
+              "text": "三年後、その藤井玲が会議室の向こう側に座っていた。取引先の新しい担当だという。名刺を交換する指が、三年前より少しだけ節くれだっている。「お久しぶりです」藤井はそう言って、笑いもせずに頭を下げた。佐伯は「お久しぶり」と返した。会議は四十分続いたが、佐伯が覚えているのは、藤井がペンを回す癖が直っていないことと、グラスを取るたびに薬指の付け根が光ることだけだった。",
+              "zh": "三年后，藤井玲坐在会议桌对面。听说是客户方的新负责人。交换名片的手指比三年前粗了一点。藤井说“好久不见”，没有笑，只是低头。佐伯回了句“好久不见”。会开了四十分钟，佐伯记得的只有两件事：藤井转笔的习惯没改，以及他每次拿杯子时，无名指根都会反光。"
+            },
+            {
+              "text": "エレベーターは満員で、二人は隅に押し込まれた。藤井の肩が佐伯の胸に当たって、離れなかった。二十階まで、誰も何も言わなかった。降りる直前、藤井が振り向いて、声を落とした。「あの日、何か言いかけてたよね」佐伯の喉が鳴った。「覚えてるの」「覚えてるよ」藤井は扉の隙間から降りながら、こちらを見ないで言った。「ずっと待ってたのに、春が来る前に、君は東京にいなかった」",
+              "zh": "电梯很满，两个人被挤在角落。藤井的肩膀贴着佐伯的胸口，没有挪开。一直到二十楼，谁也没说话。就在下电梯前，藤井回过头，压低声音：“那天你好像有话要说。”佐伯的喉咙响了一下。“你记得？”“记得啊。”藤井从门缝里出去，没看他，说：“我一直等着，可春天还没来，你就不在东京了。”"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "title": "傘の下",
+          "passages": [
+            {
+              "text": "退社時、雨だった。佐伯が傘を開くと、藤井がロビーの柱のところに立って、空を見ていた。「傘、ないの」「朝は降ってなかったから」藤井は少し笑って、それから佐伯の傘の中に入ってきた。肩が触れ合う。傘は一つしかない。藤井はほとんど濡れないように歩いて、そのくせ佐伯の腕にはしっかり掴まっていた。駅まで七分。佐伯はその七分を、できるだけゆっくり歩いた。",
+              "zh": "下班时下着雨。佐伯撑开伞，看见藤井站在大堂柱子边上，望着天。“没带伞？”“早上没下。”藤井轻轻笑了一下，然后走进佐伯的伞下。肩膀碰在一起。只有一把伞。藤井走得很小心，几乎不让自己淋到，手却牢牢抓着佐伯的手臂。到车站七分钟。那七分钟，佐伯走得能多慢就多慢。"
+            },
+            {
+              "text": "「なんで東京を出たの」改札の前で、藤井が聞いた。雨の音が屋根を叩いている。「父が倒れて」佐伯は言いかけて、やめた。「……半分は、そう」「残りの半分は」佐伯は傘の柄を握り直した。「君が、俺のせいで困るのが嫌だった」藤井は黙って、それから佐伯のコートの裾を掴んだ。「勝手に決めないでよ」声が震えていた。「困るかどうかは、俺が決める」",
+              "zh": "“为什么离开东京？”在检票口前，藤井问。雨点敲着顶棚。“父亲病倒了……”佐伯说到一半停住。“……一半是因为这个。”“另一半呢？”佐伯握紧了伞柄。“我不想让你因为我为难。”藤井沉默了一会儿，然后抓住佐伯的大衣下摆。“别擅自替我做决定。”声音在抖。“会不会为难，由我来决定。”"
+            },
+            {
+              "text": "雨はまだ降っていた。藤井は裾を掴んだまま、一歩近づいて、佐伯の頬に手を当てた。冷たい指だった。「今度は、春まで待たないから」佐伯は傘を少し傾けて、二人の顔の上に影を作った。キスは雨の音より静かで、少しだけ塩辛かった。傘の外では、東京の街が濡れたまま光っていた。佐伯は思った。三年分の手紙は、もう出さなくていい。今、返事がここにある。",
+              "zh": "雨还在下。藤井抓着下摆，往前一步，把手贴在佐伯脸上。手指是凉的。“这次，我不会等到春天了。”佐伯把伞稍微倾斜，在两人脸前投下一片阴影。那个吻比雨声还轻，有点咸。伞外，东京的街湿着发亮。佐伯想：那三年的信，不用寄了。回信现在就在这里。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ko-long-winter",
+      "lang": "ko",
+      "title": "우리의 겨울은 길다",
+      "titleZh": "我们的冬天很长",
+      "blurb": "二十三封没寄出去的信，和两年后的一个雪夜。",
+      "cast": [
+        { "name": "서준", "zh": "徐俊", "age": 31, "role": "편의점 야간 근무. 이별 후 편지를 계속 썼다" },
+        { "name": "민재", "zh": "敏在", "age": 30, "role": "이 년 만에 돌아왔다. 이유를 끝까지 묻지 못했다" }
+      ],
+      "beats": ["편지 서랍", "편의점 재회", "점퍼", "눈길", "헤어진 이유", "첫 키스", "긴 겨울"],
+      "chapters": [
+        {
+          "n": 1,
+          "title": "보내지 못한 편지",
+          "passages": [
+            {
+              "text": "서준은 이사를 할 때마다 상자를 하나씩 버렸다. 책은 버렸고, 컵은 버렸고, 사진은 지웠다. 그런데 민재에게 쓰는 편지는 한 장도 버리지 못했다. 스물세 통. 첫 장은 헤어진 날 밤에 썼고, 마지막 장은 작년 겨울에 썼다. 내용은 거의 다 똑같다. 보고 싶다고, 미안하다고, 잘 지내냐고. 우편함 앞까지 가서 돌아온 밤도 여러 번이다. 편지는 아직도 서랍 맨 아래에, 날짜 순서대로 놓여 있다.",
+              "zh": "徐俊每次搬家都会扔掉一个箱子。书扔了，杯子扔了，照片删了。可是写给敏在的信，一封都没舍得扔。二十三封。第一封是分手那晚写的，最后一封是去年冬天写的。内容几乎都一样：想你、对不起、过得好吗。有好几次走到邮筒前又折回来。信到现在还放在抽屉最底下，按日期排着。"
+            },
+            {
+              "text": "이 년 만에, 민재가 돌아왔다. 서준은 편의점 야간 근무 마지막 시간에 그를 봤다. 민재는 검은 코트를 입고, 라면 하나와 캔커피 하나를 계산대에 올렸다. 서준은 바코드를 찍다가 손이 멈췄다. 민재도 멈췄다. 둘 다 아무 말도 하지 않았다. 계산이 끝나고, 민재가 봉투를 들고 돌아서다가 말했다. “여기 아직 있네.” 서준은 고개를 끄덕였다. “응. 아직.”",
+              "zh": "两年后，敏在回来了。徐俊是在便利店夜班最后一小时看见他的。敏在穿着黑色大衣，把一盒泡面和一听罐装咖啡放到收银台上。徐俊扫条码的手停住了。敏在也停住了。两个人谁都没说话。结完账，敏在拎着袋子转身，说：“你还在这儿。”徐俊点点头。“嗯。还在。”"
+            },
+            {
+              "text": "민재는 나가다가 문 앞에서 멈췄다. 밖은 영하 십도였다. 서준은 계산대 뒤에서 일어나, 자기 점퍼를 벗어 민재의 어깨에 걸쳐 줬다. 민재가 돌아봤다. “이거 입고 가.” 서준은 민재의 눈을 보지 않고 말했다. “너 추운 거 못 견디잖아.” 민재는 한참 점퍼를 만지작거리다가, 낮게 웃었다. “이거, 아직 냄새 그대로네.” 유리문이 열리고, 찬 바람이 들어왔다. 서준은 그 바람 속에서 숨을 삼켰다.",
+              "zh": "敏在走到门口停住了。外面零下十度。徐俊从收银台后站起来，脱下自己的外套，披到敏在肩上。敏在回过头。“穿着走吧。”徐俊没看他的眼睛，“你又怕冷。”敏在摸着外套站了一会儿，低声笑了。“这味道，还是老样子。”玻璃门开了，冷风灌进来。徐俊在那阵风里咽了一口呼吸。"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "title": "눈이 오는 밤",
+          "passages": [
+            {
+              "text": "민재는 점퍼를 입은 채로 서준이 퇴근하기를 기다렸다. 새벽 두 시, 편의점 불이 꺼지고, 두 사람은 눈이 쌓인 길을 나란히 걸었다. 서준의 집은 버스로 두 정거장이었지만, 민재는 걷자고 했다. 발소리만 났다. 눈이 와서, 세상이 조용해진 것 같았다. 민재가 갑자기 말했다. “편지 썼어?” 서준은 대답하지 않았다. 민재가 다시 물었다. “몇 통?” “……스물세 통.” 민재는 웃지 않았다. “그거, 다 어디 있어.” “서랍.”",
+              "zh": "敏在就穿着那件外套，等徐俊下班。凌晨两点，便利店的灯灭了，两个人并排走在积雪的路上。徐俊家坐公交两站，可敏在说走走吧。一路只有脚步声。下着雪，世界好像安静下来了。敏在忽然问：“写过信吗？”徐俊没回答。敏在又问：“几封？”“……二十三封。”敏在没笑。“那些信，在哪儿？”“抽屉里。”"
+            },
+            {
+              "text": "“왜 헤어졌는지 나한테 말해 본 적 없잖아.” 민재가 말했다. 서준은 오래 걸었다가 대답했다. “네가 나 때문에 힘들어지는 게 싫었어.” 민재가 걸음을 멈췄다. “또 그 말.” 목소리가 낮아졌다. “서준아, 나는 힘들어도 네 옆에 있고 싶었어. 넌 나를 약한 사람으로 만드는 거야.” 서준도 멈췄다. 눈이 눈썹에 앉았다. “그럼 어떻게 해야 했는데.” “그냥 물어봤어야지. 나한테. 힘들지, 하고.”",
+              "zh": "“你为什么分手，从来没跟我说清楚过。”敏在说。徐俊沉默地走了很久才回答：“我不想让你因为我受苦。”敏在停住脚步。“又是这句。”声音沉下去。“徐俊，我情愿辛苦，也想待在你身边。你这是在把我当成软弱的人。”徐俊也停下了。雪落在眉毛上。“那我该怎么做？”“你就该问问我啊。问我一句：累不累。”"
+            },
+            {
+              "text": "민재가 서준의 목덜미에 손을 댔다. 장갑을 벗은 손은 차가웠고, 서준은 그 차가움을 피하지 않았다. “이번엔 도망가지 마.” 민재가 말했다. 서준은 고개를 저었다. “안 도망쳐.” 그가 민재를 끌어안았다. 눈이 옷깃으로 들어와도 상관없었다. 민재가 먼저 입술을 대었다. 짧고, 조심스럽고, 오래 기다린 사람의 키스였다. 서준은 눈을 감고, 이 년 만에 처음으로, 숨을 편하게 내쉬었다.",
+              "zh": "敏在把手放到徐俊的后颈上。摘了手套的手很凉，徐俊没有躲开那份凉。“这次别跑了。”敏在说。徐俊摇头：“不跑。”他把他抱进怀里。雪落进衣领也不管了。敏在先吻上来。很短，很小心，是一个等了太久的人的吻。徐俊闭上眼睛，两年来第一次，呼吸得那么松。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

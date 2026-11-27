@@ -28,7 +28,7 @@
   var listShownFor = '';
 
   var LANG_NAME = { en: '英语', ko: '韩语', ja: '日语' };
-  var APP_VER = 'v2026-11-24.2'; // 页脚版本号：看到它就知道手机跑的是哪版
+  var APP_VER = 'v2026-11-27.1'; // 页脚版本号：看到它就知道手机跑的是哪版
 
   // 细线图标（韩系极简：不用 emoji）
   var ICON = {
@@ -1454,16 +1454,19 @@
         '<a class="entry-card" href="#/quiz"><b>小测验</b><small>混合出题</small></a>' +
         '<a class="entry-card" href="#/copybook"><b>练字本</b><small>写写贴贴</small></a>' +
         '</div>';
-      // 日用角入口（#7）：物件闪卡 + 地道对话，数据没到先显示读取中
+      // 日用角入口（#7）：物件闪卡 + 地道对话 + 阅读，数据没到先显示读取中
       var dailyRow =
-        '<p class="picker-h">日用角 · 日用物件与地道对话</p>' +
-        '<div class="entry-row two">' +
+        '<p class="picker-h">日用角 · 物件 · 对话 · 阅读</p>' +
+        '<div class="entry-row three">' +
         '<a class="entry-card" href="#/daily/obj"><b>物件</b><small>' +
         (KINDER ? KINDER.cats.length + '类 ' +
           KINDER.cats.reduce(function (n, c) { return n + c.words.length; }, 0) + '词'
           : '读取中…') + '</small></a>' +
         '<a class="entry-card" href="#/daily/dlg"><b>对话</b><small>' +
         (DIALOGUES ? DIALOGUES.dialogues.length + '段 · 职场+日常' : '读取中…') +
+        '</small></a>' +
+        '<a class="entry-card" href="#/daily/read"><b>阅读</b><small>' +
+        (READING ? READING.books.length + ' 本 · 英日韩' : '读取中…') +
         '</small></a>' +
         '</div>';
       var scenes = sceneLists().filter(function (l) {
@@ -1658,11 +1661,14 @@
   // 词库命中的物件挂词条（有道发音+词感+真 ref 进间隔复习），未命中的内置释义+系统朗读
   var KINDER = null; // {cats:[{id,title,img,words:[...]}]}
   var DIALOGUES = null; // {dialogues:[{id,grp,title,en,lines:[{who,en,zh,ja,ko}]}]}
+  var READING = null; // {books:[{id,lang,title,titleZh,cast,beats,chapters:[{n,title,passages:[{text,zh}]}]}]}
   var KMAP = null; // 词库英文头词 → 词条（懒建一次）
   fetch('data/kinder.json').then(function (r) { return r.json(); })
     .then(function (d) { KINDER = d; route(); }).catch(function () {});
   fetch('data/dialogues.json').then(function (r) { return r.json(); })
     .then(function (d) { DIALOGUES = d; route(); }).catch(function () {});
+  fetch('data/reading.json').then(function (r) { return r.json(); })
+    .then(function (d) { READING = d; route(); }).catch(function () {});
 
   function kmap() {
     if (!KMAP) {
@@ -1982,12 +1988,15 @@
     if (step === 0) {
       if (session.cpListened !== session.idx) {
         session.cpListened = session.idx;
-        setTimeout(function () { kinderSay('en'); }, 150);
+        // 听认：英→日→韩各读一遍；跟读只给英文原声
+        setTimeout(function () { m === 'lr' ? kinderSayAll() : kinderSay('en'); }, 150);
       }
       return '<div class="card study-card kinder-card">' + img +
         '<div class="spell-hint">' +
-        (m === 'lr' ? '先听发音（只藏文字 · 看图猜词）' : '先听原声，准备跟读') + '</div>' +
+        (m === 'lr' ? '先听三语（英→日→韩） · 看图猜词' : '先听原声，准备跟读') + '</div>' +
         '<div class="spell-tools">' + sayBtn('en') +
+        (m === 'lr' ? '<button class="mini-btn" data-act="kinder-say-all" title="英日韩连播">' +
+          ICON.sound + '三语</button>' : '') +
         '<span class="tour-slot">听清了再继续 · 可重播</span></div>' +
         '<div class="study-actions">' +
         '<button class="btn" data-act="cp-next">' +
@@ -2102,6 +2111,120 @@
       '<button class="btn" data-act="dlg-done" data-id="' + d.id + '">' +
       (isRead ? '下一段 →' : '✓ 读完了') + '</button>' +
       '</div>';
+  }
+
+  // ---------- 视图：日用角·阅读 ----------
+  var READ_LANG = { en: '英', ja: '日', ko: '韩' };
+
+  function readDoneMap() { return lsGet('hedgehog:kinder-read', {}); }
+  function readGenMap() { return lsGet('hedgehog:kinder-read-gen', {}); }
+
+  // 静态章节 + 应用内续写的章节（续章只存本机，不入库）
+  function bookChapters(b) {
+    var gen = readGenMap()[b.id] || [];
+    return (b.chapters || []).concat(gen);
+  }
+
+  function findBook(id) {
+    var found = null;
+    if (READING) READING.books.forEach(function (b) { if (b.id === id) found = b; });
+    return found;
+  }
+
+  // 逐段朗读：整段原文走有道，失败转系统 TTS（长句只能靠 TTS 兜底）
+  function readSay(text, lang) {
+    var l = lang === 'ja' || lang === 'ko' ? lang : 'en';
+    if (!text) return;
+    var sp = l === 'ja' ? 'ja-JP' : l === 'ko' ? 'ko-KR' : 'en-US';
+    playAudio(text, YOUDAO_LE[l], text.trim().slice(0, 12) + '…',
+      { x: { w: text }, l: { speech: sp, lang: l } });
+  }
+
+  function readDone(bookId, chN) {
+    var b = findBook(bookId);
+    if (!b) return;
+    var m = readDoneMap();
+    var done = m[bookId] || {};
+    var first = !done[chN];
+    if (first) {
+      done[chN] = 1;
+      m[bookId] = done;
+      lsSet('hedgehog:kinder-read', m);
+      logStamp(); // 读完一章=打卡一轮（只记首次）
+    }
+    var list = bookChapters(b);
+    var nextC = list.filter(function (c) { return !done[c.n]; })[0];
+    route(); // 重绘：本按钮转灰、章标题打勾
+    toast(first ? '✓ 本章已读 · 打卡 +1' : '✓ 已读');
+    if (nextC) {
+      var el = $('readCh' + nextC.n);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      location.hash = '#/daily/read';
+    }
+  }
+
+  function viewDailyRead(bookId) {
+    var back0 = '<a class="back-link" href="#/study">← 巡游</a>';
+    if (!READING) return back0 + '<h2>日用角 · 阅读</h2><p class="sub">书架读取中…</p>';
+    var books = READING.books || [];
+    if (!bookId) {
+      var done0 = readDoneMap();
+      var card = function (b) {
+        var chs = bookChapters(b);
+        var d = done0[b.id] || {};
+        var readN = chs.filter(function (c) { return d[c.n]; }).length;
+        var all = chs.length && readN >= chs.length;
+        return '<a class="mini-card read-card" href="#/daily/read/' + b.id + '">' +
+          '<span class="en">' + (READ_LANG[b.lang] || '') + ' · ' + chs.length + ' 章</span>' +
+          '<b>' + esc(b.title) + (all ? ' ✓' : '') + '</b>' +
+          '<small>' + esc(b.titleZh || '') + (readN ? ' · 已读 ' + readN + '/' + chs.length : '') +
+          '</small>' +
+          (b.blurb ? '<em class="read-blurb">' + esc(b.blurb) + '</em>' : '') +
+          '</a>';
+      };
+      var sec = function (lang, label) {
+        var g = books.filter(function (b) { return b.lang === lang; });
+        if (!g.length) return '';
+        return '<p class="picker-h">' + label + ' · ' + g.length + ' 本</p>' +
+          '<div class="wordlist">' + g.map(card).join('') + '</div>';
+      };
+      return back0 +
+        '<h2>日用角 · 阅读</h2>' +
+        '<p class="sub">逐段读 · 点原文朗读 · 一段一章地攒</p>' +
+        sec('en', '英语') + sec('ja', '日语') + sec('ko', '韩语');
+    }
+    var b = findBook(bookId);
+    if (!b) return back0 + '<h2>日用角 · 阅读</h2><p class="sub">没有这本书</p>';
+    var chs = bookChapters(b);
+    var done = readDoneMap()[b.id] || {};
+    var readN = chs.filter(function (c) { return done[c.n]; }).length;
+    var cast = (b.cast || []).map(function (p) {
+      return '<span class="read-cast">' + esc(p.name) + ' · ' + esc(p.zh) +
+        (p.age ? ' · ' + p.age : '') + '</span>';
+    }).join('');
+    var chHtml = chs.map(function (c) {
+      var isRead = !!done[c.n];
+      var ps = (c.passages || []).map(function (p) {
+        return '<p class="read-p" data-act="read-say" data-lang="' + b.lang + '" ' +
+          'title="点一下朗读">' + esc(p.text) + '</p>' +
+          '<p class="read-zh">' + esc(p.zh || '') + '</p>';
+      }).join('');
+      return '<section class="read-ch" id="readCh' + c.n + '">' +
+        '<h3>第 ' + c.n + ' 章 · ' + esc(c.title) + (isRead ? ' <span class="read-ok">✓</span>' : '') + '</h3>' +
+        ps +
+        '<div class="study-actions">' +
+        '<button class="btn' + (isRead ? ' ghost' : '') + '" data-act="read-done" data-id="' + b.id +
+        '" data-ch="' + c.n + '">' + (isRead ? '再读一遍记 ✓' : '✓ 本章读完') + '</button>' +
+        '</div></section>';
+    }).join('');
+    return '<a class="back-link" href="#/daily/read">← 书架</a>' +
+      '<h2>' + esc(b.title) + '</h2>' +
+      '<p class="sub">' + esc(b.titleZh || '') + ' · ' + (READ_LANG[b.lang] || '') +
+      ' · ' + chs.length + ' 章 · 已读 ' + readN + '/' + chs.length + '</p>' +
+      (b.blurb ? '<p class="read-lead">' + esc(b.blurb) + '</p>' : '') +
+      (cast ? '<div class="read-casts">' + cast + '</div>' : '') +
+      '<div class="read-box">' + chHtml + '</div>';
   }
 
   // ---------- 视图：收藏 ----------
@@ -4001,9 +4124,9 @@
       view.innerHTML = studyScreen();
     } else if (name === 'daily') {
       nav = 'study'; // 日用角挂在背词标签下
-      view.innerHTML = parts[1] === 'dlg'
-        ? viewDailyDlg(parts[2] || '')
-        : viewDailyObj(parts[2] || '');
+      view.innerHTML = parts[1] === 'read'
+        ? viewDailyRead(parts[2] ? decodeURIComponent(parts[2]) : '')
+        : parts[1] === 'dlg' ? viewDailyDlg(parts[2] || '') : viewDailyObj(parts[2] || '');
     } else if (name === 'quiz') {
       view.innerHTML = viewQuiz();
       nav = 'study';
@@ -4504,6 +4627,10 @@
       dlgSayAll(curDlg(), el.getAttribute('data-lang'));
     } else if (act === 'dlg-done') { // 读完打卡 + 下一段
       dlgDone(el.getAttribute('data-id'));
+    } else if (act === 'read-say') { // 阅读：点原文段落朗读（语种取这本书）
+      readSay(el.textContent, el.getAttribute('data-lang'));
+    } else if (act === 'read-done') { // 阅读：读完一章打卡
+      readDone(el.getAttribute('data-id'), parseInt(el.getAttribute('data-ch'), 10) || 1);
     } else if (act === 'study-home') {
       session = null;
       route();

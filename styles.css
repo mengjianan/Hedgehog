@@ -1832,8 +1832,9 @@ body.exam-focus .view { padding-top: 8px; }
   body.exam-focus .view { max-width: 1500px; }
 }
 
-/* ---------- 日用角（物件闪卡 + 地道对话，#7） ---------- */
+/* ---------- 日用角（物件闪卡 + 地道对话 + 阅读，#7） ---------- */
 .entry-row.two { grid-template-columns: repeat(2, 1fr); }
+.entry-row.three { grid-template-columns: repeat(3, 1fr); }
 
 /* 类别卡：细线静物图 + 名称 + 词数 */
 .kd-cats {
@@ -1917,3 +1918,39 @@ body.exam-focus .view { padding-top: 8px; }
   display: flex; align-items: center; gap: 8px;
   margin-top: 10px; font-size: 12px; color: var(--mut);
 }
+
+/* 阅读书架卡：语种 + 章数 + 书名 + 中文名 + 一句剧透 */
+.read-card { display: block; }
+.read-card em.read-blurb {
+  display: block; margin-top: 3px;
+  font-style: normal; font-size: 12px; color: var(--mut); line-height: 1.45;
+}
+.read-lead { margin: 6px 0 10px; font-size: 13px; color: var(--mut); line-height: 1.6; }
+.read-casts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.read-cast {
+  padding: 2px 8px; font-size: 11.5px; color: var(--stone);
+  background: #fcfbf7; border: 1px solid var(--line); border-radius: 999px;
+}
+
+/* 正文：原文大字可点读，中文小字垫底 */
+.read-box { display: flex; flex-direction: column; gap: 18px; margin-top: 12px; }
+.read-ch {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px 10px;
+  box-shadow: var(--shadow);
+  scroll-margin-top: 12px;
+}
+.read-ch h3 {
+  margin: 0 0 10px; padding-bottom: 8px;
+  font-family: Georgia, serif; font-size: 15px; font-weight: 600; letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+}
+.read-ok { color: var(--sage); font-weight: 400; }
+.read-p {
+  margin: 0 0 6px; font-size: 17px; line-height: 1.75; letter-spacing: 0.01em;
+  cursor: pointer;
+}
+.read-p:active { opacity: 0.6; }
+.read-zh { margin: 0 0 14px; font-size: 12.5px; color: var(--mut); line-height: 1.6; }

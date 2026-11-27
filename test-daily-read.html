@@ -1,0 +1,184 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>daily read test</title>
+<style>
+  pre { position: absolute; top: 0; right: 0; width: 320px; margin: 0; padding: 4px;
+        font: 10px/1.35 monospace; background: #ffffffe8; z-index: 9; max-height: 100%; overflow: auto; }
+  iframe { margin: 0; }
+</style>
+<pre id="out">boot…</pre>
+<script>
+/* 日用角·阅读测试：三入口并排、书架分组、章节正文与点读、读完打卡；顺带核对听认第0步三语自动读。
+   需要本地服务（有 /__hold 更好），跑完清掉假缓存。 */
+var LOG = [];
+function say(s) { LOG.push(s); document.getElementById('out').textContent = LOG.join('\n'); }
+if (/nolog/.test(location.search)) document.getElementById('out').style.display = 'none';
+function slp(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+function seed() {
+  return fetch('data/words.enc.gz', { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+    var t = r.headers.get('ETag') || r.headers.get('Last-Modified') || '';
+    if (t) { try { localStorage.setItem('hedgehog:etag', t); } catch (e) {} }
+    say('etag: ' + t);
+    var fake = {
+      version: 7,
+      tables: [{ id: 't0', title: '空表', lang: 'en', sections: [] }],
+      lists: [{
+        id: 'lt', title: '测试厅', lang: 'en', words: [
+          { w: 'apple', pron: '/ˈæpl/', pos: 'n.', zh: '苹果', sense: '一种水果',
+            trap: '别和 application 混', collo: ['an apple a day', 'apple pie'],
+            ex: [{ en: 'I ate an apple.', zh: '我吃了一个苹果。' }] },
+        ],
+      }],
+      tags: {},
+    };
+    try { localStorage.setItem('hedgehog:data', JSON.stringify(fake)); } catch (e) { say('seed fail ' + e); }
+  });
+}
+
+function waitFor(fn, ms) {
+  var t0 = Date.now();
+  return new Promise(function (res, rej) {
+    (function loop() {
+      var v = null;
+      try { v = fn(); } catch (e) {}
+      if (v) return res(v);
+      if (Date.now() - t0 > (ms || 10000)) return rej(new Error('timeout'));
+      setTimeout(loop, 60);
+    })();
+  });
+}
+
+(async function () {
+  try {
+    var keep = setInterval(function () { fetch('/__hold?ms=150').catch(function () {}); }, 20);
+    fetch('/__hold?ms=150').catch(function () {});
+    await slp(30);
+    await seed();
+    localStorage.removeItem('hedgehog:kinder-read');
+    localStorage.removeItem('hedgehog:kinder-read-gen');
+
+    var fr = document.createElement('iframe');
+    fr.style.cssText = 'width:390px;height:844px;border:0;display:block';
+    fr.src = 'index.html#/study';
+    document.body.appendChild(fr);
+
+    try {
+      await waitFor(function () {
+        var dd = fr.contentDocument;
+        return dd && dd.querySelector('.entry-row.three');
+      }, 15000);
+    } catch (e0) {
+      var dd0 = fr.contentDocument;
+      say('iframe 未就绪: ready=' + (dd0 && dd0.readyState));
+      if (dd0) {
+        say('gate.hidden=' + dd0.getElementById('gate').hidden);
+        say('view=' + (dd0.getElementById('view').textContent || '').slice(0, 160));
+      }
+      throw e0;
+    }
+    await slp(400);
+    var w = fr.contentWindow;
+    var D = fr.contentDocument;
+
+    var row = D.querySelector('.entry-row.three');
+    var cols = w.getComputedStyle(row).gridTemplateColumns.split(' ').length;
+    say('日用角入口数: ' + row.children.length + (row.children.length === 3 ? ' ✔' : ' ✘'));
+    say('并排列数: ' + cols + (cols === 3 ? ' ✔' : ' ✘'));
+    say('入口文字: ' + Array.prototype.map.call(row.children, function (c) {
+      return c.querySelector('b').textContent;
+    }).join(' / '));
+
+    var readCard = row.querySelector('a[href="#/daily/read"]');
+    say('阅读入口: ' + (readCard ? '有 ✔' : '缺失 ✘'));
+    readCard.click();
+    var shelf = await waitFor(function () { return D.querySelector('.read-card'); }, 8000);
+    say('书架卡数: ' + D.querySelectorAll('.read-card').length);
+    var heads = Array.prototype.map.call(D.querySelectorAll('.picker-h'), function (p) {
+      return p.textContent;
+    });
+    say('分组: ' + heads.join(' | '));
+    say('三语分组齐: ' + (heads.filter(function (t) { return /英语|日语|韩语/.test(t); }).length === 3 ? '是 ✔' : '否 ✘'));
+
+    D.querySelector('a.read-card[href="#/daily/read/en-last-train"]').click();
+    await waitFor(function () { return D.querySelector('.read-p'); }, 8000);
+    await slp(150);
+    var chs = D.querySelectorAll('.read-ch');
+    var ps = D.querySelectorAll('.read-p');
+    say('章节数: ' + chs.length + (chs.length >= 2 ? ' ✔' : ' ✘'));
+    say('段落数: ' + ps.length + (ps.length >= 6 ? ' ✔' : ' ✘'));
+    say('中文译文行: ' + D.querySelectorAll('.read-zh').length + ' 条');
+    var fs = parseFloat(w.getComputedStyle(ps[0]).fontSize);
+    say('原文字号: ' + fs + 'px' + (fs >= 16 ? ' ✔' : ' ✘'));
+    say('原文语种标记: ' + ps[0].getAttribute('data-lang'));
+    say('首段: ' + ps[0].textContent.slice(0, 40) + '…');
+
+    ps[0].click();
+    await slp(200);
+    say('点段朗读 toast: 「' + (D.getElementById('toast') ? D.getElementById('toast').textContent : '') + '」');
+
+    var doneBtn = chs[0].querySelector('[data-act="read-done"]');
+    say('读完按钮: ' + (doneBtn ? '「' + doneBtn.textContent + '」' : '缺失 ✘'));
+    doneBtn.click();
+    await slp(250);
+    var rm = JSON.parse(localStorage.getItem('hedgehog:kinder-read') || '{}');
+    say('已读记录: ' + JSON.stringify(rm) + (rm['en-last-train'] && rm['en-last-train']['1'] ? ' ✔' : ' ✘'));
+    var ch1 = D.getElementById('readCh1');
+    say('按钮转 ghost: ' + (ch1.querySelector('[data-act="read-done"]').className.indexOf('ghost') >= 0 ? '是 ✔' : '否 ✘'));
+    say('章标题打勾: ' + (ch1.querySelector('.read-ok') ? '有 ✔' : '缺 ✘'));
+
+    var de = D.documentElement;
+    say('横向溢出: ' + (de.scrollWidth > de.clientWidth ? 'YES ' + de.scrollWidth + '>' + de.clientWidth : 'no'));
+
+    // 日/韩书：正文与中文都在，语种标记正确
+    w.location.hash = '#/daily/read/ja-haru-made';
+    await waitFor(function () { return D.querySelector('.read-p'); }, 8000);
+    await slp(120);
+    var jp = D.querySelector('.read-p');
+    say('日语首段[' + jp.getAttribute('data-lang') + ']: ' + jp.textContent.slice(0, 30) + '…');
+    say('日语中文行: ' + (D.querySelectorAll('.read-zh').length >= 6 ? '齐 ✔' : '缺 ✘'));
+    w.location.hash = '#/daily/read/ko-long-winter';
+    await waitFor(function () { return D.querySelector('.read-p'); }, 8000);
+    await slp(120);
+    var kp = D.querySelector('.read-p');
+    say('韩语首段[' + kp.getAttribute('data-lang') + ']: ' + kp.textContent.slice(0, 30) + '…');
+    say('韩语中文行: ' + (D.querySelectorAll('.read-zh').length >= 6 ? '齐 ✔' : '缺 ✘'));
+    say('横向溢出(韩): ' + (de.scrollWidth > de.clientWidth ? 'YES ' + de.scrollWidth + '>' + de.clientWidth : 'no'));
+
+    // 听认第0步：三语自动读（回到背词页 → 进第一类）
+    w.location.hash = '#/study';
+    await slp(300);
+    var kinder = await (await fetch('data/kinder.json')).json();
+    var catId = kinder.cats[0].id;
+    w.location.hash = '#/daily/obj/' + catId;
+    await waitFor(function () { return D.querySelector('.spell-hint'); }, 8000);
+    await slp(200);
+    var hint = D.querySelector('.spell-hint').textContent;
+    say('听认提示: ' + hint + (/三语|英→日→韩/.test(hint) ? ' ✔' : ' ✘'));
+    var threeBtn = D.querySelector('.spell-tools [data-act="kinder-say-all"]');
+    say('第0步三语按钮: ' + (threeBtn ? '「' + threeBtn.textContent.trim() + '」✔' : '缺失 ✘'));
+
+    D.querySelector('.seg[data-mode="ls"]').click();
+    await slp(350);
+    var hint2 = D.querySelector('.spell-hint').textContent;
+    say('跟读提示: ' + hint2 + (/准备跟读/.test(hint2) ? ' ✔' : ' ✘'));
+    say('跟读仍有三语按钮: ' +
+      (D.querySelector('.spell-tools [data-act="kinder-say-all"]') ? '是 ✘' : '否 ✔'));
+
+    say('DONE');
+    clearInterval(keep);
+    try {
+      localStorage.removeItem('hedgehog:data');
+      localStorage.removeItem('hedgehog:etag');
+      localStorage.removeItem('hedgehog:kinder-read');
+      var rq2 = indexedDB.open('hedgehog', 1);
+      rq2.onsuccess = function () {
+        var tx2 = rq2.result.transaction('kv', 'readwrite');
+        tx2.objectStore('kv').delete('data');
+      };
+    } catch (e) {}
+  } catch (e) {
+    say('ERROR: ' + (e && e.stack || e));
+  }
+})();
+</script>
